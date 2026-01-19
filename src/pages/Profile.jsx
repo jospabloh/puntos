@@ -38,6 +38,11 @@ export default function Profile() {
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ full_name: '', phone: '' });
+  const [notifPrefs, setNotifPrefs] = useState({
+    campaigns_enabled: true,
+    offers_enabled: true,
+    points_activity_enabled: true
+  });
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -66,6 +71,40 @@ export default function Profile() {
 
   const account = accounts?.[0];
 
+  // Fetch notification preferences
+  const { data: preferences } = useQuery({
+    queryKey: ['notifPreferences', user?.id],
+    queryFn: () => base44.entities.NotificationPreference.filter({ user_id: user?.id }),
+    enabled: !!user?.id,
+  });
+
+  // Initialize or create preferences
+  useEffect(() => {
+    const initPreferences = async () => {
+      if (user && preferences !== undefined) {
+        if (preferences.length === 0) {
+          // Create default preferences
+          await base44.entities.NotificationPreference.create({
+            user_id: user.id,
+            user_email: user.email,
+            campaigns_enabled: true,
+            offers_enabled: true,
+            points_activity_enabled: true,
+            email_enabled: true
+          });
+          queryClient.invalidateQueries(['notifPreferences']);
+        } else {
+          setNotifPrefs({
+            campaigns_enabled: preferences[0].campaigns_enabled ?? true,
+            offers_enabled: preferences[0].offers_enabled ?? true,
+            points_activity_enabled: preferences[0].points_activity_enabled ?? true
+          });
+        }
+      }
+    };
+    initPreferences();
+  }, [user, preferences]);
+
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data) => {
@@ -87,6 +126,25 @@ export default function Profile() {
 
   const handleSave = () => {
     updateProfileMutation.mutate(formData);
+  };
+
+  // Update notification preferences
+  const updateNotifMutation = useMutation({
+    mutationFn: async (data) => {
+      if (preferences?.[0]) {
+        await base44.entities.NotificationPreference.update(preferences[0].id, data);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['notifPreferences']);
+      toast.success('Preferencias actualizadas');
+    }
+  });
+
+  const handleNotifChange = (key, value) => {
+    const newPrefs = { ...notifPrefs, [key]: value };
+    setNotifPrefs(newPrefs);
+    updateNotifMutation.mutate(newPrefs);
   };
 
   const handleLogout = () => {
@@ -274,17 +332,33 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
+                  <p className="font-medium text-slate-900">Campañas especiales</p>
+                  <p className="text-sm text-slate-500">Alertas de nuevas campañas y bonificaciones</p>
+                </div>
+                <Switch 
+                  checked={notifPrefs.campaigns_enabled}
+                  onCheckedChange={(v) => handleNotifChange('campaigns_enabled', v)}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
                   <p className="font-medium text-slate-900">Ofertas y promociones</p>
                   <p className="text-sm text-slate-500">Recibe alertas de nuevas ofertas</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={notifPrefs.offers_enabled}
+                  onCheckedChange={(v) => handleNotifChange('offers_enabled', v)}
+                />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium text-slate-900">Movimientos de puntos</p>
                   <p className="text-sm text-slate-500">Notificaciones al ganar o canjear</p>
                 </div>
-                <Switch defaultChecked />
+                <Switch 
+                  checked={notifPrefs.points_activity_enabled}
+                  onCheckedChange={(v) => handleNotifChange('points_activity_enabled', v)}
+                />
               </div>
             </CardContent>
           </Card>

@@ -16,7 +16,8 @@ import {
   MoreVertical,
   Play,
   Pause,
-  Star
+  Star,
+  Send
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,6 +160,60 @@ export default function AdminCampaigns() {
     onSuccess: () => {
       queryClient.invalidateQueries(['allOffers']);
       toast.success('Oferta eliminada');
+    }
+  });
+
+  // Send campaign notifications
+  const notifyCampaignMutation = useMutation({
+    mutationFn: async (campaign) => {
+      // Fetch all users with notification preferences enabled
+      const allPreferences = await base44.entities.NotificationPreference.list();
+      const enabledUsers = allPreferences.filter(pref => pref.campaigns_enabled);
+
+      // Send emails to all subscribed users
+      const emailPromises = enabledUsers.map(pref => 
+        base44.integrations.Core.SendEmail({
+          from_name: 'LoyaltyAI',
+          to: pref.user_email,
+          subject: `🎉 Nueva campaña: ${campaign.name}`,
+          body: `Hola,\n\n¡Tenemos una nueva campaña para ti!\n\n**${campaign.name}**\n${campaign.description}\n\n${campaign.type === 'multiplier' ? `Gana puntos x${campaign.multiplier}` : `Recibe ${campaign.bonus_points} puntos bonus`}\n\nVálida desde ${campaign.start_date ? format(new Date(campaign.start_date), "d 'de' MMMM", { locale: es }) : 'hoy'} hasta ${campaign.end_date ? format(new Date(campaign.end_date), "d 'de' MMMM", { locale: es }) : 'nuevo aviso'}.\n\n¡Aprovecha ahora!\n\nEquipo LoyaltyAI`
+        })
+      );
+
+      await Promise.all(emailPromises);
+      return enabledUsers.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`Notificación enviada a ${count} usuarios`);
+    },
+    onError: () => {
+      toast.error('Error al enviar notificaciones');
+    }
+  });
+
+  // Send offer notifications
+  const notifyOfferMutation = useMutation({
+    mutationFn: async (offer) => {
+      const allPreferences = await base44.entities.NotificationPreference.list();
+      const enabledUsers = allPreferences.filter(pref => pref.offers_enabled);
+
+      const emailPromises = enabledUsers.map(pref => 
+        base44.integrations.Core.SendEmail({
+          from_name: 'LoyaltyAI',
+          to: pref.user_email,
+          subject: `🎁 Nueva oferta disponible: ${offer.title}`,
+          body: `Hola,\n\n¡Tenemos una nueva oferta especial para ti!\n\n**${offer.title}**\n${offer.description}\n\nCosto: ${offer.points_cost.toLocaleString()} puntos\nValor: $${offer.value_mxn.toLocaleString()} MXN\n\n${offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!'}\n\n¡Canjea ahora en la app!\n\nEquipo LoyaltyAI`
+        })
+      );
+
+      await Promise.all(emailPromises);
+      return enabledUsers.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`Notificación enviada a ${count} usuarios`);
+    },
+    onError: () => {
+      toast.error('Error al enviar notificaciones');
     }
   });
 
@@ -318,6 +373,12 @@ export default function AdminCampaigns() {
                               <Edit className="h-4 w-4 mr-2" /> Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem 
+                              onClick={() => notifyCampaignMutation.mutate(campaign)}
+                              disabled={notifyCampaignMutation.isPending}
+                            >
+                              <Send className="h-4 w-4 mr-2" /> Notificar usuarios
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
                               onClick={() => deleteCampaignMutation.mutate(campaign.id)}
                               className="text-red-600"
                             >
@@ -393,6 +454,12 @@ export default function AdminCampaigns() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleEditOffer(offer)}>
                               <Edit className="h-4 w-4 mr-2" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => notifyOfferMutation.mutate(offer)}
+                              disabled={notifyOfferMutation.isPending}
+                            >
+                              <Send className="h-4 w-4 mr-2" /> Notificar usuarios
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => deleteOfferMutation.mutate(offer.id)}
