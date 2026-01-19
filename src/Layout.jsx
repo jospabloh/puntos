@@ -273,6 +273,13 @@ export default function Layout({ children, currentPageName }) {
         {children}
       </main>
 
+      {/* Footer */}
+      <footer className="bg-white border-t border-slate-100 py-4 text-center">
+        <p className="text-xs text-slate-400">
+          © 2026 ACACIA Consultoría en Informática y Cómputo. Todos los Derechos Reservados.
+        </p>
+      </footer>
+
       {/* Bottom Navigation - Mobile Only (Customer) */}
       {user && !currentPageName?.startsWith('Admin') && !currentPageName?.startsWith('Merchant') && (
         <nav className="fixed bottom-0 left-0 right-0 md:hidden glass-card border-t border-slate-200/50 safe-area-bottom">

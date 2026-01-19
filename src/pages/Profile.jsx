@@ -409,9 +409,9 @@ export default function Profile() {
           </button>
         </motion.div>
 
-        {/* Version */}
+        {/* Footer */}
         <p className="text-center text-xs text-slate-400 mt-8">
-          LoyaltyAI v1.0.0 • Hecho con ❤️
+          © 2026 ACACIA Consultoría en Informática y Cómputo. Todos los Derechos Reservados.
         </p>
       </div>
     </div>
