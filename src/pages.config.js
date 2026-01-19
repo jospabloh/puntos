@@ -5,6 +5,10 @@ import Offers from './pages/Offers';
 import Chat from './pages/Chat';
 import MerchantPOS from './pages/MerchantPOS';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminStores from './pages/AdminStores';
+import AdminCustomers from './pages/AdminCustomers';
+import AdminAudit from './pages/AdminAudit';
+import AdminCampaigns from './pages/AdminCampaigns';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +20,10 @@ export const PAGES = {
     "Chat": Chat,
     "MerchantPOS": MerchantPOS,
     "AdminDashboard": AdminDashboard,
+    "AdminStores": AdminStores,
+    "AdminCustomers": AdminCustomers,
+    "AdminAudit": AdminAudit,
+    "AdminCampaigns": AdminCampaigns,
 }
 
 export const pagesConfig = {
