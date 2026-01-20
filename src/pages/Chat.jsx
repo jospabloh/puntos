@@ -129,7 +129,7 @@ export default function Chat() {
       };
 
       const response = await base44.integrations.Core.InvokeLLM({
-        prompt: `Eres el asistente virtual del programa de lealtad "LoyaltyAI". Tu nombre es Lumi.
+        prompt: `Eres el asistente virtual del programa de lealtad "Puntos+". Tu nombre es Nexo.
 Ayudas a los usuarios a entender su saldo de puntos, cómo ganar más, cómo canjear, y respondes dudas generales.
 Siempre sé amable, conciso y útil. Responde en español mexicano.
 
@@ -199,7 +199,7 @@ ${userMessage}`,
                 <Bot className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-slate-900">Lumi</h1>
+                <h1 className="font-bold text-slate-900">Nexo</h1>
                 <p className="text-xs text-emerald-600 flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                   En línea
@@ -223,7 +223,7 @@ ${userMessage}`,
               <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/25">
                 <Bot className="h-8 w-8 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">¡Hola! Soy Lumi 👋</h2>
+              <h2 className="text-xl font-bold text-slate-900 mb-2">¡Hola! Soy Nexo 👋</h2>
               <p className="text-slate-500 text-sm max-w-sm mx-auto">
                 Tu asistente del programa de lealtad. Pregúntame sobre tus puntos, ofertas o cómo ganar más.
               </p>
