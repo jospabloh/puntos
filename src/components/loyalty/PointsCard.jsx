@@ -89,7 +89,7 @@ export default function PointsCard({ account, compact = false }) {
         <div className="flex items-start justify-between mb-8">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-white/80" />
-            <span className="text-white/80 text-sm font-medium">LoyaltyAI</span>
+            <span className="text-white/80 text-sm font-medium">Puntos+</span>
           </div>
           <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
             <span className="text-lg">{tier.icon}</span>
