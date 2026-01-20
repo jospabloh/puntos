@@ -16,7 +16,8 @@ import {
   Star,
   Bell,
   HelpCircle,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -410,9 +411,17 @@ export default function Profile() {
         </motion.div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-slate-400 mt-8">
-          © 2026 ACACIA Consultoría en Informática y Cómputo. Todos los Derechos Reservados.
-        </p>
+        <div className="text-center mt-8">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="h-6 w-6 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-sm">
+              <Sparkles className="h-3.5 w-3.5 text-white" />
+            </div>
+            <span className="text-sm font-semibold gradient-text">Puntos+</span>
+          </div>
+          <p className="text-xs text-slate-400">
+            © 2026 ACACIA Consultoría en Informática y Cómputo. Todos los Derechos Reservados.
+          </p>
+        </div>
       </div>
     </div>
   );

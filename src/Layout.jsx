@@ -122,7 +122,7 @@ export default function Layout({ children, currentPageName }) {
               <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/25">
                 <Sparkles className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold gradient-text hidden sm:block">LoyaltyAI</span>
+              <span className="text-xl font-bold gradient-text hidden sm:block">Puntos+</span>
             </Link>
 
             {/* Desktop Navigation */}
