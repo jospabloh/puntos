@@ -245,13 +245,13 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="px-4 -mt-6 max-w-lg mx-auto space-y-6">
+      <div className="px-4 -mt-6 max-w-lg mx-auto space-y-6 relative z-10">
         {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-3 gap-3"
+          className="grid grid-cols-3 gap-3 relative z-10"
         >
           {quickActions.map((action, index) => {
             const Icon = action.icon;
