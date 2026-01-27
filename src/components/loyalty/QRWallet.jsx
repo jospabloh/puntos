@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { QrCode, RefreshCw, Clock, Shield, Copy, Check } from 'lucide-react';
+import { QrCode, RefreshCw, Clock, Shield, Copy, Check, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
 export default function QRWallet({ account, onRefreshToken }) {
   const [timeLeft, setTimeLeft] = useState(0);
@@ -49,6 +51,44 @@ export default function QRWallet({ account, onRefreshToken }) {
     navigator.clipboard.writeText(account.qr_token);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleAddToGoogleWallet = async () => {
+    try {
+      toast.loading('Generando pase de Google Wallet...');
+      const response = await base44.functions.invoke('createGoogleWalletPass', {});
+      toast.dismiss();
+      
+      if (response.data?.url) {
+        window.open(response.data.url, '_blank');
+      }
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Error al generar el pase: ' + error.message);
+    }
+  };
+
+  const handleAddToAppleWallet = async () => {
+    try {
+      toast.loading('Generando pase de Apple Wallet...');
+      const response = await base44.functions.invoke('createAppleWalletPass', {});
+      toast.dismiss();
+      
+      // Create blob from response
+      const blob = new Blob([response.data], { type: 'application/vnd.apple.pkpass' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `puntos_plus_${account.id.slice(0, 8)}.pkpass`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      toast.success('Pase descargado. Ábrelo para agregarlo a Apple Wallet');
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Error al generar el pase: ' + error.message);
+    }
   };
 
   // Generate QR code URL using a public QR API
@@ -158,12 +198,39 @@ export default function QRWallet({ account, onRefreshToken }) {
             </div>
           )}
 
+          {/* Wallet Buttons */}
+          <div className="mt-6 space-y-3">
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 text-center">
+              Agregar a tu cartera digital
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={handleAddToGoogleWallet}
+                variant="outline"
+                className="h-12 rounded-xl border-2 border-slate-200 hover:border-violet-300 hover:bg-violet-50 transition-all"
+              >
+                <Wallet className="h-4 w-4 mr-2 text-violet-600" />
+                <span className="text-sm font-medium">Google</span>
+              </Button>
+
+              <Button
+                onClick={handleAddToAppleWallet}
+                variant="outline"
+                className="h-12 rounded-xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all"
+              >
+                <Wallet className="h-4 w-4 mr-2 text-slate-700" />
+                <span className="text-sm font-medium">Apple</span>
+              </Button>
+            </div>
+          </div>
+
           {/* Refresh Button */}
           <Button
             onClick={handleRefresh}
             disabled={isRefreshing}
             className={cn(
-              "w-full mt-6 h-12 rounded-xl font-medium transition-all",
+              "w-full mt-4 h-12 rounded-xl font-medium transition-all",
               isExpired || isExpiringSoon
                 ? "bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white"
                 : "bg-slate-100 hover:bg-slate-200 text-slate-700"
