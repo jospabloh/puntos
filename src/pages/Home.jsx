@@ -19,9 +19,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import PointsCard from '../components/loyalty/PointsCard';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import OfferCard from '../components/loyalty/OfferCard';
+import NotificationsPanel from '../components/loyalty/NotificationsPanel';
 
 export default function Home() {
   const [user, setUser] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -61,6 +63,48 @@ export default function Home() {
     queryKey: ['featuredOffers'],
     queryFn: () => base44.entities.Offer.filter({ status: 'active' }, '-created_date', 4),
   });
+
+  // Build notifications from recent activity
+  const notifications = React.useMemo(() => {
+    if (!transactions) return [];
+    
+    return transactions.map(tx => {
+      let title = '';
+      let message = '';
+      let type = '';
+
+      switch (tx.type) {
+        case 'EARN':
+          title = '¡Ganaste puntos!';
+          message = `+${tx.points} puntos en ${tx.store_name || 'tu compra'}`;
+          type = 'earn';
+          break;
+        case 'BURN':
+          title = 'Puntos canjeados';
+          message = `Usaste ${Math.abs(tx.points)} puntos`;
+          type = 'burn';
+          break;
+        case 'BONUS':
+          title = '¡Bonus especial!';
+          message = `+${tx.points} puntos de campaña`;
+          type = 'campaign';
+          break;
+        default:
+          title = 'Movimiento de puntos';
+          message = `${tx.points > 0 ? '+' : ''}${tx.points} puntos`;
+          type = 'default';
+      }
+
+      return {
+        id: tx.id,
+        title,
+        message,
+        type,
+        created_date: tx.created_date,
+        read: false
+      };
+    }).slice(0, 10);
+  }, [transactions]);
 
   // Create account if doesn't exist
   useEffect(() => {
@@ -139,6 +183,13 @@ export default function Home() {
 
   return (
     <div className="pb-24 md:pb-8">
+      {/* Notifications Panel */}
+      <NotificationsPanel 
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+      />
+
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600" />
@@ -163,8 +214,18 @@ export default function Home() {
                   {user.full_name || 'Hola'}
                 </h1>
               </div>
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white/80 hover:text-white hover:bg-white/10 relative"
+                onClick={() => setShowNotifications(true)}
+              >
                 <Bell className="h-5 w-5" />
+                {notifications?.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
+                    {notifications.length}
+                  </span>
+                )}
               </Button>
             </div>
 
