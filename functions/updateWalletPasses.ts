@@ -3,6 +3,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // This function updates both Google Wallet and Apple Wallet passes when points change
 Deno.serve(async (req) => {
   try {
+    // Validate webhook signature to prevent unauthorized access
+    const webhookSecret = Deno.env.get('WALLET_UPDATE_WEBHOOK_SECRET');
+    const providedSecret = req.headers.get('x-webhook-secret');
+    
+    if (!webhookSecret || !providedSecret || webhookSecret !== providedSecret) {
+      return Response.json({ error: 'Unauthorized: Invalid webhook secret' }, { status: 403 });
+    }
+
     const base44 = createClientFromRequest(req);
     
     // This function is called by an entity automation, so we use service role
