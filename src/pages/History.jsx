@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import TransactionItem from '../components/loyalty/TransactionItem';
+import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -144,8 +145,11 @@ export default function History() {
     );
   }
 
+  const isSuspended = account?.status === 'suspended';
+
   return (
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
+      {isSuspended && <SuspendedAccountModal />}
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
         <div className="max-w-lg mx-auto px-4 py-4">

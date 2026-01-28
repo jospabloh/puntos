@@ -19,6 +19,7 @@ import { createPageUrl } from '../utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ReactMarkdown from 'react-markdown';
+import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -86,7 +87,7 @@ export default function Chat() {
   };
 
   const sendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || account?.status === 'suspended') return;
 
     const userMessage = inputValue.trim();
     setInputValue('');
@@ -183,8 +184,11 @@ ${userMessage}`,
     );
   }
 
+  const isSuspended = account?.status === 'suspended';
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
+      {isSuspended && <SuspendedAccountModal />}
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -332,11 +336,11 @@ ${userMessage}`,
               onKeyDown={handleKeyPress}
               placeholder="Escribe tu pregunta..."
               className="flex-1 bg-slate-50 border-0 h-12"
-              disabled={isLoading}
+              disabled={isLoading || isSuspended}
             />
             <Button
               onClick={sendMessage}
-              disabled={!inputValue.trim() || isLoading}
+              disabled={!inputValue.trim() || isLoading || isSuspended}
               className="h-12 w-12 bg-violet-600 hover:bg-violet-700 rounded-xl"
             >
               <Send className="h-5 w-5" />

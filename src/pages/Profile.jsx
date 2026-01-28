@@ -27,6 +27,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import PointsCard from '../components/loyalty/PointsCard';
+import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 
 const tierConfig = {
   bronze: { label: 'Bronce', icon: '🥉', nextTier: 'silver', pointsNeeded: 1000 },
@@ -164,9 +165,11 @@ export default function Profile() {
   const progress = currentTier.nextTier 
     ? Math.min(100, ((account?.lifetime_earned || 0) / currentTier.pointsNeeded) * 100)
     : 100;
+  const isSuspended = account?.status === 'suspended';
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
+      {isSuspended && <SuspendedAccountModal />}
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-24">
         <div className="max-w-lg mx-auto">
