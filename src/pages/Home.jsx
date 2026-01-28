@@ -22,6 +22,7 @@ import OfferCard from '../components/loyalty/OfferCard';
 import NotificationsPanel from '../components/loyalty/NotificationsPanel';
 import TrialBanner from '../components/loyalty/TrialBanner';
 import WelcomeTrialDialog from '../components/loyalty/WelcomeTrialDialog';
+import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -234,10 +235,17 @@ export default function Home() {
     },
   ];
 
+  // Check if account is suspended
+  const isSuspended = account?.status === 'suspended' || 
+    (account?.subscription_status === 'inactive' && account?.status === 'suspended');
+
   return (
     <div className="pb-24 md:pb-8">
+      {/* Suspended Account Modal */}
+      {isSuspended && <SuspendedAccountModal />}
+
       {/* Trial Banner */}
-      <TrialBanner trialEndDate={account?.trial_end_date} />
+      {!isSuspended && <TrialBanner trialEndDate={account?.trial_end_date} />}
 
       {/* Welcome Dialog */}
       <WelcomeTrialDialog
