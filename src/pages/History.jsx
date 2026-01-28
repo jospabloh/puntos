@@ -145,7 +145,8 @@ export default function History() {
     );
   }
 
-  const isSuspended = account?.status === 'suspended';
+  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isSuspended = isMerchant && account?.status === 'suspended';
 
   return (
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">

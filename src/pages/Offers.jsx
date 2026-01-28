@@ -230,7 +230,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
     );
   }
 
-  const isSuspended = account?.status === 'suspended';
+  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isSuspended = isMerchant && account?.status === 'suspended';
 
   const categories = [
     { value: 'all', label: 'Todas' },

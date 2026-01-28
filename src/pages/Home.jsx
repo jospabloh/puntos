@@ -235,9 +235,10 @@ export default function Home() {
     },
   ];
 
-  // Check if account is suspended
-  const isSuspended = account?.status === 'suspended' || 
-    (account?.subscription_status === 'inactive' && account?.status === 'suspended');
+  // Check if account is suspended (only for merchant accounts, not regular customers)
+  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isSuspended = isMerchant && (account?.status === 'suspended' || 
+    (account?.subscription_status === 'inactive' && account?.status === 'suspended'));
 
   return (
     <div className="pb-24 md:pb-8">

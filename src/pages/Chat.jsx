@@ -184,7 +184,8 @@ ${userMessage}`,
     );
   }
 
-  const isSuspended = account?.status === 'suspended';
+  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isSuspended = isMerchant && account?.status === 'suspended';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
