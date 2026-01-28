@@ -118,9 +118,12 @@ export default function Home() {
         const qrToken = Math.random().toString(36).substring(2, 14).toUpperCase();
         const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
         
-        // Set trial dates (30 days)
-        const trialStart = new Date().toISOString();
-        const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        // Check if user is merchant
+        const isMerchantUser = user.merchant_role === 'merchant' || user.role === 'merchant';
+        
+        // Only merchants get trial period, regular customers get active status
+        const trialStart = isMerchantUser ? new Date().toISOString() : null;
+        const trialEnd = isMerchantUser ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null;
         
         await base44.entities.LoyaltyAccount.create({
           user_id: user.id,
@@ -134,31 +137,33 @@ export default function Home() {
           qr_token: qrToken,
           qr_token_expires: tokenExpires,
           last_activity: new Date().toISOString(),
-          subscription_status: 'trial',
+          subscription_status: isMerchantUser ? 'trial' : 'active',
           trial_start_date: trialStart,
           trial_end_date: trialEnd,
-          subscription_plan: 'trial',
+          subscription_plan: isMerchantUser ? 'trial' : 'monthly',
           welcome_message_shown: false
         });
 
-        // Send notification to admin about new user
-        try {
-          await base44.integrations.Core.SendEmail({
-            to: 'jose.herrera@acaciaco.com.mx',
-            from_name: 'Puntos+ Sistema',
-            subject: '🆕 Nuevo usuario dado de alta en Puntos+',
-            body: `
-              <h2>Se acaba de dar de alta un nuevo usuario</h2>
-              <p><strong>Nombre:</strong> ${user.full_name || 'No especificado'}</p>
-              <p><strong>Email:</strong> ${user.email}</p>
-              <p><strong>Fecha de registro:</strong> ${new Date().toLocaleString('es-MX')}</p>
-              <p><strong>Trial hasta:</strong> ${new Date(trialEnd).toLocaleString('es-MX')}</p>
-              <hr>
-              <p>Por favor, dar de alta en la app de billing para gestionar su suscripción.</p>
-            `
-          });
-        } catch (e) {
-          console.error('Error sending admin notification:', e);
+        // Send notification to admin about new merchant
+        if (isMerchantUser) {
+          try {
+            await base44.integrations.Core.SendEmail({
+              to: 'jose.herrera@acaciaco.com.mx',
+              from_name: 'Puntos+ Sistema',
+              subject: '🆕 Nuevo comercio dado de alta en Puntos+',
+              body: `
+                <h2>Se acaba de dar de alta un nuevo comercio</h2>
+                <p><strong>Nombre:</strong> ${user.full_name || 'No especificado'}</p>
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Fecha de registro:</strong> ${new Date().toLocaleString('es-MX')}</p>
+                <p><strong>Trial hasta:</strong> ${new Date(trialEnd).toLocaleString('es-MX')}</p>
+                <hr>
+                <p>Por favor, dar de alta en la app de billing para gestionar su suscripción.</p>
+              `
+            });
+          } catch (e) {
+            console.error('Error sending admin notification:', e);
+          }
         }
       }
     };
