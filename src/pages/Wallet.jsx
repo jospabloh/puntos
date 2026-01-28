@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import PointsCard from '../components/loyalty/PointsCard';
 import QRWallet from '../components/loyalty/QRWallet';
 import TransactionItem from '../components/loyalty/TransactionItem';
+import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 
 export default function Wallet() {
   const [user, setUser] = useState(null);
@@ -86,8 +87,11 @@ export default function Wallet() {
     );
   }
 
+  const isSuspended = account?.status === 'suspended';
+
   return (
     <div className="min-h-screen pb-24 md:pb-8">
+      {isSuspended && <SuspendedAccountModal />}
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-32">
         <div className="max-w-lg mx-auto">

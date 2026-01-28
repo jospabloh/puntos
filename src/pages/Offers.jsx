@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import OfferCard from '../components/loyalty/OfferCard';
 import PointsCard from '../components/loyalty/PointsCard';
+import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 
 export default function Offers() {
   const [user, setUser] = useState(null);
@@ -210,12 +211,13 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
   }, [recommendations, offers]);
 
   const handleRedeem = (offer) => {
+    if (account?.status === 'suspended') return;
     setSelectedOffer(offer);
     setRedeemStatus(null);
   };
 
   const confirmRedeem = () => {
-    if (selectedOffer) {
+    if (selectedOffer && account?.status !== 'suspended') {
       redeemMutation.mutate(selectedOffer);
     }
   };
@@ -228,6 +230,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
     );
   }
 
+  const isSuspended = account?.status === 'suspended';
+
   const categories = [
     { value: 'all', label: 'Todas' },
     { value: 'food', label: '🍽️ Comida' },
@@ -239,6 +243,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
 
   return (
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
+      {isSuspended && <SuspendedAccountModal />}
+      
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-20">
         <div className="max-w-2xl mx-auto">
