@@ -143,11 +143,11 @@ export default function Home() {
         // Send notification to admin about new user
         try {
           await base44.integrations.Core.SendEmail({
-            to: 'admin@acacia.mx',
+            to: 'jose.herrera@acaciaco.com.mx',
             from_name: 'Puntos+ Sistema',
-            subject: '🆕 Nuevo usuario registrado en Puntos+',
+            subject: '🆕 Nuevo usuario dado de alta en Puntos+',
             body: `
-              <h2>Nuevo Usuario en Trial</h2>
+              <h2>Se acaba de dar de alta un nuevo usuario</h2>
               <p><strong>Nombre:</strong> ${user.full_name || 'No especificado'}</p>
               <p><strong>Email:</strong> ${user.email}</p>
               <p><strong>Fecha de registro:</strong> ${new Date().toLocaleString('es-MX')}</p>
