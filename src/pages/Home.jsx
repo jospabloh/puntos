@@ -20,10 +20,13 @@ import PointsCard from '../components/loyalty/PointsCard';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import OfferCard from '../components/loyalty/OfferCard';
 import NotificationsPanel from '../components/loyalty/NotificationsPanel';
+import TrialBanner from '../components/loyalty/TrialBanner';
+import WelcomeTrialDialog from '../components/loyalty/WelcomeTrialDialog';
 
 export default function Home() {
   const [user, setUser] = useState(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -114,6 +117,10 @@ export default function Home() {
         const qrToken = Math.random().toString(36).substring(2, 14).toUpperCase();
         const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
         
+        // Set trial dates (30 days)
+        const trialStart = new Date().toISOString();
+        const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        
         await base44.entities.LoyaltyAccount.create({
           user_id: user.id,
           user_email: user.email,
@@ -125,12 +132,53 @@ export default function Home() {
           lifetime_redeemed: 0,
           qr_token: qrToken,
           qr_token_expires: tokenExpires,
-          last_activity: new Date().toISOString()
+          last_activity: new Date().toISOString(),
+          subscription_status: 'trial',
+          trial_start_date: trialStart,
+          trial_end_date: trialEnd,
+          subscription_plan: 'trial',
+          welcome_message_shown: false
         });
+
+        // Send notification to admin about new user
+        try {
+          await base44.integrations.Core.SendEmail({
+            to: 'admin@acacia.mx',
+            from_name: 'Puntos+ Sistema',
+            subject: '🆕 Nuevo usuario registrado en Puntos+',
+            body: `
+              <h2>Nuevo Usuario en Trial</h2>
+              <p><strong>Nombre:</strong> ${user.full_name || 'No especificado'}</p>
+              <p><strong>Email:</strong> ${user.email}</p>
+              <p><strong>Fecha de registro:</strong> ${new Date().toLocaleString('es-MX')}</p>
+              <p><strong>Trial hasta:</strong> ${new Date(trialEnd).toLocaleString('es-MX')}</p>
+              <hr>
+              <p>Por favor, dar de alta en la app de billing para gestionar su suscripción.</p>
+            `
+          });
+        } catch (e) {
+          console.error('Error sending admin notification:', e);
+        }
       }
     };
     initAccount();
   }, [user, accounts]);
+
+  // Show welcome dialog on first login
+  useEffect(() => {
+    if (account && !account.welcome_message_shown) {
+      setShowWelcome(true);
+    }
+  }, [account]);
+
+  const handleCloseWelcome = async () => {
+    setShowWelcome(false);
+    if (account) {
+      await base44.entities.LoyaltyAccount.update(account.id, {
+        welcome_message_shown: true
+      });
+    }
+  };
 
   // Subscribe to real-time updates
   useEffect(() => {
@@ -153,6 +201,11 @@ export default function Home() {
       </div>
     );
   }
+
+  // Calculate days remaining for trial
+  const daysRemaining = account?.trial_end_date 
+    ? Math.ceil((new Date(account.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+    : 30;
 
   const quickActions = [
     { 
@@ -183,6 +236,17 @@ export default function Home() {
 
   return (
     <div className="pb-24 md:pb-8">
+      {/* Trial Banner */}
+      <TrialBanner trialEndDate={account?.trial_end_date} />
+
+      {/* Welcome Dialog */}
+      <WelcomeTrialDialog
+        isOpen={showWelcome}
+        onClose={handleCloseWelcome}
+        userName={user?.full_name}
+        daysRemaining={daysRemaining}
+      />
+
       {/* Notifications Panel */}
       <NotificationsPanel 
         isOpen={showNotifications}
