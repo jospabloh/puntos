@@ -141,21 +141,23 @@ export default function Home() {
     enabled: !!user?.id && (user?.role === 'merchant' || user?.role === 'admin'),
   });
 
-  // Show welcome dialog for merchants in trial (only once per session)
+  // Show welcome dialog for merchants in trial (only once - first time)
   useEffect(() => {
     const isMerchantUser = user?.role === 'merchant' || user?.role === 'admin';
     const isInTrial = account?.subscription_status === 'trial' && account?.trial_end_date;
-    const hasShownWelcome = sessionStorage.getItem(`trial_welcome_${account?.id}`);
+    const hasNotSeenWelcome = account && !account.welcome_message_shown;
     
-    if (isMerchantUser && isInTrial && !hasShownWelcome && account) {
+    if (isMerchantUser && isInTrial && hasNotSeenWelcome) {
       setShowWelcome(true);
     }
   }, [account, user]);
 
   const handleCloseWelcome = async () => {
     setShowWelcome(false);
-    if (account) {
-      sessionStorage.setItem(`trial_welcome_${account.id}`, 'true');
+    if (account && !account.welcome_message_shown) {
+      await base44.entities.LoyaltyAccount.update(account.id, {
+        welcome_message_shown: true
+      });
     }
   };
 

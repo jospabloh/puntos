@@ -300,20 +300,22 @@ export default function MerchantPOS() {
     ? Math.ceil((new Date(merchantAccount.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24))
     : 30;
 
-  // Show welcome dialog for trial merchants (only once per session)
+  // Show welcome dialog for trial merchants (only once - first time)
   useEffect(() => {
     const isInTrial = merchantAccount?.subscription_status === 'trial' && merchantAccount?.trial_end_date;
-    const hasShownWelcome = sessionStorage.getItem(`trial_welcome_${merchantAccount?.id}`);
+    const hasNotSeenWelcome = merchantAccount && !merchantAccount.welcome_message_shown;
     
-    if (isInTrial && !hasShownWelcome && merchantAccount) {
+    if (isInTrial && hasNotSeenWelcome) {
       setShowWelcome(true);
     }
   }, [merchantAccount]);
 
-  const handleCloseWelcome = () => {
+  const handleCloseWelcome = async () => {
     setShowWelcome(false);
-    if (merchantAccount) {
-      sessionStorage.setItem(`trial_welcome_${merchantAccount.id}`, 'true');
+    if (merchantAccount && !merchantAccount.welcome_message_shown) {
+      await base44.entities.LoyaltyAccount.update(merchantAccount.id, {
+        welcome_message_shown: true
+      });
     }
   };
 
