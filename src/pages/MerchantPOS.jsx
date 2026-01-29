@@ -69,6 +69,11 @@ export default function MerchantPOS() {
   const loadUser = async () => {
     try {
       const userData = await base44.auth.me();
+      // Verify user is merchant or admin
+      if (userData.role !== 'merchant' && userData.role !== 'admin' && userData.merchant_role !== 'merchant') {
+        window.location.href = createPageUrl('Home');
+        return;
+      }
       setUser(userData);
     } catch (e) {
       base44.auth.redirectToLogin();
