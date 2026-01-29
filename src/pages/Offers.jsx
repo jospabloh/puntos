@@ -30,6 +30,7 @@ import {
 import OfferCard from '../components/loyalty/OfferCard';
 import PointsCard from '../components/loyalty/PointsCard';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
+import TrialBanner from '../components/loyalty/TrialBanner';
 
 export default function Offers() {
   const [user, setUser] = useState(null);
@@ -232,6 +233,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
 
   const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
   const isSuspended = isMerchant && account?.status === 'suspended';
+  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 
   const categories = [
     { value: 'all', label: 'Todas' },
@@ -245,6 +247,11 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
   return (
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
       {isSuspended && <SuspendedAccountModal />}
+      {!isSuspended && showTrialBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <TrialBanner trialEndDate={account?.trial_end_date} />
+        </div>
+      )}
       
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-20">

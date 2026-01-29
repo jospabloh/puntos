@@ -245,13 +245,16 @@ export default function Home() {
   const isSuspended = isMerchant && (account?.status === 'suspended' || 
     (account?.subscription_status === 'inactive' && account?.status === 'suspended'));
 
+  // Show trial banner for merchants in trial/demo mode
+  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
+
   return (
     <div className="pb-24 md:pb-8">
       {/* Suspended Account Modal */}
       {isSuspended && <SuspendedAccountModal />}
 
-      {/* Trial Banner */}
-      {!isSuspended && <TrialBanner trialEndDate={account?.trial_end_date} />}
+      {/* Trial Banner - visible for merchants in trial mode */}
+      {!isSuspended && showTrialBanner && <TrialBanner trialEndDate={account?.trial_end_date} />}
 
       {/* Welcome Dialog */}
       <WelcomeTrialDialog

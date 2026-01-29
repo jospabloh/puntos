@@ -10,6 +10,7 @@ import PointsCard from '../components/loyalty/PointsCard';
 import QRWallet from '../components/loyalty/QRWallet';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
+import TrialBanner from '../components/loyalty/TrialBanner';
 
 export default function Wallet() {
   const [user, setUser] = useState(null);
@@ -89,10 +90,16 @@ export default function Wallet() {
 
   const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
   const isSuspended = isMerchant && account?.status === 'suspended';
+  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 
   return (
     <div className="min-h-screen pb-24 md:pb-8">
       {isSuspended && <SuspendedAccountModal />}
+      {!isSuspended && showTrialBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <TrialBanner trialEndDate={account?.trial_end_date} />
+        </div>
+      )}
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-32">
         <div className="max-w-lg mx-auto">
