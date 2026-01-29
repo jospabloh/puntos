@@ -96,29 +96,35 @@ export default function MerchantPOS() {
     }
   }, [stores, selectedStore]);
 
-  // Search customers
+  // Search customers - ONLY from merchant's store
   const { data: searchResults, isLoading: searching } = useQuery({
-    queryKey: ['searchCustomers', customerSearch],
+    queryKey: ['searchCustomers', customerSearch, selectedStore?.id],
     queryFn: async () => {
-      if (customerSearch.length < 3) return [];
+      if (customerSearch.length < 3 || !selectedStore) return [];
       
-      // Search by email or QR token
+      // Search by email or QR token - ONLY for customers of this store
       const byEmail = await base44.entities.LoyaltyAccount.filter(
-        { user_email: customerSearch },
+        { 
+          user_email: customerSearch,
+          store_id: selectedStore.id  // SECURITY: Only customers from this store
+        },
         '-created_date',
         10
       );
       
       if (byEmail.length > 0) return byEmail;
 
-      // Search by QR token (exact match)
+      // Search by QR token (exact match) - ONLY for customers of this store
       const byToken = await base44.entities.LoyaltyAccount.filter(
-        { qr_token: customerSearch.toUpperCase() }
+        { 
+          qr_token: customerSearch.toUpperCase(),
+          store_id: selectedStore.id  // SECURITY: Only customers from this store
+        }
       );
       
       return byToken;
     },
-    enabled: customerSearch.length >= 3,
+    enabled: customerSearch.length >= 3 && !!selectedStore,
   });
 
   // Recent transactions for this store
