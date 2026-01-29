@@ -76,7 +76,7 @@ export default function Layout({ children, currentPageName }) {
   }
 
   // Pages without layout
-  const noLayoutPages = ['Login', 'Register'];
+  const noLayoutPages = ['Login', 'Register', 'Onboarding'];
   if (noLayoutPages.includes(currentPageName)) {
     return <>{children}</>;
   }
