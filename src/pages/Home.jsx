@@ -42,6 +42,19 @@ export default function Home() {
     }
   };
 
+  // Check if onboarding is needed
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (!user) return;
+      
+      const accounts = await base44.entities.LoyaltyAccount.filter({ user_email: user.email });
+      if (accounts.length === 0 || !accounts[0].onboarding_completed) {
+        window.location.href = createPageUrl('Onboarding');
+      }
+    };
+    checkOnboarding();
+  }, [user]);
+
   // Fetch loyalty account
   const { data: accounts, isLoading: loadingAccount } = useQuery({
     queryKey: ['loyaltyAccount', user?.email],
@@ -110,10 +123,10 @@ export default function Home() {
     }).slice(0, 10);
   }, [transactions]);
 
-  // Create account if doesn't exist
+  // Skip auto account creation - onboarding will handle it
   useEffect(() => {
     const initAccount = async () => {
-      if (user && accounts && accounts.length === 0) {
+      if (user && accounts && accounts.length === 0 && accounts[0]?.onboarding_completed) {
         // Generate initial QR token
         const qrToken = Math.random().toString(36).substring(2, 14).toUpperCase();
         const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();

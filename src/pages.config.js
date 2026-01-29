@@ -59,6 +59,7 @@ import MerchantPOS from './pages/MerchantPOS';
 import Offers from './pages/Offers';
 import Profile from './pages/Profile';
 import Wallet from './pages/Wallet';
+import Onboarding from './pages/Onboarding';
 import __Layout from './Layout.jsx';
 
 
@@ -75,6 +76,7 @@ export const PAGES = {
     "Offers": Offers,
     "Profile": Profile,
     "Wallet": Wallet,
+    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {
