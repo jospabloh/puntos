@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRemaining }) {
+export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRemaining, isMerchant = false }) {
   if (!isOpen) return null;
 
   return (

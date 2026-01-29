@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import TrialBanner from '../components/loyalty/TrialBanner';
+import WelcomeTrialDialog from '../components/loyalty/WelcomeTrialDialog';
 
 export default function MerchantPOS() {
   const [user, setUser] = useState(null);
@@ -60,6 +61,7 @@ export default function MerchantPOS() {
   const [burnPoints, setBurnPoints] = useState('');
   const [selectedStore, setSelectedStore] = useState(null);
   const [showResult, setShowResult] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -292,6 +294,28 @@ export default function MerchantPOS() {
   
   const merchantAccount = merchantAccounts?.[0];
   const showTrialBanner = merchantAccount?.subscription_status === 'trial' && merchantAccount?.trial_end_date;
+  
+  // Calculate days remaining
+  const daysRemaining = merchantAccount?.trial_end_date 
+    ? Math.ceil((new Date(merchantAccount.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+    : 30;
+
+  // Show welcome dialog for trial merchants (only once per session)
+  useEffect(() => {
+    const isInTrial = merchantAccount?.subscription_status === 'trial' && merchantAccount?.trial_end_date;
+    const hasShownWelcome = sessionStorage.getItem(`trial_welcome_${merchantAccount?.id}`);
+    
+    if (isInTrial && !hasShownWelcome && merchantAccount) {
+      setShowWelcome(true);
+    }
+  }, [merchantAccount]);
+
+  const handleCloseWelcome = () => {
+    setShowWelcome(false);
+    if (merchantAccount) {
+      sessionStorage.setItem(`trial_welcome_${merchantAccount.id}`, 'true');
+    }
+  };
 
   if (!user) {
     return (
@@ -303,6 +327,15 @@ export default function MerchantPOS() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-8">
+      {/* Welcome Dialog */}
+      <WelcomeTrialDialog
+        isOpen={showWelcome}
+        onClose={handleCloseWelcome}
+        userName={user?.full_name}
+        daysRemaining={daysRemaining}
+        isMerchant={true}
+      />
+
       {showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
           <TrialBanner trialEndDate={merchantAccount?.trial_end_date} />
