@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import ReactMarkdown from 'react-markdown';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
+import TrialBanner from '../components/loyalty/TrialBanner';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -186,10 +187,16 @@ ${userMessage}`,
 
   const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
   const isSuspended = isMerchant && account?.status === 'suspended';
+  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       {isSuspended && <SuspendedAccountModal />}
+      {!isSuspended && showTrialBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <TrialBanner trialEndDate={account?.trial_end_date} />
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
         <div className="max-w-2xl mx-auto px-4 py-4">

@@ -48,6 +48,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import TrialBanner from '../components/loyalty/TrialBanner';
 
 export default function MerchantPOS() {
   const [user, setUser] = useState(null);
@@ -277,6 +278,16 @@ export default function MerchantPOS() {
     }
   });
 
+  // Fetch loyalty account to check trial status
+  const { data: merchantAccounts } = useQuery({
+    queryKey: ['merchantAccount', user?.email],
+    queryFn: () => base44.entities.LoyaltyAccount.filter({ user_email: user?.email }),
+    enabled: !!user?.email,
+  });
+  
+  const merchantAccount = merchantAccounts?.[0];
+  const showTrialBanner = merchantAccount?.subscription_status === 'trial' && merchantAccount?.trial_end_date;
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -287,6 +298,11 @@ export default function MerchantPOS() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-8">
+      {showTrialBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <TrialBanner trialEndDate={merchantAccount?.trial_end_date} />
+        </div>
+      )}
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-4 py-6">
         <div className="max-w-4xl mx-auto">
