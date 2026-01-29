@@ -27,6 +27,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
+import TrialBanner from '../components/loyalty/TrialBanner';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -147,10 +148,16 @@ export default function History() {
 
   const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
   const isSuspended = isMerchant && account?.status === 'suspended';
+  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 
   return (
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
       {isSuspended && <SuspendedAccountModal />}
+      {!isSuspended && showTrialBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <TrialBanner trialEndDate={account?.trial_end_date} />
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
         <div className="max-w-lg mx-auto px-4 py-4">
