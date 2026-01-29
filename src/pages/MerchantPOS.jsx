@@ -334,6 +334,7 @@ export default function MerchantPOS() {
         userName={user?.full_name}
         daysRemaining={daysRemaining}
         isMerchant={true}
+        storeCode={selectedStore?.code}
       />
 
       {showTrialBanner && (

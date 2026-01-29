@@ -134,6 +134,13 @@ export default function Home() {
     initAccount();
   }, [user, accounts]);
 
+  // Fetch store for merchant users
+  const { data: merchantStores } = useQuery({
+    queryKey: ['merchantStores', user?.id],
+    queryFn: () => base44.entities.Store.filter({ merchant_id: user?.id }),
+    enabled: !!user?.id && (user?.role === 'merchant' || user?.role === 'admin'),
+  });
+
   // Show welcome dialog for merchants in trial (only once per session)
   useEffect(() => {
     const isMerchantUser = user?.role === 'merchant' || user?.role === 'admin';
@@ -229,6 +236,7 @@ export default function Home() {
         userName={user?.full_name}
         daysRemaining={daysRemaining}
         isMerchant={isMerchant}
+        storeCode={merchantStores?.[0]?.code}
       />
 
       {/* Notifications Panel */}
