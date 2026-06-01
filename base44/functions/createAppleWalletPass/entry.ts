@@ -126,9 +126,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Apple Wallet error:', error);
-    return Response.json({ 
-      error: error.message,
-      details: error.stack 
+    console.error('Stack:', error.stack);
+    return Response.json({
+      error: 'Internal server error generating Apple Wallet pass'
     }, { status: 500 });
   }
 });

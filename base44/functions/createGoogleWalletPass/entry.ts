@@ -115,9 +115,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Google Wallet error:', error);
-    return Response.json({ 
-      error: error.message,
-      details: error.stack 
+    console.error('Stack:', error.stack);
+    return Response.json({
+      error: 'Internal server error generating Google Wallet pass'
     }, { status: 500 });
   }
 });
