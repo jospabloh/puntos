@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Sparkles, 
-  Gift, 
+import { motion } from 'framer-motion';
+import {
+  ArrowLeft,
+  Sparkles,
+  Gift,
   Search,
-  Filter,
   Star,
-  X,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
@@ -17,7 +15,6 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -28,7 +25,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import OfferCard from '../components/loyalty/OfferCard';
-import PointsCard from '../components/loyalty/PointsCard';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
 

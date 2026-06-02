@@ -4,17 +4,14 @@ import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { 
-  Activity, 
-  Search, 
+import {
+  Activity,
+  Search,
   ArrowLeft,
-  Filter,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  User,
-  Store,
-  Calendar
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +33,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 const actionConfig = {
   earn: { label: 'Acumular', color: 'bg-emerald-100 text-emerald-700' },

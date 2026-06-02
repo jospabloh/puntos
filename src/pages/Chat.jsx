@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Send, 
-  Bot, 
+import {
+  ArrowLeft,
+  Send,
+  Bot,
   User,
   Loader2,
   Sparkles,
-  HelpCircle,
   Gift,
   History,
   CreditCard

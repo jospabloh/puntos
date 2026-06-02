@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Filter, 
-  Search, 
+import {
+  ArrowLeft,
+  Search,
   Calendar,
   TrendingUp,
   TrendingDown,

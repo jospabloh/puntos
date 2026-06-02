@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Store, 
-  QrCode, 
-  Search, 
-  Plus, 
-  Minus, 
+import { motion } from 'framer-motion';
+import {
+  Store,
+  Search,
+  Plus,
+  Minus,
   CheckCircle,
   AlertCircle,
   User,
@@ -15,7 +14,6 @@ import {
   Ticket,
   ArrowLeft,
   Gift,
-  RefreshCw,
   History,
   Loader2
 } from 'lucide-react';
@@ -42,10 +40,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import TrialBanner from '../components/loyalty/TrialBanner';
