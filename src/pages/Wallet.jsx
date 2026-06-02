@@ -52,7 +52,9 @@ export default function Wallet() {
   // Mutation to refresh QR token
   const refreshTokenMutation = useMutation({
     mutationFn: async () => {
-      const newToken = Math.random().toString(36).substring(2, 14).toUpperCase();
+      const array = new Uint8Array(9);
+      crypto.getRandomValues(array);
+      const newToken = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
       const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       
       await base44.entities.LoyaltyAccount.update(account.id, {

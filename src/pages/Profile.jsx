@@ -26,7 +26,6 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import PointsCard from '../components/loyalty/PointsCard';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
 

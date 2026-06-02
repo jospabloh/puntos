@@ -125,10 +125,9 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Apple Wallet error:', error);
-    return Response.json({ 
-      error: error.message,
-      details: error.stack 
+    console.error('Apple Wallet error:', error.message, error.stack);
+    return Response.json({
+      error: error.message
     }, { status: 500 });
   }
 });

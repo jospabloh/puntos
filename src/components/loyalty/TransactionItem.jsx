@@ -1,10 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  RefreshCw, 
-  Clock, 
+import {
+  TrendingUp,
+  RefreshCw,
+  Clock,
   AlertTriangle,
   Gift,
   Store,

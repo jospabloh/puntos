@@ -70,7 +70,9 @@ export default function Onboarding() {
   const completeCustomerOnboarding = async (store) => {
     try {
       // Generate QR token
-      const qrToken = Math.random().toString(36).substring(2, 14).toUpperCase();
+      const array = new Uint8Array(9);
+      crypto.getRandomValues(array);
+      const qrToken = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
       const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
       // Create loyalty account for customer
@@ -138,7 +140,9 @@ export default function Onboarding() {
       });
 
       // Create loyalty account for merchant (for trial tracking)
-      const qrToken = Math.random().toString(36).substring(2, 14).toUpperCase();
+      const merchantArray = new Uint8Array(9);
+      crypto.getRandomValues(merchantArray);
+      const qrToken = Array.from(merchantArray, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
       const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
       const trialStart = new Date().toISOString();
       const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();

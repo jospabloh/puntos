@@ -92,8 +92,8 @@ export default function QRWallet({ account, onRefreshToken }) {
   };
 
   // Generate QR code URL using a public QR API
-  const qrData = account?.qr_token ? 
-    `LOYALTY:${account.qr_token}:${account.id}` : '';
+  const qrData = account?.qr_token ?
+    `LOYALTY:${account.qr_token}` : '';
   const qrUrl = qrData ? 
     `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&bgcolor=ffffff&color=000000&margin=10` : '';
 
