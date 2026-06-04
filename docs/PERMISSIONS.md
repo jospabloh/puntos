@@ -51,7 +51,7 @@ Version: 1.4.0 | Updated: 2026-06-02
 | `LoyaltyAccount` write | ✅ | ✅ (balance updates only via POS) | ✅ (QR token refresh, profile) | User-owned | Admin adjust via AdminCustomers |
 | `PointsLedger` read | ✅ all | ✅ by `store_id` | ✅ by `account_id` | `account_id` / `store_id` | Customer and merchant filtered at query time |
 | `PointsLedger` create | ✅ | ✅ (EARN/BURN) | ❌ | `store_id` required for merchant ops | Idempotency key enforced for EARN |
-| `AuditLog` read | ✅ | ❌ | ❌ | None (admin-only) | AdminAudit page |
+| `AuditLog` read | ✅ all | ✅ own store (by `store_id`) | ✅ own / targeted (by `actor_id` or `target_user_id`) | `actor_id` / `target_user_id` / `store_id` | RLS: admin all; user own or targeted; merchant by store. AdminAudit page |
 | `AuditLog` create | ✅ | ✅ (own ops) | ❌ | Actor fields set server-side | Merchant creates for EARN/BURN/ADJUST ops |
 | `Store` read | ✅ all | ✅ active stores | ✅ (store name in account) | `status: active` filter | Merchants see all active stores in POS selector |
 | `Store` write | ✅ | ❌ | ❌ | Admin only | AdminStores CRUD |
@@ -59,7 +59,7 @@ Version: 1.4.0 | Updated: 2026-06-02
 | `Offer` write | ✅ | ❌ | ❌ | Admin only | AdminCampaigns |
 | `Campaign` read | ✅ | ❌ | ❌ | Admin only | |
 | `Campaign` write | ✅ | ❌ | ❌ | Admin only | AdminCampaigns |
-| `Redemption` read | ✅ | ❌ | ✅ own | `account_id` | Created on offer redemption |
+| `Redemption` read | ✅ all | ✅ own store (by `store_id`) | ✅ own (by `user_id`) | `user_id` / `store_id` | RLS: admin all; user own; merchant by store. Created on offer redemption |
 | `Redemption` create | ✅ | ❌ | ✅ | Own account only | Offers.jsx; balance check enforced client-side |
 | `NotificationPreference` read | ✅ | ❌ | ✅ own | `user_id` | Profile.jsx |
 | `NotificationPreference` write | ✅ | ❌ | ✅ own | `user_id` | Profile.jsx |
