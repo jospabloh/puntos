@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.1] — 2026-06-04
+
+### Security
+- **CRITICAL FIX** — Completed Row-Level Security (RLS) `read` rules for the `AuditLog` and `Redemption` entities. Both entities previously lacked merchant-scoped read access.
+  - `AuditLog` read: admins read all records; users read their own (`actor_id`) or records that target them (`target_user_id`); merchants read records for their store (`store_id`).
+  - `Redemption` read: admins read all redemptions; users read their own (`user_id`); merchants read redemptions for their store (`store_id`).
+
+### Documentation
+- Updated `docs/PERMISSIONS.md` entity-access matrix to reflect the new `AuditLog` and `Redemption` read policies.
+
+---
+
 ## [1.4.0] — 2026-06-02
 
 ### Security
