@@ -1,6 +1,6 @@
 # Puntos+ — Roles and Permissions Matrix
 
-Version: 1.4.2 | Updated: 2026-06-08
+Version: 1.4.3 | Updated: 2026-06-08
 
 ---
 
@@ -124,12 +124,13 @@ Version: 1.4.2 | Updated: 2026-06-08
 
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
-| G-1 | Medium | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), but should be documented |
+| G-1 | Medium | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), documented |
 | G-2 | Medium | Client-side balance calculation race condition for concurrent transactions | Open — platform limitation |
-| G-3 | Medium | BURN idempotency uses `Date.now()`; rapid duplicate calls are possible within the same millisecond | Open |
+| G-3 | Medium | BURN idempotency uses `Date.now()`; rapid duplicate calls are possible within the same millisecond | ✅ Resolved (v1.4.3) — keys now use a crypto-random suffix via `makeIdempotencyKey()` |
 | G-4 | Low | Route access is enforced only client-side; Base44 RLS is the actual data-layer enforcement | Acceptable — Base44 platform handles data layer |
-| G-5 | Low | Hardcoded admin notification email in `checkTrialExpiration` and `Onboarding` | Open — move to env variable |
-| G-6 | Medium | `react-quill`/`quill` XSS vulnerability in admin campaign editor — fix requires breaking `react-quill` downgrade | Deferred — admin-only editor; non-admin users cannot access this form |
+| G-5 | Low | Hardcoded admin notification email in `checkTrialExpiration` and `Onboarding` | ✅ Resolved (v1.4.3) — moved to `ADMIN_NOTIFICATION_EMAIL` / `VITE_ADMIN_NOTIFICATION_EMAIL` |
+| G-6 | Medium | `react-quill`/`quill` XSS vulnerability in admin campaign editor | ✅ Resolved (v1.4.3) — unused `react-quill` dependency removed; `npm audit` clean |
+| G-7 | Medium | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration |
 
 ---
 

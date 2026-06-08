@@ -5,6 +5,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.3] — 2026-06-08
+
+Resolves the actionable open items carried since v1.4.0.
+
+### Security
+- **M-8 / G-6 resolved** — Removed the unused `react-quill` dependency (and its transitive `quill` package), eliminating the deferred XSS advisory in the admin editor. The package was declared in `package.json` but never imported anywhere in the source, so removal is a clean fix with no behavior change. `npm audit` now reports **0 vulnerabilities** (was 2 moderate).
+- **M-1 / G-5 resolved** — Moved the hardcoded admin notification email out of source. `checkTrialExpiration/entry.ts` now reads `ADMIN_NOTIFICATION_EMAIL` (Deno env) and `Onboarding.jsx` reads `VITE_ADMIN_NOTIFICATION_EMAIL` (Vite env), both falling back to the previous default so existing deployments are unaffected. Documented in `.env.example`.
+- **M-3 / G-3 resolved** — Replaced `Date.now()`-based idempotency keys with a cryptographically secure suffix via the new `makeIdempotencyKey()`/`randomId()` helpers in `src/lib/utils.js`. Distinct EARN/BURN/ADJUST operations can no longer collide within the same millisecond. Real idempotency is preserved where a stable token exists (POS ticket id for EARN, redemption id for offer BURN).
+
+### Added
+- **M-7 resolved** — Added a GitHub Actions CI workflow (`.github/workflows/ci.yml`) that runs lint and build on every push to `main` and on all pull requests.
+- `.env.example` documenting the required and optional environment variables.
+
+### Changed
+- Idempotency-key generation centralized in `src/lib/utils.js` and applied in `MerchantPOS.jsx` (EARN/BURN), `Offers.jsx` (BURN), and `AdminCustomers.jsx` (ADJUST).
+
+### Known Open Items (carried)
+| ID  | Severity | Description | Status |
+|-----|----------|-------------|--------|
+| M-2 | Medium   | Atomic server-side balance update — client-side balance calculation race window | Open — Base44 platform limitation |
+| M-4 | Medium   | Merchants can transact for any active store | Open — by design (single-program model) |
+| M-5 | Medium   | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration + credentials |
+| M-6 | Low      | External QR image service receives user token; consider self-hosted generation | Open |
+
+---
+
 ## [1.4.2] — 2026-06-08
 
 ### Security

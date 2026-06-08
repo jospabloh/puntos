@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { makeIdempotencyKey } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,7 +150,10 @@ export default function MerchantPOS() {
       }
 
       // Generate idempotency key
-      const idempotencyKey = `earn_${selectedStore.id}_${ticketId || Date.now()}_${selectedCustomer.id}`;
+      const idempotencyKey = makeIdempotencyKey(
+        `earn_${selectedStore.id}_${selectedCustomer.id}`,
+        ticketId || undefined
+      );
 
       // Check for duplicate
       const existing = await base44.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
@@ -228,8 +232,8 @@ export default function MerchantPOS() {
         throw new Error('Saldo insuficiente');
       }
 
-      // Generate idempotency key
-      const idempotencyKey = `burn_${selectedStore.id}_${Date.now()}_${selectedCustomer.id}`;
+      // Generate idempotency key (crypto-random suffix — no timestamp collisions)
+      const idempotencyKey = makeIdempotencyKey(`burn_${selectedStore.id}_${selectedCustomer.id}`);
 
       // Calculate new balance
       const newBalance = selectedCustomer.current_balance - points;

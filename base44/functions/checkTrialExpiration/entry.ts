@@ -1,5 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
+// Admin notification recipient. Configure via the ADMIN_NOTIFICATION_EMAIL
+// environment variable; falls back to the historical default if unset.
+const ADMIN_NOTIFICATION_EMAIL =
+  Deno.env.get('ADMIN_NOTIFICATION_EMAIL') || 'jose.herrera@acaciaco.com.mx';
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -42,7 +47,7 @@ Deno.serve(async (req) => {
         // Notify admin
         try {
           await base44.asServiceRole.integrations.Core.SendEmail({
-            to: 'jose.herrera@acaciaco.com.mx',
+            to: ADMIN_NOTIFICATION_EMAIL,
             from_name: 'Puntos+ Sistema',
             subject: '🚫 Usuario suspendido por falta de pago',
             body: `
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
               <p>Tu período de prueba expiró hace 5 días.</p>
               <p><strong>Tu cuenta será suspendida en 2 días</strong> si no activas tu suscripción.</p>
               <p>Para continuar usando Puntos+, por favor contacta con nosotros inmediatamente.</p>
-              <p>Email: jose.herrera@acaciaco.com.mx</p>
+              <p>Email: ${ADMIN_NOTIFICATION_EMAIL}</p>
             `
           });
           results.reminder_final++;
@@ -120,7 +125,7 @@ Deno.serve(async (req) => {
               <p>Hola ${account.user_name},</p>
               <p>Te recordamos que tu período de prueba de Puntos+ finaliza el <strong>${trialEnd.toLocaleDateString('es-MX')}</strong>.</p>
               <p>Para continuar disfrutando de todos los beneficios, por favor contacta con nosotros para activar tu suscripción.</p>
-              <p>Email: jose.herrera@acaciaco.com.mx</p>
+              <p>Email: ${ADMIN_NOTIFICATION_EMAIL}</p>
             `
           });
           results.reminder_3days++;
@@ -142,7 +147,7 @@ Deno.serve(async (req) => {
               <p>Hola ${account.user_name},</p>
               <p>Te recordamos que tu período de prueba de Puntos+ finaliza el <strong>${trialEnd.toLocaleDateString('es-MX')}</strong>.</p>
               <p>Si deseas continuar usando el programa, contacta con nosotros para gestionar tu suscripción.</p>
-              <p>Email: jose.herrera@acaciaco.com.mx</p>
+              <p>Email: ${ADMIN_NOTIFICATION_EMAIL}</p>
             `
           });
           results.reminder_7days++;

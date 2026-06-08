@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { makeIdempotencyKey } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -113,7 +114,7 @@ export default function AdminCustomers() {
         throw new Error('La razón es obligatoria');
       }
 
-      const idempotencyKey = `adjust_${selectedCustomer.id}_${Date.now()}`;
+      const idempotencyKey = makeIdempotencyKey(`adjust_${selectedCustomer.id}`);
       const newBalance = selectedCustomer.current_balance + points;
 
       // Create ledger entry
