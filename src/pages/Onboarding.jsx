@@ -172,7 +172,7 @@ export default function Onboarding() {
       // Send notification to admin
       try {
         await base44.integrations.Core.SendEmail({
-          to: 'jose.herrera@acaciaco.com.mx',
+          to: import.meta.env.VITE_ADMIN_NOTIFICATION_EMAIL || 'jose.herrera@acaciaco.com.mx',
           from_name: 'Puntos+ Sistema',
           subject: '🆕 Nuevo comercio registrado en Puntos+',
           body: `

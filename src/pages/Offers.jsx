@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
+import { makeIdempotencyKey } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -131,8 +132,9 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
         expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
       });
 
-      // Generate idempotency key
-      const idempotencyKey = `burn_${redemption.id}_${Date.now()}`;
+      // Generate idempotency key — redemption.id is unique per redemption,
+      // so this is inherently idempotent (one redemption = one burn).
+      const idempotencyKey = makeIdempotencyKey('burn', redemption.id);
 
       // Create ledger entry
       const newBalance = account.current_balance - offer.points_cost;
