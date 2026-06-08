@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.5] — 2026-06-08
+
+### Security
+- **CRITICAL — LoyaltyAccount financial fields hardened against tampering.** The `update` RLS rule let a normal user (`role: user`) update their own record, including `current_balance`, `lifetime_earned`/`lifetime_redeemed`, `tier`, `status`, `subscription_*` and `trial_*`. Because point balances were written client-side, a customer could set their own balance arbitrarily. Added **field-level RLS** (`rls.write`) to those fields plus `user_id`/`user_email`/`store_*`, restricting writes to `admin` or `merchant` (service-role backend bypasses RLS). Reads are unchanged, so customers still see their own balance.
+
+### Changed
+- **Customer offer redemption moved server-side.** New `redeemOffer` serverless function (service role) re-reads the account balance and offer server-side, validates funds/stock, and writes the `Redemption`, `PointsLedger` (BURN) and balance deduction atomically. `Offers.jsx` now calls the function instead of writing the balance from the browser. (Also addresses the deferred M-2 client-side balance race for redemptions.)
+- **Onboarding account creation moved server-side.** New `createLoyaltyAccount` serverless function (service role) creates the `LoyaltyAccount` during customer and merchant onboarding with server-enforced safe values (balance always 0) and a one-account-per-user guard. Required because the new field-level RLS blocks normal/role-less users from writing those fields directly. `Onboarding.jsx` now calls the function for both flows.
+
+### Notes
+- Merchant POS (earn/burn) is unchanged — merchants satisfy the new field-write rule and keep writing balances at the POS.
+- Both new functions must be deployed to the Base44 functions environment for redemption and onboarding to work.
+- **Deploy ordering:** the field-level RLS is a manual Base44 schema step that must be applied **after** the functions are live — see `docs/RUNBOOK-loyaltyaccount-rls.md`. Applying it before deploy would break live onboarding/redemption. The live schema currently has no field-level RLS until the runbook is executed.
+
+---
+
 ## [1.4.4] — 2026-06-08
 
 ### Security

@@ -69,31 +69,14 @@ export default function Onboarding() {
   // Complete customer onboarding
   const completeCustomerOnboarding = async (store) => {
     try {
-      // Generate QR token
-      const array = new Uint8Array(9);
-      crypto.getRandomValues(array);
-      const qrToken = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
-      const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-
-      // Create loyalty account for customer
-      await base44.entities.LoyaltyAccount.create({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: user.full_name || user.email.split('@')[0],
-        store_id: store.id,
-        store_code: store.code,
-        store_name: store.name,
-        status: 'active',
-        tier: 'bronze',
-        current_balance: 0,
-        lifetime_earned: 0,
-        lifetime_redeemed: 0,
-        qr_token: qrToken,
-        qr_token_expires: tokenExpires,
-        last_activity: new Date().toISOString(),
-        subscription_status: 'active',
-        onboarding_completed: true
+      // Create loyalty account server-side (balance is enforced to 0).
+      const response = await base44.functions.invoke('createLoyaltyAccount', {
+        type: 'customer',
+        store: { id: store.id, code: store.code, name: store.name }
       });
+      if (!response?.data?.success) {
+        throw new Error(response?.data?.error || 'No se pudo crear la cuenta de loyalty');
+      }
 
       // Update user role
       await base44.auth.updateMe({ 
@@ -139,32 +122,17 @@ export default function Onboarding() {
         daily_earn_limit: 1000
       });
 
-      // Create loyalty account for merchant (for trial tracking)
-      const merchantArray = new Uint8Array(9);
-      crypto.getRandomValues(merchantArray);
-      const qrToken = Array.from(merchantArray, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
-      const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-      const trialStart = new Date().toISOString();
-      const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-      await base44.entities.LoyaltyAccount.create({
-        user_id: user.id,
-        user_email: user.email,
-        user_name: user.full_name || user.email.split('@')[0],
-        status: 'active',
-        tier: 'bronze',
-        current_balance: 0,
-        qr_token: qrToken,
-        qr_token_expires: tokenExpires,
-        subscription_status: 'trial',
-        trial_start_date: trialStart,
-        trial_end_date: trialEnd,
-        subscription_plan: 'trial',
-        onboarding_completed: true
+      // Create loyalty account for merchant (trial tracking) server-side.
+      const accountResponse = await base44.functions.invoke('createLoyaltyAccount', {
+        type: 'merchant'
       });
+      if (!accountResponse?.data?.success) {
+        throw new Error(accountResponse?.data?.error || 'No se pudo crear la cuenta de loyalty');
+      }
+      const trialEnd = accountResponse.data.account.trial_end_date;
 
       // Update user role
-      await base44.auth.updateMe({ 
+      await base44.auth.updateMe({
         role: 'merchant',
         data: { userType: 'merchant', storeId: store.id }
       });

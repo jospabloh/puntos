@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { makeIdempotencyKey } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -112,61 +111,16 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Redeem mutation
+  // Redeem mutation — runs server-side so the balance is validated and
+  // deducted by a service-role function (the client cannot write the balance).
   const redeemMutation = useMutation({
     mutationFn: async (offer) => {
-      // Generate confirmation code
-      const confirmationCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-      
-      // Create redemption record
-      const redemption = await base44.entities.Redemption.create({
-        account_id: account.id,
-        user_id: user.id,
-        user_email: user.email,
-        offer_id: offer.id,
-        offer_title: offer.title,
-        points_spent: offer.points_cost,
-        value_mxn: offer.value_mxn,
-        status: 'confirmed',
-        confirmation_code: confirmationCode,
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
-      });
-
-      // Generate idempotency key — redemption.id is unique per redemption,
-      // so this is inherently idempotent (one redemption = one burn).
-      const idempotencyKey = makeIdempotencyKey('burn', redemption.id);
-
-      // Create ledger entry
-      const newBalance = account.current_balance - offer.points_cost;
-      await base44.entities.PointsLedger.create({
-        account_id: account.id,
-        user_id: user.id,
-        type: 'BURN',
-        points: -offer.points_cost,
-        balance_after: newBalance,
-        reference_type: 'redemption',
-        reference_id: redemption.id,
-        idempotency_key: idempotencyKey,
-        description: `Canje: ${offer.title}`,
-        status: 'completed'
-      });
-
-      // Update account balance
-      await base44.entities.LoyaltyAccount.update(account.id, {
-        current_balance: newBalance,
-        lifetime_redeemed: (account.lifetime_redeemed || 0) + offer.points_cost,
-        last_activity: new Date().toISOString()
-      });
-
-      // Update offer stock if limited
-      if (offer.stock > 0) {
-        await base44.entities.Offer.update(offer.id, {
-          stock: offer.stock - 1,
-          redemptions_count: (offer.redemptions_count || 0) + 1
-        });
+      const response = await base44.functions.invoke('redeemOffer', { offer_id: offer.id });
+      const result = response?.data;
+      if (!result?.success) {
+        throw new Error(result?.error || 'No se pudo canjear la oferta');
       }
-
-      return { redemption, confirmationCode };
+      return { confirmationCode: result.confirmation_code, redemption: result.redemption };
     },
     onSuccess: () => {
       setRedeemStatus('success');

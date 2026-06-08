@@ -1,6 +1,6 @@
 # Puntos+ — Roles and Permissions Matrix
 
-Version: 1.4.3 | Updated: 2026-06-08
+Version: 1.4.5 | Updated: 2026-06-08
 
 ---
 
@@ -48,7 +48,7 @@ Version: 1.4.3 | Updated: 2026-06-08
 | Entity | Admin | Merchant | Customer | Isolation Scope | Notes |
 |--------|-------|----------|----------|-----------------|-------|
 | `LoyaltyAccount` read | ✅ all | ✅ own store only (by `store_id` + `user_email`) | ✅ own account (by `user_email`) | By `user_email` or `store_id` | Admin sees all; merchant filtered in POS search |
-| `LoyaltyAccount` write | ✅ | ✅ (balance updates only via POS) | ✅ (QR token refresh, profile) | User-owned | Admin adjust via AdminCustomers |
+| `LoyaltyAccount` write | ✅ | ✅ (balance updates via POS) | ✅ (QR token refresh, profile only) | User-owned + field-level RLS | Financial/identity fields (`current_balance`, `lifetime_*`, `tier`, `status`, `subscription_*`, `trial_*`, `store_*`, `user_id`, `user_email`) are write-restricted to admin/merchant via field-level RLS. Customer balance writes happen only server-side (`redeemOffer`, `createLoyaltyAccount`) |
 | `PointsLedger` read | ✅ all | ✅ by `store_id` | ✅ by `account_id` | `account_id` / `store_id` | Customer and merchant filtered at query time |
 | `PointsLedger` create | ✅ | ✅ (EARN/BURN) | ❌ | `store_id` required for merchant ops | Idempotency key enforced for EARN |
 | `AuditLog` read | ✅ all | ✅ own store (by `store_id`) | ✅ own / targeted (by `actor_id` or `target_user_id`) | `actor_id` / `target_user_id` / `store_id` | RLS: admin all; user own or targeted; merchant by store. AdminAudit page |
@@ -103,6 +103,8 @@ Version: 1.4.3 | Updated: 2026-06-08
 | `sendWeeklySummary` | `admin` | `role !== 'admin'` → 403 | Scheduled: send weekly activity emails |
 | `cleanupInactiveUsers` | `admin` | `role !== 'admin'` → 403 | Scheduled: send re-engagement emails |
 | `updateWalletPasses` | `admin` | `role !== 'admin'` → 403 | Scheduled stub: update wallet pass balances (not yet implemented) |
+| `redeemOffer` | Any authenticated user | `base44.auth.me()` → 401 if missing | Validate funds/stock and perform offer redemption server-side (service role); writes Redemption, PointsLedger BURN and balance |
+| `createLoyaltyAccount` | Any authenticated user | `base44.auth.me()` → 401 if missing | Create the caller's LoyaltyAccount during onboarding with server-enforced safe values (balance 0); one account per user |
 
 ---
 
@@ -125,7 +127,8 @@ Version: 1.4.3 | Updated: 2026-06-08
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
 | G-1 | Medium | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), documented |
-| G-2 | Medium | Client-side balance calculation race condition for concurrent transactions | Open — platform limitation |
+| G-2 | Medium | Client-side balance calculation race condition for concurrent transactions | Partially resolved (v1.4.5) — customer redemption now atomic server-side (`redeemOffer`); merchant POS earn/burn still client-side |
+| G-8 | Critical | Normal users could alter their own `current_balance`/financial fields via direct `LoyaltyAccount` update | ✅ Resolved (v1.4.5) — field-level RLS restricts financial-field writes to admin/merchant; customer balance writes moved to service-role functions |
 | G-3 | Medium | BURN idempotency uses `Date.now()`; rapid duplicate calls are possible within the same millisecond | ✅ Resolved (v1.4.3) — keys now use a crypto-random suffix via `makeIdempotencyKey()` |
 | G-4 | Low | Route access is enforced only client-side; Base44 RLS is the actual data-layer enforcement | Acceptable — Base44 platform handles data layer |
 | G-5 | Low | Hardcoded admin notification email in `checkTrialExpiration` and `Onboarding` | ✅ Resolved (v1.4.3) — moved to `ADMIN_NOTIFICATION_EMAIL` / `VITE_ADMIN_NOTIFICATION_EMAIL` |
