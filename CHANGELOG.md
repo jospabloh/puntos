@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.2] — 2026-06-08
+
+### Security
+- **CRITICAL FIX** — Replaced `Math.random()` with `crypto.getRandomValues()` in `regenerateExpiredQR/entry.ts`. The scheduled function that auto-regenerates expired QR tokens for all accounts was still using a cryptographically weak random source, allowing token prediction. Now uses the same cryptographically secure method as the client-side QR refresh in `Wallet.jsx` and `Onboarding.jsx`.
+- **CRITICAL DEP FIX** — Updated `jspdf` from `4.0.0` to `4.2.1`, resolving CVE GHSA-pqxr-3g65-p328 (PDF Injection in AcroFormChoiceField — arbitrary JavaScript execution) and GHSA-95fx-jjr5-f39c (DoS via unvalidated BMP dimensions).
+- **HIGH/MODERATE DEP FIXES** — Applied `npm audit fix` to resolve 24 additional vulnerabilities across transitive dependencies (react-router, axios, brace-expansion, js-yaml, yaml, ws, and others).
+
+### Dependencies
+- `jspdf` pinned to `^4.2.1` (was `^4.0.0`).
+- 24 total dependency vulnerabilities resolved via `npm audit fix`.
+
+### Known Open Items (carried from v1.4.0)
+| ID  | Severity | Description |
+|-----|----------|-------------|
+| M-1 | Medium   | Move hardcoded admin notification email to environment variable |
+| M-2 | Medium   | Atomic server-side balance update — client-side balance calculation race condition window |
+| M-3 | Medium   | BURN idempotency uses `Date.now()`; rapid duplicate burn calls possible |
+| M-4 | Medium   | Merchants can process transactions for any active store, not restricted to their own |
+| M-5 | Medium   | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented |
+| M-6 | Low      | External QR image service (`api.qrserver.com`) receives user token; consider self-hosted generation |
+| M-7 | Low      | No CI/CD pipeline configured |
+| M-8 | Medium   | `react-quill`/`quill` XSS in admin editor — fix requires breaking change; admin-only risk |
+
+---
+
 ## [1.4.1] — 2026-06-04
 
 ### Security

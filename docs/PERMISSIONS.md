@@ -1,6 +1,6 @@
 # Puntos+ — Roles and Permissions Matrix
 
-Version: 1.4.0 | Updated: 2026-06-02
+Version: 1.4.2 | Updated: 2026-06-08
 
 ---
 
@@ -129,6 +129,7 @@ Version: 1.4.0 | Updated: 2026-06-02
 | G-3 | Medium | BURN idempotency uses `Date.now()`; rapid duplicate calls are possible within the same millisecond | Open |
 | G-4 | Low | Route access is enforced only client-side; Base44 RLS is the actual data-layer enforcement | Acceptable — Base44 platform handles data layer |
 | G-5 | Low | Hardcoded admin notification email in `checkTrialExpiration` and `Onboarding` | Open — move to env variable |
+| G-6 | Medium | `react-quill`/`quill` XSS vulnerability in admin campaign editor — fix requires breaking `react-quill` downgrade | Deferred — admin-only editor; non-admin users cannot access this form |
 
 ---
 

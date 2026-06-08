@@ -21,7 +21,9 @@ Deno.serve(async (req) => {
       
       // Regenerate if expired or missing
       if (!account.qr_token || !tokenExpires || tokenExpires <= now) {
-        const newToken = Math.random().toString(36).substring(2, 14).toUpperCase();
+        const bytes = new Uint8Array(9);
+        crypto.getRandomValues(bytes);
+        const newToken = Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
         const newExpires = new Date(now.getTime() + 5 * 60 * 1000).toISOString(); // 5 minutes
         
         await base44.asServiceRole.entities.LoyaltyAccount.update(account.id, {
