@@ -5,7 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.4.3] — 2026-06-08
+## [1.4.4] — 2026-06-08
+
+### Security
+- **Removed hardcoded email fallbacks** — The v1.4.3 env-var change kept the historical address (`... || 'jose.herrera@acaciaco.com.mx'`) as a fallback, which still embedded the address in source and was flagged by the secret scanner. The literal is now gone entirely from `checkTrialExpiration/entry.ts` and `Onboarding.jsx`. The recipient comes only from `ADMIN_NOTIFICATION_EMAIL` / `VITE_ADMIN_NOTIFICATION_EMAIL`; when unset, the admin notification (and the server-side support-contact line) is skipped while the surrounding flow (onboarding, trial lifecycle) still completes.
+
+### Changed
+- `.env.example` updated to mark the notification email as required and document the skip-when-unset behavior.
 
 Resolves the actionable open items carried since v1.4.0.
 

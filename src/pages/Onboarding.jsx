@@ -169,23 +169,27 @@ export default function Onboarding() {
         data: { userType: 'merchant', storeId: store.id }
       });
 
-      // Send notification to admin
-      try {
-        await base44.integrations.Core.SendEmail({
-          to: import.meta.env.VITE_ADMIN_NOTIFICATION_EMAIL || 'jose.herrera@acaciaco.com.mx',
-          from_name: 'Puntos+ Sistema',
-          subject: '🆕 Nuevo comercio registrado en Puntos+',
-          body: `
-            <h2>Nuevo comercio registrado</h2>
-            <p><strong>Nombre:</strong> ${merchantData.storeName}</p>
-            <p><strong>Código:</strong> ${merchantData.storeCode.toUpperCase()}</p>
-            <p><strong>Merchant:</strong> ${user.full_name || 'No especificado'}</p>
-            <p><strong>Email:</strong> ${user.email}</p>
-            <p><strong>Trial hasta:</strong> ${new Date(trialEnd).toLocaleString('es-MX')}</p>
-          `
-        });
-      } catch (e) {
-        console.error('Error sending admin notification:', e);
+      // Send notification to admin — only if a recipient is configured via env.
+      // No hardcoded fallback address is kept in source.
+      const adminNotificationEmail = import.meta.env.VITE_ADMIN_NOTIFICATION_EMAIL;
+      if (adminNotificationEmail) {
+        try {
+          await base44.integrations.Core.SendEmail({
+            to: adminNotificationEmail,
+            from_name: 'Puntos+ Sistema',
+            subject: '🆕 Nuevo comercio registrado en Puntos+',
+            body: `
+              <h2>Nuevo comercio registrado</h2>
+              <p><strong>Nombre:</strong> ${merchantData.storeName}</p>
+              <p><strong>Código:</strong> ${merchantData.storeCode.toUpperCase()}</p>
+              <p><strong>Merchant:</strong> ${user.full_name || 'No especificado'}</p>
+              <p><strong>Email:</strong> ${user.email}</p>
+              <p><strong>Trial hasta:</strong> ${new Date(trialEnd).toLocaleString('es-MX')}</p>
+            `
+          });
+        } catch (e) {
+          console.error('Error sending admin notification:', e);
+        }
       }
 
       return store;
