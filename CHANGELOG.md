@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.6] — 2026-06-15
+
+### Security
+- **LOW — Wallet function error details no longer returned to client.** `createGoogleWalletPass` and `createAppleWalletPass` previously returned `error.message` in the JSON response body, which could leak internal credential or JWT error details to the browser. Both functions now return a fixed generic message (`'Failed to generate … pass'`); full error details are still logged server-side.
+- **LOW — `objectId` removed from Google Wallet API response.** The response from `createGoogleWalletPass` previously included `objectId`, which was composed of `GOOGLE_WALLET_ISSUER_ID` and the internal `account.id`. The client does not need this field (only the `url` is required), so it has been removed to avoid exposing the internal record identifier.
+
+### Fixed
+- **MEDIUM — `redeemOffer` now propagates `store_id` to `Redemption` and `PointsLedger` records.** Offer redemptions performed by customers via the `redeemOffer` serverless function were creating `Redemption` and `PointsLedger` records without a `store_id`. The merchant-scoped RLS rule on both entities uses `store_id` to filter results, so those records were invisible to the merchant. Both records now carry `store_id` from the customer's `LoyaltyAccount`, matching the existing RLS expectation.
+
+### Known Open Items (carried)
+| ID  | Severity | Description | Status |
+|-----|----------|-------------|--------|
+| H-1 | High     | `esbuild` 0.17–0.28 supply-chain CVE (GHSA-gv7w-rqvm-qjhr) — affects build toolchain only (not deployed runtime). Fix requires upgrading to vite@8 (breaking change). Risk is low in the controlled GitHub Actions CI environment; no registry interception capability. Upgrade to vite@8 should be evaluated when the Base44 vite plugin confirms compatibility. | Open — deferred, upgrade needed |
+| G-1 | Medium   | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), documented |
+| G-2 | Medium   | Client-side balance calculation race condition for concurrent POS earn/burn | Partially resolved (v1.4.5) — customer redemption now atomic server-side; merchant POS still client-side |
+| G-7 | Medium   | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration |
+
+---
+
 ## [1.4.5] — 2026-06-08
 
 ### Security

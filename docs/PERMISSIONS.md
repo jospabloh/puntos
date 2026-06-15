@@ -1,6 +1,6 @@
 # Puntos+ — Roles and Permissions Matrix
 
-Version: 1.4.5 | Updated: 2026-06-08
+Version: 1.4.6 | Updated: 2026-06-15
 
 ---
 
@@ -129,11 +129,15 @@ Version: 1.4.5 | Updated: 2026-06-08
 | G-1 | Medium | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), documented |
 | G-2 | Medium | Client-side balance calculation race condition for concurrent transactions | Partially resolved (v1.4.5) — customer redemption now atomic server-side (`redeemOffer`); merchant POS earn/burn still client-side |
 | G-8 | Critical | Normal users could alter their own `current_balance`/financial fields via direct `LoyaltyAccount` update | ✅ Resolved (v1.4.5) — field-level RLS restricts financial-field writes to admin/merchant; customer balance writes moved to service-role functions |
+| G-9 | Medium | `redeemOffer` did not propagate `store_id` to `Redemption` and `PointsLedger` records — merchant-scoped RLS could not filter them | ✅ Resolved (v1.4.6) — `store_id: account.store_id` added to both records in `redeemOffer/entry.ts` |
 | G-3 | Medium | BURN idempotency uses `Date.now()`; rapid duplicate calls are possible within the same millisecond | ✅ Resolved (v1.4.3) — keys now use a crypto-random suffix via `makeIdempotencyKey()` |
 | G-4 | Low | Route access is enforced only client-side; Base44 RLS is the actual data-layer enforcement | Acceptable — Base44 platform handles data layer |
 | G-5 | Low | Hardcoded admin notification email in `checkTrialExpiration` and `Onboarding` | ✅ Resolved (v1.4.3) — moved to `ADMIN_NOTIFICATION_EMAIL` / `VITE_ADMIN_NOTIFICATION_EMAIL` |
 | G-6 | Medium | `react-quill`/`quill` XSS vulnerability in admin campaign editor | ✅ Resolved (v1.4.3) — unused `react-quill` dependency removed; `npm audit` clean |
 | G-7 | Medium | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration |
+| G-10 | Low | `createGoogleWalletPass` and `createAppleWalletPass` returned `error.message` to client | ✅ Resolved (v1.4.6) — generic message returned; details logged server-side only |
+| G-11 | Low | `createGoogleWalletPass` returned `objectId` (contains `account.id`) to client in response | ✅ Resolved (v1.4.6) — `objectId` removed from response; only `url` returned |
+| H-1 | High | `esbuild` 0.17–0.28 (GHSA-gv7w-rqvm-qjhr) — supply-chain vulnerability in build toolchain (not deployed runtime). Fix requires vite@8 (breaking change) | Open — deferred; risk low in controlled CI environment; upgrade when Base44 vite plugin supports vite@8 |
 
 ---
 

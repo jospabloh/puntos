@@ -59,11 +59,13 @@ Deno.serve(async (req) => {
       .substring(0, 8)
       .toUpperCase();
 
-    // Create the redemption record.
+    // Create the redemption record. store_id comes from the account so that
+    // merchant-scoped RLS on Redemption.read lets the store owner see it.
     const redemption = await base44.asServiceRole.entities.Redemption.create({
       account_id: account.id,
       user_id: user.id,
       user_email: user.email,
+      store_id: account.store_id,
       offer_id: offer.id,
       offer_title: offer.title,
       points_spent: cost,
@@ -74,9 +76,11 @@ Deno.serve(async (req) => {
     });
 
     // Create the ledger entry (idempotent: one redemption = one burn).
+    // store_id propagated so merchant-scoped RLS on PointsLedger.read is satisfied.
     const ledger = await base44.asServiceRole.entities.PointsLedger.create({
       account_id: account.id,
       user_id: user.id,
+      store_id: account.store_id,
       type: 'BURN',
       points: -cost,
       balance_after: newBalance,
@@ -112,9 +116,6 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error redeeming offer:', error);
-    return Response.json(
-      { error: 'Failed to redeem offer', details: error.message },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Failed to redeem offer' }, { status: 500 });
   }
 });

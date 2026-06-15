@@ -108,15 +108,12 @@ Deno.serve(async (req) => {
     // Generate the Save URL
     const saveUrl = `https://pay.google.com/gp/v/save/${jwt}`;
 
-    return Response.json({ 
-      url: saveUrl,
-      objectId: objectId
-    });
+    // Return only the save URL — objectId contains the internal account ID
+    // and is not needed by the client.
+    return Response.json({ url: saveUrl });
 
   } catch (error) {
     console.error('Google Wallet error:', error.message, error.stack);
-    return Response.json({
-      error: error.message
-    }, { status: 500 });
+    return Response.json({ error: 'Failed to generate Google Wallet pass' }, { status: 500 });
   }
 });
