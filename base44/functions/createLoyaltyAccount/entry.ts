@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error creating loyalty account:', error);
     return Response.json(
-      { error: 'Failed to create loyalty account', details: error.message },
+      { error: 'Failed to create loyalty account' },
       { status: 500 }
     );
   }
