@@ -43,9 +43,9 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('Error regenerating QR tokens:', error);
-    return Response.json({ 
-      error: error.message,
-      success: false 
+    return Response.json({
+      error: 'Failed to regenerate QR tokens',
+      success: false
     }, { status: 500 });
   }
 });

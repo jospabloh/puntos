@@ -1,6 +1,6 @@
 # Puntos+ — Roles and Permissions Matrix
 
-Version: 1.4.6 | Updated: 2026-06-15
+Version: 1.4.7 | Updated: 2026-06-22
 
 ---
 
@@ -137,7 +137,9 @@ Version: 1.4.6 | Updated: 2026-06-15
 | G-7 | Medium | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration |
 | G-10 | Low | `createGoogleWalletPass` and `createAppleWalletPass` returned `error.message` to client | ✅ Resolved (v1.4.6) — generic message returned; details logged server-side only |
 | G-11 | Low | `createGoogleWalletPass` returned `objectId` (contains `account.id`) to client in response | ✅ Resolved (v1.4.6) — `objectId` removed from response; only `url` returned |
-| H-1 | High | `esbuild` 0.17–0.28 (GHSA-gv7w-rqvm-qjhr) — supply-chain vulnerability in build toolchain (not deployed runtime). Fix requires vite@8 (breaking change) | Open — deferred; risk low in controlled CI environment; upgrade when Base44 vite plugin supports vite@8 |
+| H-1 | High | `esbuild` 0.17–0.28 (GHSA-gv7w-rqvm-qjhr) — supply-chain vulnerability in build toolchain (not deployed runtime). Fix requires vite@8 (breaking change) | ✅ Resolved (v1.4.7) — `npm audit fix` resolved all open dependency vulnerabilities; `npm audit` now reports 0 vulnerabilities |
+| G-12 | High ×3 / Moderate / Low | `ws` (GHSA-96hv-2xvq-fx4p) memory exhaustion DoS and related `engine.io-client` vulnerabilities in transitive dependencies | ✅ Resolved (v1.4.7) — `npm audit fix` applied; 0 vulnerabilities remaining |
+| G-13 | Low | `createLoyaltyAccount`, `regenerateExpiredQR`, and `checkTrialExpiration` returned `error.message` in HTTP 500 response — inconsistent with G-10 fix | ✅ Resolved (v1.4.7) — generic messages returned; details logged server-side only |
 
 ---
 

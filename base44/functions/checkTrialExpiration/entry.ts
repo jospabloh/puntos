@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Error checking trial expiration:', error);
     return Response.json(
-      { error: 'Failed to check trial expiration', details: error.message },
+      { error: 'Failed to check trial expiration' },
       { status: 500 }
     );
   }

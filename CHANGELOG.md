@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.4.7] — 2026-06-22
+
+### Security
+
+- **HIGH ×3 / MODERATE / LOW — Dependency vulnerabilities resolved.** `npm audit fix` resolved 5 new vulnerabilities in `ws` (GHSA-96hv-2xvq-fx4p: memory exhaustion DoS via tiny WebSocket fragments) and its dependant `engine.io-client`. Affected the `form-data` transitive chain. All are client/browser-transport libraries and do not affect the deployed server runtime, but could affect build-time tooling. `npm audit` now reports **0 vulnerabilities**.
+
+- **LOW — Internal error messages no longer returned to callers from `createLoyaltyAccount`, `regenerateExpiredQR`, and `checkTrialExpiration` functions.** Three serverless functions returned raw `error.message` strings (or a `details` field containing `error.message`) in their HTTP 500 error responses. This was inconsistent with the G-10 fix applied to the wallet functions in v1.4.6. All three functions now return fixed generic error messages; full details continue to be logged server-side via `console.error`.
+  - `createLoyaltyAccount/entry.ts` — removed `details: error.message` from 500 response
+  - `regenerateExpiredQR/entry.ts` — replaced `error: error.message` with fixed string
+  - `checkTrialExpiration/entry.ts` — removed `details: error.message` from 500 response
+
+### Known Open Items (carried)
+| ID  | Severity | Description | Status |
+|-----|----------|-------------|--------|
+| G-1 | Medium   | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), documented |
+| G-2 | Medium   | Client-side balance calculation race condition for concurrent POS earn/burn | Partially resolved (v1.4.5) — customer redemption now atomic server-side; merchant POS still client-side |
+| G-7 | Medium   | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration |
+
+---
+
 ## [1.4.6] — 2026-06-15
 
 ### Security
