@@ -152,10 +152,12 @@ suspended → archived`, derived to UI banners by `deriveLicense()` in
 
 | Function | Caller | Auth | Purpose |
 |----------|--------|------|---------|
-| `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Now stamps `business_id` from the store/owner context (service role). |
+| `createBusiness` | any authed | `auth.me()` → 401 | Provision a tenant (Business + first Store + owner account + LicenseEvent) with server-enforced safe values. Required because `Business.create` is admin-only. |
+| `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Stamps `business_id` from the store/owner context (service role). |
 | `redeemOffer` | any authed | `auth.me()` → 401 | Server-side offer redemption (atomic balance). |
 | `createGoogleWalletPass` / `createAppleWalletPass` | any authed | `auth.me()` → 401 | Wallet passes. |
-| `checkTrialExpiration` / `regenerateExpiredQR` / `sendWeeklySummary` / `cleanupInactiveUsers` / `updateWalletPasses` | `admin` | role gate | Scheduled jobs. |
+| `updateWalletPasses` | `admin` | role gate | Scheduled: real Google Wallet balance push (Apple push pending — needs PassKit web service + APNs). |
+| `checkTrialExpiration` / `regenerateExpiredQR` / `sendWeeklySummary` / `cleanupInactiveUsers` | `admin` | role gate | Scheduled jobs. |
 
 ---
 

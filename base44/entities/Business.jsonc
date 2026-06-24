@@ -40,7 +40,9 @@
   },
   "required": ["name"],
   "rls": {
-    "create": {},
+    "create": {
+      "user_condition": { "role": "admin" }
+    },
     "read": {
       "$or": [
         { "id": "{{user.data.business_id}}" },
