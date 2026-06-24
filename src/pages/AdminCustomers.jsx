@@ -3,6 +3,7 @@ import { makeIdempotencyKey } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
+import { getActiveBusinessId } from '@/lib/activeTenant';
 import { ROLES } from '@/lib/rbac';
 import {
   Users,
@@ -141,8 +142,9 @@ export default function AdminCustomers() {
   const queryClient = useQueryClient();
 
   // Tenant scoping: owner sees everything ({}), business_admin only their business.
-  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
-  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
+  const activeBusinessId = getActiveBusinessId(user);
+  const scope = { business_id: activeBusinessId };
+  const scopeKey = activeBusinessId || 'none';
 
   // Fetch all accounts
   const { data: accounts, isLoading } = useQuery({

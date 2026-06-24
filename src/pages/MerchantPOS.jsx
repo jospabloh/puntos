@@ -20,6 +20,7 @@ import {
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { makeIdempotencyKey } from '@/lib/utils';
+import { getActiveBusinessId } from '@/lib/activeTenant';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -84,7 +85,7 @@ export default function MerchantPOS() {
   const { data: stores } = useQuery({
     queryKey: ['stores', user?.business_id, user?.role],
     queryFn: () => {
-      const scope = user?.role === 'admin' ? { status: 'active' } : { status: 'active', business_id: user?.business_id };
+      const scope = { status: 'active', business_id: getActiveBusinessId(user) };
       return base44.entities.Store.filter(scope);
     },
     enabled: !!user,

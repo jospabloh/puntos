@@ -4,7 +4,7 @@ import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
-import { ROLES } from '@/lib/rbac';
+import { getActiveBusinessId } from '@/lib/activeTenant';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -56,8 +56,9 @@ export default function AdminDashboard() {
   const [dateRange, setDateRange] = useState('7days');
 
   // Tenant scoping: owner sees everything ({}), business_admin only their business.
-  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
-  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
+  const activeBusinessId = getActiveBusinessId(user);
+  const scope = { business_id: activeBusinessId };
+  const scopeKey = activeBusinessId || 'none';
 
   // Fetch all accounts
   const { data: accounts, isLoading: loadingAccounts } = useQuery({

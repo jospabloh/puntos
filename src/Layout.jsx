@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
+import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
 
 const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding'];
 
@@ -178,7 +179,22 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
           </div>
         )}
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          {role === ROLES.OWNER && ADMIN_PAGES.includes(currentPageName) && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/70 bg-amber-50/80 px-4 py-2 text-sm sm:px-6">
+              <span className="flex items-center gap-2 text-amber-800">
+                <Building2 className="h-4 w-4" /> Administrando: <strong className="font-semibold">{getActiveBusinessName(user) || 'tu negocio'}</strong>
+              </span>
+              <span className="flex items-center gap-3">
+                <Link to={createPageUrl('PlatformTenants')} className="font-medium text-violet-700 hover:underline">Cambiar negocio</Link>
+                {isImpersonatingTenant(user) && (
+                  <button onClick={() => { clearActiveBusiness(); window.location.reload(); }} className="font-medium text-slate-500 hover:underline">Volver al mío</button>
+                )}
+              </span>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );

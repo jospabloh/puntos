@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
-import { ROLES } from '@/lib/rbac';
+import { getActiveBusinessId } from '@/lib/activeTenant';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -143,8 +143,9 @@ export default function AdminAudit() {
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Tenant scoping: owner sees everything ({}), business_admin only their business.
-  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
-  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
+  const activeBusinessId = getActiveBusinessId(user);
+  const scope = { business_id: activeBusinessId };
+  const scopeKey = activeBusinessId || 'none';
 
   // Fetch audit logs
   const { data: auditLogs, isLoading } = useQuery({
