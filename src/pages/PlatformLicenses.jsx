@@ -60,6 +60,67 @@ function monthlyRevenue(business) {
   return plan.monthly_price_mxn || 0;
 }
 
+/* Hoisted to module scope: defining these inside the page component re-creates
+   them on every render, remounting rows and resetting any focus/state. */
+function LicenseRow({ b, action, busy, onAction }) {
+  const isTrial = (b.billing_status || 'trial') === 'trial';
+  const dateLabel = isTrial
+    ? `Prueba: ${fmtDate(b.trial_end_at)}`
+    : `Licencia: ${fmtDate(b.license_expires_at)}`;
+  const days = isTrial ? daysUntil(b.trial_end_at) : daysUntil(b.license_expires_at);
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-slate-800 truncate">{b.name || 'Sin nombre'}</span>
+          <PlanBadge plan={b.license_plan || 'starter'} />
+        </div>
+        <p className="text-xs text-slate-500 truncate">
+          {dateLabel}
+          {days !== null && (
+            <span className={days < 0 ? 'text-rose-600' : 'text-slate-500'}>
+              {' '}· {days < 0 ? `vencida hace ${Math.abs(days)}d` : `${days}d restantes`}
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <StatusPill status={b.billing_status || 'trial'} />
+        {action && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy}
+            onClick={() => onAction({ business: b, activate: action === 'activate' })}
+          >
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+            {action === 'activate' ? 'Activar' : 'Renovar'}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Portfolio({ title, icon: Icon, items, action, emptyHint, busy, onAction }) {
+  const list = items || [];
+  return (
+    <SectionCard title={title} icon={Icon} bodyClassName="p-0" description={`${list.length} negocio(s)`}>
+      {list.length === 0 ? (
+        <div className="p-5">
+          <EmptyState icon={Icon} title="Sin negocios" description={emptyHint} />
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {list.map((b) => (
+            <LicenseRow key={b.id} b={b} action={action} busy={busy} onAction={onAction} />
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
 export default function PlatformLicenses() {
   const { user, ready } = useRequirePage('PlatformLicenses');
   const qc = useQueryClient();
@@ -133,62 +194,7 @@ export default function PlatformLicenses() {
   if (!ready) return <PageLoader />;
 
   const renewBusy = renewMutation.isPending;
-
-  const Row = ({ b, action }) => {
-    const isTrial = (b.billing_status || 'trial') === 'trial';
-    const dateLabel = isTrial
-      ? `Prueba: ${fmtDate(b.trial_end_at)}`
-      : `Licencia: ${fmtDate(b.license_expires_at)}`;
-    const days = isTrial ? daysUntil(b.trial_end_at) : daysUntil(b.license_expires_at);
-    return (
-      <div className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-800 truncate">{b.name || 'Sin nombre'}</span>
-            <PlanBadge plan={b.license_plan || 'starter'} />
-          </div>
-          <p className="text-xs text-slate-500 truncate">
-            {dateLabel}
-            {days !== null && (
-              <span className={days < 0 ? 'text-rose-600' : 'text-slate-500'}>
-                {' '}· {days < 0 ? `vencida hace ${Math.abs(days)}d` : `${days}d restantes`}
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <StatusPill status={b.billing_status || 'trial'} />
-          {action && (
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={renewBusy}
-              onClick={() => renewMutation.mutate({ business: b, activate: action === 'activate' })}
-            >
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              {action === 'activate' ? 'Activar' : 'Renovar'}
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const Portfolio = ({ title, icon, items, action, emptyHint }) => (
-    <SectionCard title={title} icon={icon} bodyClassName="p-0" description={`${items.length} negocio(s)`}>
-      {items.length === 0 ? (
-        <div className="p-5">
-          <EmptyState icon={icon} title="Sin negocios" description={emptyHint} />
-        </div>
-      ) : (
-        <div className="divide-y divide-slate-100">
-          {items.map((b) => (
-            <Row key={b.id} b={b} action={action} />
-          ))}
-        </div>
-      )}
-    </SectionCard>
-  );
+  const onAction = (vars) => renewMutation.mutate(vars);
 
   return (
     <PageShell>
@@ -270,11 +276,11 @@ export default function PlatformLicenses() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Portfolio title="Por vencer" icon={AlertTriangle} items={groups.expiring} action="renew" emptyHint="Nada por vencer en los próximos 14 días." />
-          <Portfolio title="Vencidas / solo lectura" icon={Ban} items={groups.expired} action="activate" emptyHint="Sin licencias vencidas." />
-          <Portfolio title="En prueba" icon={Clock} items={groups.trial} action="activate" emptyHint="Sin negocios en prueba." />
-          <Portfolio title="Activas" icon={Sparkles} items={groups.active} action="renew" emptyHint="Sin licencias activas." />
-          <Portfolio title="Suspendidas / archivadas" icon={Ban} items={groups.suspended} action="activate" emptyHint="Sin negocios suspendidos." />
+          <Portfolio title="Por vencer" icon={AlertTriangle} items={groups.expiring} action="renew" emptyHint="Nada por vencer en los próximos 14 días." busy={renewBusy} onAction={onAction} />
+          <Portfolio title="Vencidas / solo lectura" icon={Ban} items={groups.expired} action="activate" emptyHint="Sin licencias vencidas." busy={renewBusy} onAction={onAction} />
+          <Portfolio title="En prueba" icon={Clock} items={groups.trial} action="activate" emptyHint="Sin negocios en prueba." busy={renewBusy} onAction={onAction} />
+          <Portfolio title="Activas" icon={Sparkles} items={groups.active} action="renew" emptyHint="Sin licencias activas." busy={renewBusy} onAction={onAction} />
+          <Portfolio title="Suspendidas / archivadas" icon={Ban} items={groups.suspended} action="activate" emptyHint="Sin negocios suspendidos." busy={renewBusy} onAction={onAction} />
         </div>
       )}
     </PageShell>

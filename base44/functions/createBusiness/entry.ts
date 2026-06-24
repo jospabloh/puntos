@@ -14,12 +14,30 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 const TRIAL_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I/L
 
-function randomCode(n = 6) {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function randPart(n) {
   const bytes = new Uint8Array(n);
   crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('');
+}
+
+function randomCode(n = 6) {
+  return randPart(n);
+}
+
+function slug(name) {
+  return (name || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'PP';
+}
+
+// Globally-unique store code, generated server-side (never trusted from client).
+async function uniqueStoreCode(sr, name) {
+  for (let i = 0; i < 12; i++) {
+    const code = i < 8 ? `${slug(name)}${randPart(3)}` : randPart(8);
+    const taken = await sr.entities.Store.filter({ code });
+    if (!taken || taken.length === 0) return code;
+  }
+  return `${slug(name)}${randPart(6)}`;
 }
 
 Deno.serve(async (req) => {
@@ -33,11 +51,10 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const businessName = (body?.businessName || '').trim();
     const storeName = (body?.storeName || '').trim();
-    const storeCode = (body?.storeCode || '').trim().toUpperCase();
     const phone = (body?.phone || '').trim();
 
-    if (!businessName || !storeName || !storeCode) {
-      return Response.json({ error: 'businessName, storeName and storeCode are required' }, { status: 400 });
+    if (!businessName || !storeName) {
+      return Response.json({ error: 'businessName and storeName are required' }, { status: 400 });
     }
 
     // One business per owner — prevents duplicate provisioning on re-submit.
@@ -46,11 +63,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Business already exists for this user', business: owned[0] }, { status: 409 });
     }
 
-    // Store code must be globally unique (customers join by code).
-    const codeTaken = await base44.asServiceRole.entities.Store.filter({ code: storeCode });
-    if (codeTaken.length > 0) {
-      return Response.json({ error: 'Ese código de tienda ya está en uso' }, { status: 409 });
-    }
+    // Store code is generated server-side and guaranteed unique — never trusted
+    // from the client (avoids duplicates / collisions).
+    const storeCode = await uniqueStoreCode(base44.asServiceRole, storeName || businessName);
 
     const nowIso = new Date().toISOString();
     const trialEndIso = new Date(Date.now() + TRIAL_DAYS * DAY_MS).toISOString();

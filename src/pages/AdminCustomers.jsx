@@ -98,18 +98,26 @@ export default function AdminCustomers() {
   // Adjust points mutation
   const adjustMutation = useMutation({
     mutationFn: async () => {
-      const points = parseInt(adjustData.points);
+      const points = parseInt(adjustData.points, 10);
+      if (Number.isNaN(points) || points === 0) {
+        throw new Error('Ingresa una cantidad de puntos válida');
+      }
       if (!adjustData.reason.trim()) {
         throw new Error('La razón es obligatoria');
       }
 
       const idempotencyKey = makeIdempotencyKey(`adjust_${selectedCustomer.id}`);
-      const newBalance = selectedCustomer.current_balance + points;
+      const newBalance = (selectedCustomer.current_balance || 0) + points;
+
+      // Stamp the customer's tenant (owner may adjust across tenants, so derive
+      // business_id from the account, not from the acting user).
+      const businessId = selectedCustomer.business_id || user.business_id;
+      const businessName = selectedCustomer.business_name || user.business_name;
 
       // Create ledger entry
       await base44.entities.PointsLedger.create({
-        business_id: user.business_id,
-        business_name: user.business_name,
+        business_id: businessId,
+        business_name: businessName,
         account_id: selectedCustomer.id,
         user_id: selectedCustomer.user_id,
         type: 'ADJUST',
@@ -135,8 +143,8 @@ export default function AdminCustomers() {
 
       // Audit log
       await base44.entities.AuditLog.create({
-        business_id: user.business_id,
-        business_name: user.business_name,
+        business_id: businessId,
+        business_name: businessName,
         actor_id: user.id,
         actor_email: user.email,
         actor_role: role === ROLES.OWNER ? 'admin' : role,
@@ -150,8 +158,8 @@ export default function AdminCustomers() {
       return { points, newBalance };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['allAccounts']);
-      queryClient.invalidateQueries(['customerTransactions']);
+      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
       setShowAdjustDialog(false);
       setAdjustData({ points: 0, reason: '' });
       toast.success('Ajuste realizado correctamente');
@@ -200,6 +208,7 @@ export default function AdminCustomers() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Buscar por nombre o email..."
+                aria-label="Buscar clientes"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-slate-50 border-0"
@@ -282,7 +291,7 @@ export default function AdminCustomers() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" aria-label={`Acciones de ${account.user_name || 'cliente'}`}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -346,19 +355,19 @@ export default function AdminCustomers() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-4 bg-violet-50 rounded-xl text-center">
                   <p className="text-2xl font-bold text-violet-600">
-                    {selectedCustomer.current_balance?.toLocaleString()}
+                    {(selectedCustomer.current_balance || 0).toLocaleString('es-MX')}
                   </p>
                   <p className="text-sm text-violet-600">Saldo actual</p>
                 </div>
                 <div className="p-4 bg-emerald-50 rounded-xl text-center">
                   <p className="text-2xl font-bold text-emerald-600">
-                    +{selectedCustomer.lifetime_earned?.toLocaleString()}
+                    +{(selectedCustomer.lifetime_earned || 0).toLocaleString('es-MX')}
                   </p>
                   <p className="text-sm text-emerald-600">Total ganado</p>
                 </div>
                 <div className="p-4 bg-slate-50 rounded-xl text-center">
                   <p className="text-2xl font-bold text-slate-600">
-                    -{selectedCustomer.lifetime_redeemed?.toLocaleString()}
+                    -{(selectedCustomer.lifetime_redeemed || 0).toLocaleString('es-MX')}
                   </p>
                   <p className="text-sm text-slate-600">Total canjeado</p>
                 </div>
@@ -428,7 +437,7 @@ export default function AdminCustomers() {
             <div className="p-4 bg-slate-50 rounded-xl">
               <p className="text-sm text-slate-500">Saldo actual</p>
               <p className="text-2xl font-bold text-violet-600">
-                {selectedCustomer?.current_balance?.toLocaleString()} puntos
+                {(selectedCustomer?.current_balance || 0).toLocaleString('es-MX')} puntos
               </p>
             </div>
 
@@ -441,14 +450,14 @@ export default function AdminCustomers() {
                 placeholder="0"
                 className="mt-1.5"
               />
-              {adjustData.points !== 0 && (
+              {parseInt(adjustData.points, 10) ? (
                 <p className="text-sm mt-2">
-                  Nuevo saldo: 
+                  Nuevo saldo:
                   <span className="font-bold text-violet-600 ml-1">
-                    {(selectedCustomer?.current_balance + parseInt(adjustData.points || 0)).toLocaleString()} puntos
+                    {((selectedCustomer?.current_balance || 0) + (parseInt(adjustData.points, 10) || 0)).toLocaleString('es-MX')} puntos
                   </span>
                 </p>
-              )}
+              ) : null}
             </div>
 
             <div>
@@ -476,7 +485,7 @@ export default function AdminCustomers() {
             </Button>
             <Button
               onClick={() => adjustMutation.mutate()}
-              disabled={!adjustData.reason.trim() || adjustData.points === 0 || adjustMutation.isPending}
+              disabled={!adjustData.reason.trim() || !parseInt(adjustData.points, 10) || adjustMutation.isPending}
               className="bg-violet-600 hover:bg-violet-700"
             >
               {adjustMutation.isPending ? 'Procesando...' : 'Confirmar ajuste'}

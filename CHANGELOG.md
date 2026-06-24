@@ -5,6 +5,49 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.4] — 2026-06-24 — Hardening & polish pass
+
+A systematic quality audit across every page (4 parallel reviewers + shared shell),
+fixing the classes of defects that a real click-through surfaces.
+
+### Security / correctness
+- **Unique store codes, server-side.** Store codes are now generated and
+  guaranteed globally unique by the backend (`createStore` function +
+  `createBusiness`); the client never sets them. The code field is read-only and
+  immutable once assigned (customers join by it). Onboarding shows the assigned
+  code on a success screen with copy.
+- **Cross-tenant leak fixed (AdminCampaigns).** The "notify customers" actions
+  loaded `NotificationPreference.list()` unscoped — a business admin could email
+  **every tenant's** customers. Now scoped by `business_id`.
+- **POS records carry tenancy.** Merchant POS earn/burn now stamp
+  `business_id`/`business_name` on `PointsLedger` + `AuditLog`, so they appear in
+  the tenant admin's business-scoped views.
+- **Owner-adjust mis-stamp fixed (AdminCustomers).** Manual point adjustments now
+  derive `business_id` from the target account (was `user.business_id`, undefined
+  when the owner adjusts another tenant's customer).
+
+### Reliability
+- **Render stability.** Hoisted components that were declared inside render
+  bodies (`PlatformLicenses` Row/Portfolio; the onboarding shell; `Layout` nav) to
+  module scope — eliminating remount/focus-loss (root cause of the earlier
+  "registration resets on every keystroke").
+- **react-query v5:** standardized all `invalidateQueries(['key'])` (array form,
+  which over-invalidates every query) to the scoped `{ queryKey: [...] }` object form.
+- NaN/undefined guards across points, balances, tiers, dates, and number inputs;
+  empty/loading states added where lists rendered blank; previously-silent mutation
+  failures now show error toasts; Profile notification toggle reverts on failure;
+  Chat quick-action `setTimeout` race removed.
+
+### UX / a11y
+- Confirmation dialogs for destructive/lifecycle actions (store delete; tenant
+  view-only/suspend/archive; invite revoke). Buttons disable while pending.
+- License gating: invite/save blocked when a tenant is view-only/suspended; seat
+  limit enforced.
+- Accessibility: labels/`aria-label` on icon-only buttons, search inputs, switches,
+  and dialog titles; dead "change password" button wired to feedback.
+
+---
+
 ## [2.0.2] — 2026-06-24 — Apple Wallet update service (G-7 follow-through)
 
 Completes the Apple side of wallet balance updates that v2.0.1 scoped out.

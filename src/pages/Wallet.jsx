@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { ArrowLeft, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
@@ -52,6 +53,7 @@ export default function Wallet() {
   // Mutation to refresh QR token
   const refreshTokenMutation = useMutation({
     mutationFn: async () => {
+      if (!account?.id) throw new Error('Cuenta no disponible');
       const array = new Uint8Array(9);
       crypto.getRandomValues(array);
       const newToken = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
@@ -65,7 +67,10 @@ export default function Wallet() {
       return { qr_token: newToken, qr_token_expires: tokenExpires };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['loyaltyAccount']);
+      queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
+    },
+    onError: () => {
+      toast.error('No se pudo actualizar el código QR. Intenta de nuevo.');
     }
   });
 
@@ -75,7 +80,7 @@ export default function Wallet() {
 
     const unsubscribe = base44.entities.LoyaltyAccount.subscribe((event) => {
       if (event.data?.id === account.id) {
-        queryClient.invalidateQueries(['loyaltyAccount']);
+        queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
       }
     });
 
@@ -106,8 +111,8 @@ export default function Wallet() {
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-32">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-6">
-            <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10">
+            <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
+              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" tabIndex={-1}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>

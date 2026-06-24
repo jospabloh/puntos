@@ -174,6 +174,8 @@ export default function MerchantPOS() {
       await base44.entities.PointsLedger.create({
         account_id: selectedCustomer.id,
         user_id: selectedCustomer.user_id,
+        business_id: selectedStore.business_id || user.business_id,
+        business_name: selectedStore.business_name || user.business_name,
         store_id: selectedStore.id,
         store_name: selectedStore.name,
         type: 'EARN',
@@ -206,6 +208,7 @@ export default function MerchantPOS() {
         action: 'earn',
         entity_type: 'PointsLedger',
         target_user_id: selectedCustomer.user_id,
+        business_id: selectedStore.business_id || user.business_id,
         store_id: selectedStore.id,
         payload_summary: `+${pointsEarned} pts from $${amount} MXN`,
         status: 'success'
@@ -219,7 +222,7 @@ export default function MerchantPOS() {
       setTicketId('');
       setSelectedCustomer(null);
       setCustomerSearch('');
-      queryClient.invalidateQueries(['storeTransactions']);
+      queryClient.invalidateQueries({ queryKey: ['storeTransactions'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Error al procesar la transacción');
@@ -248,6 +251,8 @@ export default function MerchantPOS() {
       await base44.entities.PointsLedger.create({
         account_id: selectedCustomer.id,
         user_id: selectedCustomer.user_id,
+        business_id: selectedStore.business_id || user.business_id,
+        business_name: selectedStore.business_name || user.business_name,
         store_id: selectedStore.id,
         store_name: selectedStore.name,
         type: 'BURN',
@@ -276,6 +281,7 @@ export default function MerchantPOS() {
         action: 'burn',
         entity_type: 'PointsLedger',
         target_user_id: selectedCustomer.user_id,
+        business_id: selectedStore.business_id || user.business_id,
         store_id: selectedStore.id,
         payload_summary: `-${points} pts burned`,
         status: 'success'
@@ -288,7 +294,7 @@ export default function MerchantPOS() {
       setBurnPoints('');
       setSelectedCustomer(null);
       setCustomerSearch('');
-      queryClient.invalidateQueries(['storeTransactions']);
+      queryClient.invalidateQueries({ queryKey: ['storeTransactions'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Error al procesar el canje');

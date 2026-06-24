@@ -48,6 +48,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
+import {
   Table,
   TableHeader,
   TableBody,
@@ -68,6 +78,29 @@ function randomCode() {
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => chars[b % chars.length]).join('');
 }
+
+// Lifecycle actions that interrupt or limit a tenant's access require a
+// confirmation step before they run.
+const CONFIRM_ACTIONS = {
+  view_only: {
+    title: '¿Poner en solo lectura?',
+    description:
+      'El negocio podrá consultar sus datos pero no registrar operaciones en el punto de venta. Puedes reactivarlo después.',
+    confirmLabel: 'Solo lectura',
+  },
+  suspend: {
+    title: '¿Suspender este negocio?',
+    description:
+      'Se suspenderá el acceso del negocio a la plataforma. Nadie de su equipo podrá iniciar sesión hasta reactivarlo.',
+    confirmLabel: 'Suspender',
+  },
+  archive: {
+    title: '¿Archivar este negocio?',
+    description:
+      'El negocio quedará archivado y fuera de operación. Esta es una acción de cierre de cuenta; podrás reactivarlo desde soporte.',
+    confirmLabel: 'Archivar',
+  },
+};
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'Todos' },
@@ -119,6 +152,7 @@ export default function PlatformTenants() {
   const [form, setForm] = React.useState(EMPTY_FORM);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [newBiz, setNewBiz] = React.useState({ name: '', owner_email: '', license_plan: 'starter' });
+  const [confirm, setConfirm] = React.useState(null); // pending destructive action key
 
   const { data: businesses, isLoading } = useQuery({
     queryKey: ['platform', 'businesses'],
@@ -280,6 +314,16 @@ export default function PlatformTenants() {
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const busy = saveMutation.isPending || lifecycleMutation.isPending;
 
+  // Destructive actions are confirmed first; others run immediately.
+  const runLifecycle = (action) => {
+    if (CONFIRM_ACTIONS[action]) {
+      setConfirm(action);
+    } else {
+      lifecycleMutation.mutate({ action });
+    }
+  };
+  const confirmCopy = confirm ? CONFIRM_ACTIONS[confirm] : null;
+
   return (
     <PageShell>
       <PageHeader
@@ -302,6 +346,7 @@ export default function PlatformTenants() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nombre o correo…"
+            aria-label="Buscar negocios por nombre o correo"
             className="pl-9"
           />
         </div>
@@ -477,19 +522,19 @@ export default function PlatformTenants() {
 
               <Separator className="my-3" />
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => lifecycleMutation.mutate({ action: 'activate' })}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runLifecycle('activate')}>
                   <CheckCircle2 className="h-4 w-4 mr-1.5 text-emerald-600" /> Activar licencia
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => lifecycleMutation.mutate({ action: 'view_only' })}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runLifecycle('view_only')}>
                   <Eye className="h-4 w-4 mr-1.5 text-amber-600" /> Solo lectura
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => lifecycleMutation.mutate({ action: 'suspend' })}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runLifecycle('suspend')}>
                   <PauseCircle className="h-4 w-4 mr-1.5 text-rose-600" /> Suspender
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => lifecycleMutation.mutate({ action: 'reactivate' })}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runLifecycle('reactivate')}>
                   <PlayCircle className="h-4 w-4 mr-1.5 text-emerald-600" /> Reactivar
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy} onClick={() => lifecycleMutation.mutate({ action: 'archive' })}>
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => runLifecycle('archive')}>
                   <Archive className="h-4 w-4 mr-1.5 text-slate-500" /> Archivar
                 </Button>
               </div>
@@ -553,6 +598,30 @@ export default function PlatformTenants() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirmation for destructive lifecycle actions */}
+      <AlertDialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmCopy?.title || '¿Confirmar acción?'}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmCopy?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-rose-600 hover:bg-rose-700"
+              disabled={busy}
+              onClick={() => {
+                const action = confirm;
+                setConfirm(null);
+                if (action) lifecycleMutation.mutate({ action });
+              }}
+            >
+              {confirmCopy?.confirmLabel || 'Confirmar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageShell>
   );
 }

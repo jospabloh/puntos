@@ -44,6 +44,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 export default function AdminStores() {
@@ -51,6 +61,7 @@ export default function AdminStores() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
+  const [storeToDelete, setStoreToDelete] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -76,27 +87,30 @@ export default function AdminStores() {
     enabled: !!user,
   });
 
-  // Create/Update mutation
+  // Create/Update mutation.
+  // The store `code` is generated server-side (unique) and is immutable once set —
+  // customers join by it — so it is never sent from the client.
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (editingStore) {
-        return base44.entities.Store.update(editingStore.id, data);
+        const { code, ...rest } = data; // eslint-disable-line no-unused-vars
+        return base44.entities.Store.update(editingStore.id, rest);
       }
-      return base44.entities.Store.create({
-        ...data,
-        business_id: user.business_id,
-        business_name: user.business_name,
-      });
+      const { code, ...rest } = data; // eslint-disable-line no-unused-vars
+      const res = await base44.functions.invoke('createStore', rest);
+      if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo crear la tienda');
+      return res.data.store;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['allStores']);
+    onSuccess: (store) => {
+      queryClient.invalidateQueries({ queryKey: ['allStores'] });
       setShowDialog(false);
       setEditingStore(null);
       resetForm();
-      toast.success(editingStore ? 'Tienda actualizada' : 'Tienda creada');
+      if (editingStore) toast.success('Tienda actualizada');
+      else toast.success(`Tienda creada · código ${store?.code || ''}`);
     },
-    onError: () => {
-      toast.error('Error al guardar la tienda');
+    onError: (e) => {
+      toast.error(e?.message || 'Error al guardar la tienda');
     }
   });
 
@@ -104,8 +118,12 @@ export default function AdminStores() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Store.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['allStores']);
+      queryClient.invalidateQueries({ queryKey: ['allStores'] });
+      setStoreToDelete(null);
       toast.success('Tienda eliminada');
+    },
+    onError: (e) => {
+      toast.error(e?.message || 'Error al eliminar la tienda');
     }
   });
 
@@ -147,10 +165,11 @@ export default function AdminStores() {
   };
 
   // Filter stores
-  const filteredStores = stores?.filter(store => 
-    store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.city?.toLowerCase().includes(searchQuery.toLowerCase())
+  const q = searchQuery.toLowerCase();
+  const filteredStores = stores?.filter(store =>
+    store.name?.toLowerCase().includes(q) ||
+    store.code?.toLowerCase().includes(q) ||
+    store.city?.toLowerCase().includes(q)
   ) || [];
 
   if (!ready) {
@@ -192,6 +211,7 @@ export default function AdminStores() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Buscar tiendas..."
+              aria-label="Buscar tiendas"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-slate-50 border-0"
@@ -233,7 +253,7 @@ export default function AdminStores() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" aria-label={`Acciones de ${store.name || 'tienda'}`}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -242,8 +262,8 @@ export default function AdminStores() {
                             <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => deleteMutation.mutate(store.id)}
+                          <DropdownMenuItem
+                            onClick={() => setStoreToDelete(store)}
                             className="text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -281,7 +301,7 @@ export default function AdminStores() {
                         )}
                       </Badge>
                       <span className="text-sm text-slate-500">
-                        {store.points_rate}pt/$10
+                        {store.points_rate || 0}pt/$10
                       </span>
                     </div>
                   </CardContent>
@@ -318,13 +338,16 @@ export default function AdminStores() {
                 />
               </div>
               <div>
-                <Label>Código</Label>
+                <Label>Código {editingStore ? '' : '(automático)'}</Label>
                 <Input
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  placeholder="STORE001"
-                  required
+                  value={editingStore ? formData.code : 'Se genera al crear'}
+                  readOnly
+                  disabled
+                  className="font-mono text-slate-500"
                 />
+                <p className="mt-1 text-xs text-slate-400">
+                  {editingStore ? 'El código no se puede cambiar.' : 'Se asigna un código único automáticamente.'}
+                </p>
               </div>
             </div>
 
@@ -345,7 +368,7 @@ export default function AdminStores() {
                 />
               </div>
               <div>
-                <Label>Estado</Label>
+                <Label>Estado (Región)</Label>
                 <Input
                   value={formData.state}
                   onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -385,7 +408,7 @@ export default function AdminStores() {
                 <Input
                   type="number"
                   value={formData.points_rate}
-                  onChange={(e) => setFormData({ ...formData, points_rate: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, points_rate: parseInt(e.target.value) || 0 })}
                   min={1}
                 />
               </div>
@@ -394,7 +417,7 @@ export default function AdminStores() {
                 <Input
                   type="number"
                   value={formData.min_purchase}
-                  onChange={(e) => setFormData({ ...formData, min_purchase: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, min_purchase: parseInt(e.target.value) || 0 })}
                   min={0}
                 />
               </div>
@@ -403,7 +426,7 @@ export default function AdminStores() {
                 <Input
                   type="number"
                   value={formData.daily_earn_limit}
-                  onChange={(e) => setFormData({ ...formData, daily_earn_limit: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, daily_earn_limit: parseInt(e.target.value) || 0 })}
                   min={0}
                 />
               </div>
@@ -420,6 +443,28 @@ export default function AdminStores() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!storeToDelete} onOpenChange={(open) => { if (!open) setStoreToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar tienda</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que deseas eliminar la tienda &quot;{storeToDelete?.name}&quot;? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (storeToDelete) deleteMutation.mutate(storeToDelete.id); }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

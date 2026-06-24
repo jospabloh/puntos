@@ -73,6 +73,17 @@ export default function Profile() {
 
   const account = accounts?.[0];
 
+  // Keep the edit form's phone in sync with the loaded account (display reads
+  // account?.phone in view mode, so the form must start from the same source).
+  useEffect(() => {
+    if (account && !isEditing) {
+      setFormData((prev) => ({
+        ...prev,
+        phone: account.phone || user?.phone || ''
+      }));
+    }
+  }, [account, isEditing, user]);
+
   // Fetch notification preferences
   const { data: preferences } = useQuery({
     queryKey: ['notifPreferences', user?.id],
@@ -94,7 +105,7 @@ export default function Profile() {
             points_activity_enabled: true,
             email_enabled: true
           });
-          queryClient.invalidateQueries(['notifPreferences']);
+          queryClient.invalidateQueries({ queryKey: ['notifPreferences'] });
         } else {
           setNotifPrefs({
             campaigns_enabled: preferences[0].campaigns_enabled ?? true,
@@ -120,9 +131,12 @@ export default function Profile() {
     },
     onSuccess: () => {
       loadUser();
-      queryClient.invalidateQueries(['loyaltyAccount']);
+      queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
       setIsEditing(false);
       toast.success('Perfil actualizado');
+    },
+    onError: () => {
+      toast.error('No se pudo actualizar el perfil. Intenta de nuevo.');
     }
   });
 
@@ -132,21 +146,26 @@ export default function Profile() {
 
   // Update notification preferences
   const updateNotifMutation = useMutation({
-    mutationFn: async (data) => {
-      if (preferences?.[0]) {
-        await base44.entities.NotificationPreference.update(preferences[0].id, data);
-      }
+    mutationFn: async ({ next }) => {
+      if (!preferences?.[0]) throw new Error('Preferencias no disponibles');
+      await base44.entities.NotificationPreference.update(preferences[0].id, next);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['notifPreferences']);
+      queryClient.invalidateQueries({ queryKey: ['notifPreferences'] });
       toast.success('Preferencias actualizadas');
+    },
+    onError: (_error, variables) => {
+      // Revert optimistic local state
+      if (variables?.previous) setNotifPrefs(variables.previous);
+      toast.error('No se pudieron guardar tus preferencias. Intenta de nuevo.');
     }
   });
 
   const handleNotifChange = (key, value) => {
-    const newPrefs = { ...notifPrefs, [key]: value };
-    setNotifPrefs(newPrefs);
-    updateNotifMutation.mutate(newPrefs);
+    const previous = notifPrefs;
+    const next = { ...notifPrefs, [key]: value };
+    setNotifPrefs(next);
+    updateNotifMutation.mutate({ next, previous });
   };
 
   const handleLogout = () => {
@@ -161,7 +180,7 @@ export default function Profile() {
     );
   }
 
-  const currentTier = tierConfig[account?.tier || 'bronze'];
+  const currentTier = tierConfig[account?.tier] || tierConfig.bronze;
   const progress = currentTier.nextTier 
     ? Math.min(100, ((account?.lifetime_earned || 0) / currentTier.pointsNeeded) * 100)
     : 100;
@@ -181,8 +200,8 @@ export default function Profile() {
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-24">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-6">
-            <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10">
+            <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
+              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" tabIndex={-1}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
@@ -271,9 +290,10 @@ export default function Profile() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Nombre completo</Label>
+                <Label htmlFor="profile-full-name">Nombre completo</Label>
                 {isEditing ? (
                   <Input
+                    id="profile-full-name"
                     value={formData.full_name}
                     onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                     className="mt-1.5"
@@ -292,9 +312,10 @@ export default function Profile() {
               </div>
               
               <div>
-                <Label>Teléfono</Label>
+                <Label htmlFor="profile-phone">Teléfono</Label>
                 {isEditing ? (
                   <Input
+                    id="profile-phone"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+52 ..."
@@ -346,9 +367,10 @@ export default function Profile() {
                   <p className="font-medium text-slate-900">Campañas especiales</p>
                   <p className="text-sm text-slate-500">Alertas de nuevas campañas y bonificaciones</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifPrefs.campaigns_enabled}
                   onCheckedChange={(v) => handleNotifChange('campaigns_enabled', v)}
+                  aria-label="Campañas especiales"
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -356,9 +378,10 @@ export default function Profile() {
                   <p className="font-medium text-slate-900">Ofertas y promociones</p>
                   <p className="text-sm text-slate-500">Recibe alertas de nuevas ofertas</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifPrefs.offers_enabled}
                   onCheckedChange={(v) => handleNotifChange('offers_enabled', v)}
+                  aria-label="Ofertas y promociones"
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -366,9 +389,10 @@ export default function Profile() {
                   <p className="font-medium text-slate-900">Movimientos de puntos</p>
                   <p className="text-sm text-slate-500">Notificaciones al ganar o canjear</p>
                 </div>
-                <Switch 
+                <Switch
                   checked={notifPrefs.points_activity_enabled}
                   onCheckedChange={(v) => handleNotifChange('points_activity_enabled', v)}
+                  aria-label="Movimientos de puntos"
                 />
               </div>
             </CardContent>
@@ -382,7 +406,10 @@ export default function Profile() {
           transition={{ delay: 0.3 }}
           className="space-y-2"
         >
-          <button className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 hover:shadow-md transition-all">
+          <button
+            onClick={() => toast.info('Para cambiar tu contraseña, cierra sesión y usa la opción "¿Olvidaste tu contraseña?" al iniciar sesión.')}
+            className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 hover:shadow-md transition-all"
+          >
             <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
               <Shield className="h-5 w-5 text-blue-600" />
             </div>

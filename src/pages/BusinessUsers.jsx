@@ -114,6 +114,7 @@ export default function BusinessUsers() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: '', role: 'staff', store_id: '' });
   const [removeTarget, setRemoveTarget] = useState(null);
+  const [revokeTarget, setRevokeTarget] = useState(null);
   const [copied, setCopied] = useState(false);
 
   const teamQuery = useQuery({
@@ -183,7 +184,7 @@ export default function BusinessUsers() {
 
   const revokeMutation = useMutation({
     mutationFn: (id) => base44.entities.Invitation.update(id, { status: 'revoked' }),
-    onSuccess: () => { invalidate(); toast.success('Invitación revocada'); },
+    onSuccess: () => { invalidate(); setRevokeTarget(null); toast.success('Invitación revocada'); },
     onError: () => toast.error('No se pudo revocar la invitación'),
   });
 
@@ -386,7 +387,7 @@ export default function BusinessUsers() {
                   <TableCell className="text-sm text-slate-600">{inv.store_name || '—'}</TableCell>
                   <TableCell><StatusPill status="open" label="Pendiente" /></TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => revokeMutation.mutate(inv.id)} disabled={!canWrite}>
+                    <Button variant="ghost" size="sm" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => setRevokeTarget(inv)} disabled={!canWrite}>
                       Revocar
                     </Button>
                   </TableCell>
@@ -442,7 +443,7 @@ export default function BusinessUsers() {
               <p className="text-xs font-medium text-violet-700">Código de invitación a compartir</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-display text-xl font-bold tracking-[0.25em] text-violet-800 tnum">{business?.invite_code || '——————'}</span>
-                <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={copyCode} disabled={!business?.invite_code}>
+                <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={copyCode} disabled={!business?.invite_code} aria-label="Copiar código de invitación">
                   {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
               </div>
@@ -450,7 +451,7 @@ export default function BusinessUsers() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancelar</Button>
-            <Button onClick={handleInvite} disabled={inviteMutation.isPending || atLimit} className="bg-violet-600 hover:bg-violet-700">
+            <Button onClick={handleInvite} disabled={!canWrite || inviteMutation.isPending || atLimit} className="bg-violet-600 hover:bg-violet-700">
               {inviteMutation.isPending ? 'Enviando…' : 'Enviar invitación'}
             </Button>
           </DialogFooter>
@@ -468,8 +469,26 @@ export default function BusinessUsers() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" onClick={() => removeTarget && removeMutation.mutate(removeTarget.id)}>
-              Quitar del equipo
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" disabled={removeMutation.isPending} onClick={(e) => { e.preventDefault(); removeTarget && removeMutation.mutate(removeTarget.id); }}>
+              {removeMutation.isPending ? 'Quitando…' : 'Quitar del equipo'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Revoke invitation confirm */}
+      <AlertDialog open={!!revokeTarget} onOpenChange={(o) => !o && setRevokeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revocar invitación</AlertDialogTitle>
+            <AlertDialogDescription>
+              {revokeTarget ? `La invitación para ${revokeTarget.email} dejará de ser válida. ¿Continuar?` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction className="bg-rose-600 hover:bg-rose-700" disabled={revokeMutation.isPending} onClick={(e) => { e.preventDefault(); revokeTarget && revokeMutation.mutate(revokeTarget.id); }}>
+              {revokeMutation.isPending ? 'Revocando…' : 'Revocar invitación'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

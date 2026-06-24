@@ -217,6 +217,7 @@ export default function PlatformSupport() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar tickets…"
+              aria-label="Buscar tickets"
               className="pl-9"
             />
           </div>
@@ -322,8 +323,8 @@ export default function PlatformSupport() {
               bodyClassName="p-0"
               actions={
                 <div className="flex items-center gap-2">
-                  <Select value={selected.status} onValueChange={(v) => statusMutation.mutate(v)}>
-                    <SelectTrigger className="w-40 h-8">
+                  <Select value={selected.status} onValueChange={(v) => statusMutation.mutate(v)} disabled={statusMutation.isPending}>
+                    <SelectTrigger className="w-40 h-8" aria-label="Cambiar estado del ticket">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
