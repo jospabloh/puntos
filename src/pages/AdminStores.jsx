@@ -44,6 +44,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 export default function AdminStores() {
@@ -51,6 +61,7 @@ export default function AdminStores() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
+  const [storeToDelete, setStoreToDelete] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -108,7 +119,11 @@ export default function AdminStores() {
     mutationFn: (id) => base44.entities.Store.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['allStores']);
+      setStoreToDelete(null);
       toast.success('Tienda eliminada');
+    },
+    onError: (e) => {
+      toast.error(e?.message || 'Error al eliminar la tienda');
     }
   });
 
@@ -237,7 +252,7 @@ export default function AdminStores() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" aria-label={`Acciones de ${store.name || 'tienda'}`}>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -246,8 +261,8 @@ export default function AdminStores() {
                             <Edit className="h-4 w-4 mr-2" />
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => deleteMutation.mutate(store.id)}
+                          <DropdownMenuItem
+                            onClick={() => setStoreToDelete(store)}
                             className="text-red-600"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -285,7 +300,7 @@ export default function AdminStores() {
                         )}
                       </Badge>
                       <span className="text-sm text-slate-500">
-                        {store.points_rate}pt/$10
+                        {store.points_rate || 0}pt/$10
                       </span>
                     </div>
                   </CardContent>
@@ -352,7 +367,7 @@ export default function AdminStores() {
                 />
               </div>
               <div>
-                <Label>Estado</Label>
+                <Label>Estado (Región)</Label>
                 <Input
                   value={formData.state}
                   onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -392,7 +407,7 @@ export default function AdminStores() {
                 <Input
                   type="number"
                   value={formData.points_rate}
-                  onChange={(e) => setFormData({ ...formData, points_rate: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, points_rate: parseInt(e.target.value) || 0 })}
                   min={1}
                 />
               </div>
@@ -401,7 +416,7 @@ export default function AdminStores() {
                 <Input
                   type="number"
                   value={formData.min_purchase}
-                  onChange={(e) => setFormData({ ...formData, min_purchase: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, min_purchase: parseInt(e.target.value) || 0 })}
                   min={0}
                 />
               </div>
@@ -410,7 +425,7 @@ export default function AdminStores() {
                 <Input
                   type="number"
                   value={formData.daily_earn_limit}
-                  onChange={(e) => setFormData({ ...formData, daily_earn_limit: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, daily_earn_limit: parseInt(e.target.value) || 0 })}
                   min={0}
                 />
               </div>
@@ -427,6 +442,28 @@ export default function AdminStores() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!storeToDelete} onOpenChange={(open) => { if (!open) setStoreToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar tienda</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que deseas eliminar la tienda &quot;{storeToDelete?.name}&quot;? Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (storeToDelete) deleteMutation.mutate(storeToDelete.id); }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

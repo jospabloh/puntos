@@ -201,8 +201,8 @@ ${userMessage}`,
       <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
-            <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" size="icon">
+            <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
+              <Button variant="ghost" size="icon" tabIndex={-1}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>

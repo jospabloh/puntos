@@ -272,11 +272,12 @@ export default function Home() {
                   {user.full_name || 'Hola'}
                 </h1>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="text-white/80 hover:text-white hover:bg-white/10 relative"
                 onClick={() => setShowNotifications(true)}
+                aria-label="Ver notificaciones"
               >
                 <Bell className="h-5 w-5" />
                 {notifications?.length > 0 && (

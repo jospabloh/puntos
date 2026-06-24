@@ -92,9 +92,9 @@ export default function AdminDashboard() {
 
     const totalBalance = accounts.reduce((sum, a) => sum + (a.current_balance || 0), 0);
     const totalEarned = transactions.filter(t => t.type === 'EARN' || t.type === 'BONUS')
-      .reduce((sum, t) => sum + t.points, 0);
+      .reduce((sum, t) => sum + (t.points || 0), 0);
     const totalBurned = transactions.filter(t => t.type === 'BURN')
-      .reduce((sum, t) => sum + Math.abs(t.points), 0);
+      .reduce((sum, t) => sum + Math.abs(t.points || 0), 0);
 
     // Get date range
     const days = dateRange === '7days' ? 7 : dateRange === '30days' ? 30 : 90;
@@ -102,14 +102,16 @@ export default function AdminDashboard() {
     
     const recentTx = transactions.filter(t => new Date(t.created_date) >= startDate);
     const recentEarned = recentTx.filter(t => t.type === 'EARN' || t.type === 'BONUS')
-      .reduce((sum, t) => sum + t.points, 0);
+      .reduce((sum, t) => sum + (t.points || 0), 0);
     const recentBurned = recentTx.filter(t => t.type === 'BURN')
-      .reduce((sum, t) => sum + Math.abs(t.points), 0);
+      .reduce((sum, t) => sum + Math.abs(t.points || 0), 0);
 
     // Tier distribution
     const tierCounts = { bronze: 0, silver: 0, gold: 0, platinum: 0 };
     accounts.forEach(a => {
-      tierCounts[a.tier || 'bronze']++;
+      const tier = a.tier || 'bronze';
+      if (tier in tierCounts) tierCounts[tier]++;
+      else tierCounts.bronze++;
     });
 
     return {
@@ -145,9 +147,9 @@ export default function AdminDashboard() {
       });
 
       const earned = dayTx.filter(t => t.type === 'EARN' || t.type === 'BONUS')
-        .reduce((sum, t) => sum + t.points, 0);
+        .reduce((sum, t) => sum + (t.points || 0), 0);
       const burned = dayTx.filter(t => t.type === 'BURN')
-        .reduce((sum, t) => sum + Math.abs(t.points), 0);
+        .reduce((sum, t) => sum + Math.abs(t.points || 0), 0);
 
       data.push({
         date: format(date, days > 7 ? 'd MMM' : 'EEE', { locale: es }),

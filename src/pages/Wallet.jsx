@@ -111,8 +111,8 @@ export default function Wallet() {
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-32">
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 mb-6">
-            <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10">
+            <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
+              <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10" tabIndex={-1}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>

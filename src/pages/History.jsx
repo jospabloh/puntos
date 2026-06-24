@@ -159,8 +159,8 @@ export default function History() {
       <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
-            <Link to={createPageUrl('Home')}>
-              <Button variant="ghost" size="icon">
+            <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
+              <Button variant="ghost" size="icon" tabIndex={-1}>
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
@@ -175,13 +175,16 @@ export default function History() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Buscar transacción..."
+              aria-label="Buscar transacción"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-slate-50 border-0"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
+                aria-label="Limpiar búsqueda"
                 className="absolute right-3 top-1/2 -translate-y-1/2"
               >
                 <X className="h-4 w-4 text-slate-400" />
