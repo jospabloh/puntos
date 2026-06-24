@@ -46,7 +46,7 @@ export const ROLE_DESCRIPTIONS = {
  */
 export function getAppRole(user) {
   if (!user) return null;
-  if (user.role === 'admin' || user.app_role === 'owner') return ROLES.OWNER;
+  if (user.role === 'admin' || user.app_role === 'owner' || user.is_owner) return ROLES.OWNER;
   if (user.role === 'business_admin' || user.app_role === 'business_admin') return ROLES.BUSINESS_ADMIN;
   if (user.role === 'merchant' || user.merchant_role === 'merchant' || user.app_role === 'staff') return ROLES.STAFF;
   return ROLES.CUSTOMER;

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getAppRole, ROLES } from '@/lib/rbac';
 import PointsCard from '../components/loyalty/PointsCard';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import OfferCard from '../components/loyalty/OfferCard';
@@ -41,10 +42,13 @@ export default function Home() {
     }
   };
 
-  // Check if onboarding is needed
+  // Only a brand-new CUSTOMER (no completed account) needs onboarding. Tenant
+  // members (owner / business_admin / staff) are already provisioned and must
+  // never be bounced into the customer onboarding flow.
   useEffect(() => {
     const checkOnboarding = async () => {
       if (!user?.email) return;
+      if (getAppRole(user) !== ROLES.CUSTOMER) return;
 
       const accounts = await base44.entities.LoyaltyAccount.filter({ user_email: user.email });
       if ((accounts?.length || 0) === 0 || !accounts[0]?.onboarding_completed) {

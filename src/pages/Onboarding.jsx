@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { createPageUrl } from '../utils';
 import { TRIAL_DAYS } from '@/lib/licensePlans';
+import { getAppRole, homePageForRole, ROLES } from '@/lib/rbac';
 
 /* ───────────────────────────────────────────────────────────────────────────
    All subcomponents live at MODULE scope so their identity is stable across
@@ -220,9 +221,14 @@ export default function Onboarding() {
         const u = raw?.data ? { ...raw.data, ...raw } : raw;
         setUser(u);
 
+        // Anyone already provisioned must NOT be trapped here: a tenant member
+        // (owner / business_admin / staff) or a customer with a completed account
+        // is sent to their proper home. Only a brand-new customer stays.
+        const role = getAppRole(u);
         const accounts = await base44.entities.LoyaltyAccount.filter({ user_email: u.email });
-        if (accounts.length > 0 && accounts[0].onboarding_completed && (u?.business_id || u?.role)) {
-          window.location.href = createPageUrl('Home');
+        const hasAccount = accounts.length > 0 && accounts[0].onboarding_completed;
+        if (role !== ROLES.CUSTOMER || u?.business_id || hasAccount) {
+          window.location.href = createPageUrl(homePageForRole(u));
           return;
         }
         try {
