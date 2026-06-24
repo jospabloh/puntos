@@ -44,10 +44,10 @@ export default function Home() {
   // Check if onboarding is needed
   useEffect(() => {
     const checkOnboarding = async () => {
-      if (!user) return;
-      
+      if (!user?.email) return;
+
       const accounts = await base44.entities.LoyaltyAccount.filter({ user_email: user.email });
-      if (accounts.length === 0 || !accounts[0].onboarding_completed) {
+      if ((accounts?.length || 0) === 0 || !accounts[0]?.onboarding_completed) {
         window.location.href = createPageUrl('Onboarding');
       }
     };
@@ -83,8 +83,9 @@ export default function Home() {
   // Build notifications from recent activity
   const notifications = React.useMemo(() => {
     if (!transactions) return [];
-    
+
     return transactions.map(tx => {
+      const points = tx.points ?? 0;
       let title = '';
       let message = '';
       let type = '';
@@ -92,22 +93,22 @@ export default function Home() {
       switch (tx.type) {
         case 'EARN':
           title = '¡Ganaste puntos!';
-          message = `+${tx.points} puntos en ${tx.store_name || 'tu compra'}`;
+          message = `+${points} puntos en ${tx.store_name || 'tu compra'}`;
           type = 'earn';
           break;
         case 'BURN':
           title = 'Puntos canjeados';
-          message = `Usaste ${Math.abs(tx.points)} puntos`;
+          message = `Usaste ${Math.abs(points)} puntos`;
           type = 'burn';
           break;
         case 'BONUS':
           title = '¡Bonus especial!';
-          message = `+${tx.points} puntos de campaña`;
+          message = `+${points} puntos de campaña`;
           type = 'campaign';
           break;
         default:
           title = 'Movimiento de puntos';
-          message = `${tx.points > 0 ? '+' : ''}${tx.points} puntos`;
+          message = `${points > 0 ? '+' : ''}${points} puntos`;
           type = 'default';
       }
 
@@ -310,7 +311,7 @@ export default function Home() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-3 gap-3 relative z-10"
         >
-          {quickActions.map((action, index) => {
+          {quickActions.map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.page} to={createPageUrl(action.page)}>

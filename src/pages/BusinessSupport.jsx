@@ -296,7 +296,7 @@ export default function BusinessSupport() {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleReply();
                   }}
                 />
-                <Button onClick={handleReply} disabled={!reply.trim() || replyMutation.isPending} className="bg-violet-600 hover:bg-violet-700">
+                <Button onClick={handleReply} disabled={!reply.trim() || replyMutation.isPending} className="bg-violet-600 hover:bg-violet-700" aria-label="Enviar mensaje">
                   <Send className="h-4 w-4" />
                 </Button>
               </div>

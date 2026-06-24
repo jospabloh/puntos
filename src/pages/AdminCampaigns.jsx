@@ -120,6 +120,9 @@ export default function AdminCampaigns() {
       setShowCampaignDialog(false);
       setEditingCampaign(null);
       toast.success(editingCampaign ? 'Campaña actualizada' : 'Campaña creada');
+    },
+    onError: (e) => {
+      toast.error(e?.message || 'Error al guardar la campaña');
     }
   });
 
@@ -128,6 +131,9 @@ export default function AdminCampaigns() {
     onSuccess: () => {
       queryClient.invalidateQueries(['allCampaigns']);
       toast.success('Campaña eliminada');
+    },
+    onError: (e) => {
+      toast.error(e?.message || 'Error al eliminar la campaña');
     }
   });
 
@@ -148,6 +154,9 @@ export default function AdminCampaigns() {
       setShowOfferDialog(false);
       setEditingOffer(null);
       toast.success(editingOffer ? 'Oferta actualizada' : 'Oferta creada');
+    },
+    onError: (e) => {
+      toast.error(e?.message || 'Error al guardar la oferta');
     }
   });
 
@@ -156,15 +165,19 @@ export default function AdminCampaigns() {
     onSuccess: () => {
       queryClient.invalidateQueries(['allOffers']);
       toast.success('Oferta eliminada');
+    },
+    onError: (e) => {
+      toast.error(e?.message || 'Error al eliminar la oferta');
     }
   });
 
   // Send campaign notifications
   const notifyCampaignMutation = useMutation({
     mutationFn: async (campaign) => {
-      // Fetch all users with notification preferences enabled
-      const allPreferences = await base44.entities.NotificationPreference.list();
-      const enabledUsers = allPreferences.filter(pref => pref.campaigns_enabled);
+      // Fetch users with notification preferences enabled, scoped to this tenant
+      // (owner -> all). Filtering unscoped would email every tenant's customers.
+      const allPreferences = await base44.entities.NotificationPreference.filter(scope);
+      const enabledUsers = (allPreferences || []).filter(pref => pref.campaigns_enabled && pref.user_email);
 
       // Send emails to all subscribed users
       const emailPromises = enabledUsers.map(pref => 
@@ -190,15 +203,15 @@ export default function AdminCampaigns() {
   // Send offer notifications
   const notifyOfferMutation = useMutation({
     mutationFn: async (offer) => {
-      const allPreferences = await base44.entities.NotificationPreference.list();
-      const enabledUsers = allPreferences.filter(pref => pref.offers_enabled);
+      const allPreferences = await base44.entities.NotificationPreference.filter(scope);
+      const enabledUsers = (allPreferences || []).filter(pref => pref.offers_enabled && pref.user_email);
 
       const emailPromises = enabledUsers.map(pref => 
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
           subject: `🎁 Nueva oferta disponible: ${offer.title}`,
-          body: `Hola,\n\n¡Tenemos una nueva oferta especial para ti!\n\n**${offer.title}**\n${offer.description}\n\nCosto: ${offer.points_cost.toLocaleString()} puntos\nValor: $${offer.value_mxn.toLocaleString()} MXN\n\n${offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!'}\n\n¡Canjea ahora en la app!\n\nEquipo Puntos+`
+          body: `Hola,\n\n¡Tenemos una nueva oferta especial para ti!\n\n**${offer.title}**\n${offer.description}\n\nCosto: ${(offer.points_cost || 0).toLocaleString('es-MX')} puntos\nValor: $${(offer.value_mxn || 0).toLocaleString('es-MX')} MXN\n\n${offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!'}\n\n¡Canjea ahora en la app!\n\nEquipo Puntos+`
         })
       );
 
@@ -343,8 +356,21 @@ export default function AdminCampaigns() {
               </Button>
             </div>
 
+            {loadingCampaigns ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="animate-pulse"><CardContent className="p-6 h-36" /></Card>
+                ))}
+              </div>
+            ) : (campaigns?.length || 0) === 0 ? (
+              <div className="text-center py-12">
+                <Sparkles className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">No hay campañas</p>
+                <p className="text-slate-400 text-sm mt-1">Crea tu primera campaña</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {campaigns?.map((campaign, index) => (
+              {(campaigns || []).map((campaign, index) => (
                 <motion.div
                   key={campaign.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -360,7 +386,7 @@ export default function AdminCampaigns() {
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" aria-label="Acciones de campaña">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -409,6 +435,7 @@ export default function AdminCampaigns() {
                 </motion.div>
               ))}
             </div>
+            )}
           </>
         )}
 
@@ -426,8 +453,21 @@ export default function AdminCampaigns() {
               </Button>
             </div>
 
+            {loadingOffers ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse"><CardContent className="p-6 h-40" /></Card>
+                ))}
+              </div>
+            ) : (offers?.length || 0) === 0 ? (
+              <div className="text-center py-12">
+                <Gift className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500 font-medium">No hay ofertas</p>
+                <p className="text-slate-400 text-sm mt-1">Crea tu primera oferta</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {offers?.map((offer, index) => (
+              {(offers || []).map((offer, index) => (
                 <motion.div
                   key={offer.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -443,7 +483,7 @@ export default function AdminCampaigns() {
                         <h3 className="font-semibold text-slate-900 line-clamp-1">{offer.title}</h3>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Acciones de oferta">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -470,7 +510,7 @@ export default function AdminCampaigns() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 text-violet-500" />
-                          <span className="font-bold text-violet-600">{offer.points_cost.toLocaleString()}</span>
+                          <span className="font-bold text-violet-600">{(offer.points_cost || 0).toLocaleString('es-MX')}</span>
                         </div>
                         <Badge className={statusColors[offer.status]}>
                           {offer.status}
@@ -481,6 +521,7 @@ export default function AdminCampaigns() {
                 </motion.div>
               ))}
             </div>
+            )}
           </>
         )}
       </div>
@@ -538,13 +579,13 @@ export default function AdminCampaigns() {
             {campaignForm.type === 'multiplier' && (
               <div>
                 <Label>Multiplicador</Label>
-                <Input type="number" value={campaignForm.multiplier} onChange={(e) => setCampaignForm({ ...campaignForm, multiplier: parseFloat(e.target.value) })} min={1} step={0.5} />
+                <Input type="number" value={campaignForm.multiplier} onChange={(e) => setCampaignForm({ ...campaignForm, multiplier: parseFloat(e.target.value) || 0 })} min={1} step={0.5} />
               </div>
             )}
             {campaignForm.type === 'bonus' && (
               <div>
                 <Label>Puntos bonus</Label>
-                <Input type="number" value={campaignForm.bonus_points} onChange={(e) => setCampaignForm({ ...campaignForm, bonus_points: parseInt(e.target.value) })} min={0} />
+                <Input type="number" value={campaignForm.bonus_points} onChange={(e) => setCampaignForm({ ...campaignForm, bonus_points: parseInt(e.target.value) || 0 })} min={0} />
               </div>
             )}
             <DialogFooter>
@@ -607,11 +648,11 @@ export default function AdminCampaigns() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Costo en puntos</Label>
-                <Input type="number" value={offerForm.points_cost} onChange={(e) => setOfferForm({ ...offerForm, points_cost: parseInt(e.target.value) })} min={1} />
+                <Input type="number" value={offerForm.points_cost} onChange={(e) => setOfferForm({ ...offerForm, points_cost: parseInt(e.target.value) || 0 })} min={1} />
               </div>
               <div>
                 <Label>Valor en MXN</Label>
-                <Input type="number" value={offerForm.value_mxn} onChange={(e) => setOfferForm({ ...offerForm, value_mxn: parseFloat(e.target.value) })} min={0} />
+                <Input type="number" value={offerForm.value_mxn} onChange={(e) => setOfferForm({ ...offerForm, value_mxn: parseFloat(e.target.value) || 0 })} min={0} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -628,7 +669,7 @@ export default function AdminCampaigns() {
               </div>
               <div>
                 <Label>Stock (-1 = ilimitado)</Label>
-                <Input type="number" value={offerForm.stock} onChange={(e) => setOfferForm({ ...offerForm, stock: parseInt(e.target.value) })} min={-1} />
+                <Input type="number" value={offerForm.stock} onChange={(e) => { const v = parseInt(e.target.value); setOfferForm({ ...offerForm, stock: Number.isNaN(v) ? -1 : v }); }} min={-1} />
               </div>
             </div>
             <div>

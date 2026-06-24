@@ -150,10 +150,11 @@ export default function AdminStores() {
   };
 
   // Filter stores
-  const filteredStores = stores?.filter(store => 
-    store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    store.city?.toLowerCase().includes(searchQuery.toLowerCase())
+  const q = searchQuery.toLowerCase();
+  const filteredStores = stores?.filter(store =>
+    store.name?.toLowerCase().includes(q) ||
+    store.code?.toLowerCase().includes(q) ||
+    store.city?.toLowerCase().includes(q)
   ) || [];
 
   if (!ready) {

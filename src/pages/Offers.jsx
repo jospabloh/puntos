@@ -34,6 +34,7 @@ export default function Offers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOffer, setSelectedOffer] = useState(null);
   const [redeemStatus, setRedeemStatus] = useState(null); // 'success' | 'error' | null
+  const [redeemError, setRedeemError] = useState('');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -127,7 +128,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
       queryClient.invalidateQueries(['loyaltyAccount']);
       queryClient.invalidateQueries(['allOffers']);
     },
-    onError: () => {
+    onError: (error) => {
+      setRedeemError(error?.message || '');
       setRedeemStatus('error');
     }
   });
@@ -167,6 +169,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
     if (account?.status === 'suspended') return;
     setSelectedOffer(offer);
     setRedeemStatus(null);
+    setRedeemError('');
   };
 
   const confirmRedeem = () => {
@@ -374,7 +377,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-2">Error al canjear</h3>
               <p className="text-slate-500 mb-4">
-                Hubo un problema procesando tu canje. Por favor intenta de nuevo.
+                {redeemError || 'Hubo un problema procesando tu canje. Por favor intenta de nuevo.'}
               </p>
               <Button 
                 onClick={() => setRedeemStatus(null)} 
@@ -411,7 +414,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
                     <div className="flex items-center gap-1 mt-2">
                       <Star className="h-4 w-4 text-violet-500" />
                       <span className="font-bold text-violet-600">
-                        {selectedOffer.points_cost.toLocaleString()} puntos
+                        {(selectedOffer.points_cost || 0).toLocaleString()} puntos
                       </span>
                     </div>
                   </div>
@@ -420,16 +423,16 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
                 <div className="mt-4 p-4 bg-slate-50 rounded-xl">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-slate-500">Tu saldo actual</span>
-                    <span className="font-medium">{account?.current_balance?.toLocaleString()} pts</span>
+                    <span className="font-medium">{(account?.current_balance || 0).toLocaleString()} pts</span>
                   </div>
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-slate-500">Costo del canje</span>
-                    <span className="font-medium text-red-500">-{selectedOffer.points_cost.toLocaleString()} pts</span>
+                    <span className="font-medium text-red-500">-{(selectedOffer.points_cost || 0).toLocaleString()} pts</span>
                   </div>
                   <div className="border-t border-slate-200 pt-2 mt-2 flex justify-between">
                     <span className="font-medium text-slate-700">Saldo después</span>
                     <span className="font-bold text-violet-600">
-                      {((account?.current_balance || 0) - selectedOffer.points_cost).toLocaleString()} pts
+                      {((account?.current_balance || 0) - (selectedOffer.points_cost || 0)).toLocaleString()} pts
                     </span>
                   </div>
                 </div>

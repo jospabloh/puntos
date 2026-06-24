@@ -145,7 +145,7 @@ export default function Permissions() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['permissionProfiles']);
+      queryClient.invalidateQueries({ queryKey: ['permissionProfiles', user?.business_id] });
       toast.success('Permiso actualizado');
     },
     onError: () => {

@@ -281,7 +281,7 @@ export default function BusinessSettings() {
                 <span className="rounded-xl border border-violet-200 bg-violet-50 px-4 py-2 font-display text-2xl font-bold tracking-[0.25em] text-violet-700 tnum">
                   {inviteCode || '——————'}
                 </span>
-                <Button type="button" variant="outline" size="icon" onClick={handleCopy} disabled={!inviteCode} title="Copiar">
+                <Button type="button" variant="outline" size="icon" onClick={handleCopy} disabled={!inviteCode} title="Copiar" aria-label="Copiar código de invitación">
                   {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleRegenerate} disabled={!canWrite}>

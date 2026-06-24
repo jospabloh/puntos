@@ -123,6 +123,9 @@ export default function Profile() {
       queryClient.invalidateQueries(['loyaltyAccount']);
       setIsEditing(false);
       toast.success('Perfil actualizado');
+    },
+    onError: () => {
+      toast.error('No se pudo actualizar el perfil. Intenta de nuevo.');
     }
   });
 
@@ -132,21 +135,26 @@ export default function Profile() {
 
   // Update notification preferences
   const updateNotifMutation = useMutation({
-    mutationFn: async (data) => {
-      if (preferences?.[0]) {
-        await base44.entities.NotificationPreference.update(preferences[0].id, data);
-      }
+    mutationFn: async ({ next }) => {
+      if (!preferences?.[0]) throw new Error('Preferencias no disponibles');
+      await base44.entities.NotificationPreference.update(preferences[0].id, next);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['notifPreferences']);
       toast.success('Preferencias actualizadas');
+    },
+    onError: (_error, variables) => {
+      // Revert optimistic local state
+      if (variables?.previous) setNotifPrefs(variables.previous);
+      toast.error('No se pudieron guardar tus preferencias. Intenta de nuevo.');
     }
   });
 
   const handleNotifChange = (key, value) => {
-    const newPrefs = { ...notifPrefs, [key]: value };
-    setNotifPrefs(newPrefs);
-    updateNotifMutation.mutate(newPrefs);
+    const previous = notifPrefs;
+    const next = { ...notifPrefs, [key]: value };
+    setNotifPrefs(next);
+    updateNotifMutation.mutate({ next, previous });
   };
 
   const handleLogout = () => {

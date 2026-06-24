@@ -86,12 +86,13 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const sendMessage = async () => {
-    if (!inputValue.trim() || isLoading || account?.status === 'suspended') return;
+  const sendMessage = async (overrideText) => {
+    const text = typeof overrideText === 'string' ? overrideText : inputValue;
+    if (!text.trim() || isLoading || account?.status === 'suspended') return;
 
-    const userMessage = inputValue.trim();
+    const userMessage = text.trim();
     setInputValue('');
-    
+
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
@@ -245,14 +246,12 @@ ${userMessage}`,
                   const Icon = action.icon;
                   return (
                     <motion.button
-                      key={index}
+                      key={action.label}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      onClick={() => {
-                        setInputValue(action.query);
-                        setTimeout(() => sendMessage(), 100);
-                      }}
+                      disabled={isLoading || isSuspended}
+                      onClick={() => sendMessage(action.query)}
                       className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200 hover:border-violet-300 hover:shadow-md transition-all text-left"
                     >
                       <Icon className="h-4 w-4 text-violet-500 flex-shrink-0" />
@@ -342,12 +341,14 @@ ${userMessage}`,
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Escribe tu pregunta..."
+              aria-label="Escribe tu pregunta"
               className="flex-1 bg-slate-50 border-0 h-12"
               disabled={isLoading || isSuspended}
             />
             <Button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={!inputValue.trim() || isLoading || isSuspended}
+              aria-label="Enviar mensaje"
               className="h-12 w-12 bg-violet-600 hover:bg-violet-700 rounded-xl"
             >
               <Send className="h-5 w-5" />

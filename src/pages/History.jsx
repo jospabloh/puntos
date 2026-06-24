@@ -34,7 +34,6 @@ export default function History() {
   const [filter, setFilter] = useState('all');
   const [dateRange, setDateRange] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -127,11 +126,11 @@ export default function History() {
   const summary = React.useMemo(() => {
     const earned = filteredTransactions
       .filter(tx => tx.type === 'EARN' || tx.type === 'BONUS')
-      .reduce((sum, tx) => sum + tx.points, 0);
-    
+      .reduce((sum, tx) => sum + (tx.points || 0), 0);
+
     const burned = filteredTransactions
       .filter(tx => tx.type === 'BURN')
-      .reduce((sum, tx) => sum + Math.abs(tx.points), 0);
+      .reduce((sum, tx) => sum + Math.abs(tx.points || 0), 0);
 
     return { earned, burned, count: filteredTransactions.length };
   }, [filteredTransactions]);
