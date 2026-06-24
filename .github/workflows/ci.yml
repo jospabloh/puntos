@@ -27,5 +27,8 @@ jobs:
       - name: Validate RLS
         run: npm run validate:rls
 
+      - name: Check secrets
+        run: npm run check:secrets
+
       - name: Build
         run: npm run build
