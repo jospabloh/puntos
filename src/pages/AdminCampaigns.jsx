@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRequirePage } from '@/lib/useCurrentUser';
+import { ROLES } from '@/lib/rbac';
 import { motion } from 'framer-motion';
 import {
   Sparkles,
@@ -50,7 +52,7 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
 export default function AdminCampaigns() {
-  const [user, setUser] = useState(null);
+  const { user, role, ready } = useRequirePage('AdminCampaigns');
   const [tab, setTab] = useState('campaigns');
   const [showCampaignDialog, setShowCampaignDialog] = useState(false);
   const [showOfferDialog, setShowOfferDialog] = useState(false);
@@ -83,34 +85,21 @@ export default function AdminCampaigns() {
     image_url: ''
   });
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      if (userData.role !== 'admin') {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-      setUser(userData);
-    } catch (e) {
-      base44.auth.redirectToLogin();
-    }
-  };
+  // Tenant scoping: owner sees everything ({}), business_admin only their business.
+  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
+  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
 
   // Fetch campaigns
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
-    queryKey: ['allCampaigns'],
-    queryFn: () => base44.entities.Campaign.list('-created_date'),
+    queryKey: ['allCampaigns', scopeKey],
+    queryFn: () => base44.entities.Campaign.filter(scope, '-created_date'),
     enabled: !!user,
   });
 
   // Fetch offers
   const { data: offers, isLoading: loadingOffers } = useQuery({
-    queryKey: ['allOffers'],
-    queryFn: () => base44.entities.Offer.list('-created_date'),
+    queryKey: ['allOffers', scopeKey],
+    queryFn: () => base44.entities.Offer.filter(scope, '-created_date'),
     enabled: !!user,
   });
 
@@ -120,7 +109,11 @@ export default function AdminCampaigns() {
       if (editingCampaign) {
         return base44.entities.Campaign.update(editingCampaign.id, data);
       }
-      return base44.entities.Campaign.create(data);
+      return base44.entities.Campaign.create({
+        ...data,
+        business_id: user.business_id,
+        business_name: user.business_name,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['allCampaigns']);
@@ -144,7 +137,11 @@ export default function AdminCampaigns() {
       if (editingOffer) {
         return base44.entities.Offer.update(editingOffer.id, data);
       }
-      return base44.entities.Offer.create(data);
+      return base44.entities.Offer.create({
+        ...data,
+        business_id: user.business_id,
+        business_name: user.business_name,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['allOffers']);
@@ -280,7 +277,7 @@ export default function AdminCampaigns() {
     setEditingOffer(null);
   };
 
-  if (!user) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-violet-600">Cargando...</div>

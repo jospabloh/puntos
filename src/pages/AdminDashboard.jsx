@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useRequirePage } from '@/lib/useCurrentUser';
+import { ROLES } from '@/lib/rbac';
 import { motion } from 'framer-motion';
 import {
   Users,
@@ -42,58 +44,45 @@ import {
 } from 'recharts';
 
 export default function AdminDashboard() {
-  const [user, setUser] = useState(null);
+  const { user, role, ready } = useRequirePage('AdminDashboard');
   const [dateRange, setDateRange] = useState('7days');
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      if (userData.role !== 'admin') {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-      setUser(userData);
-    } catch (e) {
-      base44.auth.redirectToLogin();
-    }
-  };
+  // Tenant scoping: owner sees everything ({}), business_admin only their business.
+  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
+  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
 
   // Fetch all accounts
   const { data: accounts, isLoading: loadingAccounts } = useQuery({
-    queryKey: ['allAccounts'],
-    queryFn: () => base44.entities.LoyaltyAccount.list('-created_date', 1000),
+    queryKey: ['allAccounts', scopeKey],
+    queryFn: () => base44.entities.LoyaltyAccount.filter(scope, '-created_date', 1000),
     enabled: !!user,
   });
 
   // Fetch all transactions
   const { data: transactions, isLoading: loadingTransactions } = useQuery({
-    queryKey: ['allTransactions'],
-    queryFn: () => base44.entities.PointsLedger.list('-created_date', 1000),
+    queryKey: ['allTransactions', scopeKey],
+    queryFn: () => base44.entities.PointsLedger.filter(scope, '-created_date', 1000),
     enabled: !!user,
   });
 
   // Fetch stores
   const { data: stores } = useQuery({
-    queryKey: ['allStores'],
-    queryFn: () => base44.entities.Store.list(),
+    queryKey: ['allStores', scopeKey],
+    queryFn: () => base44.entities.Store.filter(scope),
     enabled: !!user,
   });
 
   // Fetch offers
   const { data: offers } = useQuery({
-    queryKey: ['allOffers'],
-    queryFn: () => base44.entities.Offer.list(),
+    queryKey: ['allOffers', scopeKey],
+    queryFn: () => base44.entities.Offer.filter(scope),
     enabled: !!user,
   });
 
   // Fetch flagged transactions
   const { data: flaggedTx } = useQuery({
-    queryKey: ['flaggedTransactions'],
-    queryFn: () => base44.entities.PointsLedger.filter({ status: 'flagged' }),
+    queryKey: ['flaggedTransactions', scopeKey],
+    queryFn: () => base44.entities.PointsLedger.filter({ ...scope, status: 'flagged' }),
     enabled: !!user,
   });
 
@@ -182,7 +171,7 @@ export default function AdminDashboard() {
     ];
   }, [metrics]);
 
-  if (!user) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-violet-600">Cargando...</div>

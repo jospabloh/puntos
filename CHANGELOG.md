@@ -5,6 +5,75 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.0] — 2026-06-24 — Multi-tenant SaaS
+
+Puntos+ becomes a **multi-tenant, multi-user SaaS**: one platform owner (ACACIA)
+licenses many independent businesses, each running its own loyalty program. This
+is a major release; the live Base44 schema was migrated **additively** (no existing
+RLS branch removed — see `docs/RUNBOOK-multitenant.md`).
+
+### Added — platform & tenancy
+- **`Business` (tenant) entity** with license plan, billing lifecycle
+  (`trial → active → view_only → suspended → archived`), seat/store limits,
+  trial/license dates, invite code, and branding.
+- **Owner control plane** (`PlatformDashboard`, `PlatformTenants`,
+  `PlatformLicenses`, `PlatformSupport`): tenant CRUD + lifecycle, license
+  activation/renewal, revenue (MRR/ARR) estimate, and a full support console.
+- **Tenant back-office** (`BusinessSettings`, `BusinessUsers`, `BusinessBilling`,
+  `BusinessSupport`): business profile + branding, team/user management with
+  invites and seat limits, plan/usage view with upgrade requests, and two-sided
+  support ticket follow-up with satisfaction rating.
+- **License plan catalog** (`src/lib/licensePlans.js`): Starter / Growth / Pro /
+  Enterprise with hard limits and feature flags; `LicenseEvent` audit trail of all
+  billing changes.
+- **Support desk**: `SupportTicket` + `SupportTicketMessage` (threaded), with
+  owner-only **internal notes** enforced by RLS.
+- **Team invitations** (`Invitation`) and **per-tenant permission overrides**
+  (`PermissionProfile`).
+- **In-app permissions matrix** (`/Permissions`) rendered from the code-backed
+  capability map.
+
+### Added — foundation
+- **RBAC** (`src/lib/rbac.js`): four roles (owner / business_admin / staff /
+  customer), a canonical `PERMISSIONS` matrix, `can()`, and `PAGE_ACCESS` guards.
+- **Tenant context** (`src/lib/useTenant.js`) deriving license posture + UI banners
+  and a `canWrite` flag for view-only/suspended tenants.
+- **`useCurrentUser` / `useRequirePage`** shared hooks for consistent page guards.
+- **RLS static guard** `npm run validate:rls` (`scripts/validate-rls.mjs`) — fails
+  CI on invalid entity/user RLS paths and warns on missing service-role branches.
+- **Schema-as-code**: all 16 entities now committed under `base44/entities/*.jsonc`
+  (the repo previously had none).
+
+### Changed
+- **Tenant isolation** added to `LoyaltyAccount`, `PointsLedger`, `Store`,
+  `Campaign`, `Offer`, `Redemption`, `AuditLog`, `ChatConversation`,
+  `NotificationPreference` via `business_id` + role-gated `$or` RLS branches
+  (owner/service-role branch preserved on every operation). Field-level RLS on
+  `LoyaltyAccount` financial fields now also allows `business_admin`.
+- Existing admin pages (`AdminDashboard/Stores/Campaigns/Customers/Audit`) are now
+  multi-tenant: usable by both the owner (sees all) and a business admin (scoped to
+  their `business_id`); new records are stamped with tenancy.
+- `createLoyaltyAccount` now stamps `business_id` from the store/owner context.
+- **Onboarding** rebuilt into three paths: register a business (30-day trial),
+  join as a customer by store code, or accept a team invitation.
+- **Design system**: distinctive Puntos+ identity — refined violet brand with a
+  gold "puntos" accent, Space Grotesk display + Inter body, a back-office sidebar
+  shell, and a shared back-office UI kit. New `index.html` metadata/fonts.
+
+### Security
+- Multi-tenant RLS migration follows the documented two-halves rules; additive-only
+  deploy guarantees no live access regression. New back-office routes are gated
+  both client-side (`PAGE_ACCESS`) and at the data layer (RLS).
+
+### Known open items (carried)
+| ID | Severity | Description | Status |
+|----|----------|-------------|--------|
+| G-1 | Medium | Staff can transact for any store in their tenant (not pinned to one store) | Open — by design |
+| G-2 | Medium | Merchant POS earn/burn still client-side balance | Partially resolved (customer redemption atomic server-side) |
+| G-7 | Medium | `updateWalletPasses` stub | Open — requires Wallet API integration |
+
+---
+
 ## [1.4.7] — 2026-06-22
 
 ### Security

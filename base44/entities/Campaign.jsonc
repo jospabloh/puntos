@@ -1,0 +1,31 @@
+{
+  "name": "Campaign",
+  "type": "object",
+  "description": "Tenant marketing campaign (multiplier/bonus/threshold/category). Active campaigns are readable; management is tenant-scoped.",
+  "properties": {
+    "name": { "type": "string", "description": "Nombre de la campaña" },
+    "description": { "type": "string", "description": "Descripción" },
+    "business_id": { "type": "string", "description": "ID del negocio (tenant)" },
+    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
+    "type": { "type": "string", "enum": ["multiplier", "bonus", "threshold", "category"], "description": "Tipo de campaña" },
+    "status": { "type": "string", "enum": ["draft", "active", "paused", "ended"], "default": "draft" },
+    "start_date": { "type": "string", "format": "date-time", "description": "Fecha de inicio" },
+    "end_date": { "type": "string", "format": "date-time", "description": "Fecha de fin" },
+    "multiplier": { "type": "number", "default": 1, "description": "Multiplicador de puntos" },
+    "bonus_points": { "type": "number", "description": "Puntos bonus fijos" },
+    "min_purchase": { "type": "number", "description": "Compra mínima para aplicar" },
+    "max_points_per_user": { "type": "number", "description": "Máximo de puntos por usuario" },
+    "eligible_stores": { "type": "array", "items": { "type": "string" }, "description": "IDs de tiendas elegibles (vacío = todas)" },
+    "eligible_tiers": { "type": "array", "items": { "type": "string" }, "description": "Niveles elegibles (vacío = todos)" },
+    "rules": { "type": "object", "description": "Reglas adicionales en JSON" },
+    "total_budget": { "type": "number", "description": "Presupuesto total en puntos" },
+    "used_budget": { "type": "number", "default": 0, "description": "Puntos usados" }
+  },
+  "required": ["name", "type", "start_date", "end_date"],
+  "rls": {
+    "create": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.status": "active" }, { "data.business_id": "{{user.data.business_id}}" } ] },
+    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "delete": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] }
+  }
+}

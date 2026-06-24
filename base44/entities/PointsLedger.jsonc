@@ -1,0 +1,39 @@
+{
+  "name": "PointsLedger",
+  "type": "object",
+  "description": "Append-only ledger of point movements. Source of truth for balances. Tenant-scoped by business_id; store-scoped for staff.",
+  "properties": {
+    "account_id": { "type": "string", "description": "ID de la cuenta de loyalty" },
+    "user_id": { "type": "string", "description": "ID del usuario (denormalizado)" },
+    "business_id": { "type": "string", "description": "ID del negocio (tenant)" },
+    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
+    "store_id": { "type": "string", "description": "ID de la tienda donde ocurrió" },
+    "store_name": { "type": "string", "description": "Nombre de tienda (denormalizado)" },
+    "type": { "type": "string", "enum": ["EARN", "BURN", "ADJUST", "EXPIRE", "REVERSAL", "BONUS"], "description": "Tipo de movimiento" },
+    "points": { "type": "number", "description": "Puntos (positivo=suma, negativo=resta)" },
+    "balance_after": { "type": "number", "description": "Saldo después de la transacción" },
+    "amount": { "type": "number", "description": "Monto de la compra en MXN" },
+    "currency": { "type": "string", "default": "MXN", "description": "Moneda" },
+    "reference_type": { "type": "string", "enum": ["purchase", "redemption", "campaign", "manual", "expiration", "reversal"], "description": "Tipo de referencia" },
+    "reference_id": { "type": "string", "description": "ID de la entidad relacionada" },
+    "ticket_id": { "type": "string", "description": "ID del ticket/recibo" },
+    "idempotency_key": { "type": "string", "description": "Clave única anti-duplicados" },
+    "description": { "type": "string", "description": "Descripción del movimiento" },
+    "reason": { "type": "string", "description": "Razón (obligatoria para ADJUST)" },
+    "campaign_id": { "type": "string", "description": "ID de campaña si aplica" },
+    "multiplier": { "type": "number", "default": 1, "description": "Multiplicador aplicado" },
+    "operator_id": { "type": "string", "description": "ID del cajero/admin que procesó" },
+    "operator_email": { "type": "string", "description": "Email del operador" },
+    "status": { "type": "string", "enum": ["pending", "completed", "reversed", "flagged"], "default": "completed", "description": "Estado del movimiento" },
+    "risk_score": { "type": "number", "description": "Score de riesgo de fraude (0-100)" },
+    "risk_flags": { "type": "array", "items": { "type": "string" }, "description": "Banderas de riesgo" },
+    "metadata": { "type": "object", "description": "Datos adicionales" }
+  },
+  "required": ["account_id", "user_id", "type", "points", "idempotency_key"],
+  "rls": {
+    "create": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.operator_id": "{{user.id}}" }, { "data.store_id": "{{user.data.storeId}}" } ] }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.operator_id": "{{user.id}}" }, { "data.business_id": "{{user.data.business_id}}" } ] }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.store_id": "{{user.data.storeId}}" } ] }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.business_id": "{{user.data.business_id}}" } ] }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

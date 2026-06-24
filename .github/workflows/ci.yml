@@ -24,5 +24,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Validate RLS
+        run: npm run validate:rls
+
       - name: Build
         run: npm run build

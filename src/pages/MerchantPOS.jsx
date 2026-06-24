@@ -65,9 +65,11 @@ export default function MerchantPOS() {
 
   const loadUser = async () => {
     try {
-      const userData = await base44.auth.me();
-      // Verify user is merchant or admin
-      if (userData.role !== 'merchant' && userData.role !== 'admin' && userData.merchant_role !== 'merchant') {
+      const raw = await base44.auth.me();
+      const userData = raw?.data ? { ...raw.data, ...raw } : raw;
+      // POS is for the platform owner, business admins, and staff/cashiers.
+      const allowed = ['admin', 'business_admin', 'merchant'].includes(userData.role) || userData.merchant_role === 'merchant';
+      if (!allowed) {
         window.location.href = createPageUrl('Home');
         return;
       }
@@ -77,10 +79,14 @@ export default function MerchantPOS() {
     }
   };
 
-  // Fetch stores
+  // Fetch active stores. The platform owner sees all; a tenant operator sees only
+  // their own business's stores.
   const { data: stores } = useQuery({
-    queryKey: ['stores'],
-    queryFn: () => base44.entities.Store.filter({ status: 'active' }),
+    queryKey: ['stores', user?.business_id, user?.role],
+    queryFn: () => {
+      const scope = user?.role === 'admin' ? { status: 'active' } : { status: 'active', business_id: user?.business_id };
+      return base44.entities.Store.filter(scope);
+    },
     enabled: !!user,
   });
 
