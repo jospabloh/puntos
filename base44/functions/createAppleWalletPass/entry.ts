@@ -1,6 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { create } from 'npm:@apple-wallet/pass-js@4.0.0';
 
+// authenticationToken = HMAC_SHA256(secret, serial) — recomputed by
+// passkitWebService to authorize device registration / pass refresh. No
+// per-account secret is stored.
+async function authToken(secret: string, serial: string) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(serial));
+  return Array.from(new Uint8Array(sig), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -41,12 +51,20 @@ Deno.serve(async (req) => {
 
     const tier = tierConfig[account.tier] || tierConfig.bronze;
 
+    // If the PassKit web service is configured, advertise it so the pass can be
+    // registered and refreshed with the latest balance (see passkitWebService).
+    const webServiceURL = Deno.env.get('APPLE_WALLET_WEB_SERVICE_URL');
+    const authSecret = Deno.env.get('APPLE_WALLET_AUTH_SECRET') || certPassword;
+
     // Create pass definition
     const passDefinition = {
       formatVersion: 1,
       passTypeIdentifier: passTypeId,
       teamIdentifier: teamId,
       serialNumber: account.id,
+      ...(webServiceURL
+        ? { webServiceURL, authenticationToken: await authToken(authSecret, account.id) }
+        : {}),
       organizationName: 'Puntos+',
       description: 'Tarjeta de Lealtad Puntos+',
       logoText: 'Puntos+',
