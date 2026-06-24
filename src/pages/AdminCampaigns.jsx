@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
@@ -13,18 +11,17 @@ import {
   Gift,
   Edit,
   Trash2,
-  ArrowLeft,
   MoreVertical,
   Play,
   Pause,
   Star,
-  Send
+  Send,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -50,6 +47,161 @@ import {
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { PageShell, PageHeader, StatTile, StatusPill, EmptyState, PageLoader } from '@/components/backoffice/Kit';
+
+const EMPTY_CAMPAIGN = {
+  name: '',
+  description: '',
+  type: 'multiplier',
+  status: 'draft',
+  start_date: '',
+  end_date: '',
+  multiplier: 2,
+  bonus_points: 0,
+  min_purchase: 0,
+};
+
+const EMPTY_OFFER = {
+  title: '',
+  description: '',
+  short_description: '',
+  type: 'discount',
+  points_cost: 100,
+  value_mxn: 50,
+  category: 'shopping',
+  status: 'active',
+  stock: -1,
+  image_url: '',
+};
+
+const CAMPAIGN_STATUS = {
+  draft: { pill: 'archived', label: 'Borrador' },
+  active: { pill: 'active', label: 'Activa' },
+  paused: { pill: 'view_only', label: 'Pausada' },
+  ended: { pill: 'closed', label: 'Finalizada' },
+  inactive: { pill: 'archived', label: 'Inactiva' },
+};
+
+const OFFER_STATUS = {
+  active: { pill: 'active', label: 'Activa' },
+  inactive: { pill: 'archived', label: 'Inactiva' },
+  soldout: { pill: 'suspended', label: 'Agotada' },
+};
+
+function campaignPill(status) {
+  const c = CAMPAIGN_STATUS[status] || { pill: 'default', label: status || '—' };
+  return <StatusPill status={c.pill} label={c.label} />;
+}
+
+function offerPill(status) {
+  const o = OFFER_STATUS[status] || { pill: 'default', label: status || '—' };
+  return <StatusPill status={o.pill} label={o.label} />;
+}
+
+function CampaignCard({ campaign, index, onEdit, onDelete, onNotify, notifyDisabled }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.04, 0.3) }}
+      className="flex flex-col rounded-2xl border border-slate-200/70 bg-white p-5 pp-card-hover"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <Sparkles className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate font-display font-semibold text-slate-900" title={campaign.name}>{campaign.name || 'Sin nombre'}</h3>
+            {campaign.description && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">{campaign.description}</p>}
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="-mr-1 shrink-0" aria-label={`Acciones de ${campaign.name || 'campaña'}`}>
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(campaign)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onNotify(campaign)} disabled={notifyDisabled}><Send className="mr-2 h-4 w-4" />Notificar usuarios</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(campaign.id)} className="text-rose-600 focus:text-rose-600"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {campaignPill(campaign.status)}
+        <Badge variant="outline" className="gap-1">
+          {campaign.status === 'active' && <Play className="h-3 w-3" />}
+          {campaign.status === 'paused' && <Pause className="h-3 w-3" />}
+          {campaign.type === 'multiplier' && `x${campaign.multiplier}`}
+          {campaign.type === 'bonus' && `+${campaign.bonus_points} pts`}
+          {campaign.type === 'threshold' && 'Por umbral'}
+        </Badge>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-sm text-slate-500">
+        <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+        <span className="tnum">
+          {campaign.start_date ? format(new Date(campaign.start_date), 'd MMM', { locale: es }) : 'Sin fecha'}
+          {' — '}
+          {campaign.end_date ? format(new Date(campaign.end_date), 'd MMM', { locale: es }) : 'Sin fecha'}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+function OfferCard({ offer, index, onEdit, onDelete, onNotify, notifyDisabled }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: Math.min(index * 0.04, 0.3) }}
+      className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white pp-card-hover"
+    >
+      {offer.image_url && (
+        <img src={offer.image_url} alt={offer.title} className="h-32 w-full object-cover" />
+      )}
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-start gap-3">
+            {!offer.image_url && (
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+                <Gift className="h-5 w-5" />
+              </span>
+            )}
+            <div className="min-w-0">
+              <h3 className="truncate font-display font-semibold text-slate-900" title={offer.title}>{offer.title || 'Sin título'}</h3>
+              {offer.short_description && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">{offer.short_description}</p>}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="-mr-1 shrink-0" aria-label={`Acciones de ${offer.title || 'oferta'}`}>
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(offer)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onNotify(offer)} disabled={notifyDisabled}><Send className="mr-2 h-4 w-4" />Notificar usuarios</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete(offer.id)} className="text-rose-600 focus:text-rose-600"><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+          <span className="inline-flex items-center gap-1 font-semibold text-violet-600 tnum">
+            <Star className="h-4 w-4 text-violet-500" />
+            {(offer.points_cost || 0).toLocaleString('es-MX')}
+          </span>
+          {offerPill(offer.status)}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function AdminCampaigns() {
   const { user, role, ready } = useRequirePage('AdminCampaigns');
@@ -60,30 +212,8 @@ export default function AdminCampaigns() {
   const [editingOffer, setEditingOffer] = useState(null);
   const queryClient = useQueryClient();
 
-  const [campaignForm, setCampaignForm] = useState({
-    name: '',
-    description: '',
-    type: 'multiplier',
-    status: 'draft',
-    start_date: '',
-    end_date: '',
-    multiplier: 2,
-    bonus_points: 0,
-    min_purchase: 0
-  });
-
-  const [offerForm, setOfferForm] = useState({
-    title: '',
-    description: '',
-    short_description: '',
-    type: 'discount',
-    points_cost: 100,
-    value_mxn: 50,
-    category: 'shopping',
-    status: 'active',
-    stock: -1,
-    image_url: ''
-  });
+  const [campaignForm, setCampaignForm] = useState(EMPTY_CAMPAIGN);
+  const [offerForm, setOfferForm] = useState(EMPTY_OFFER);
 
   // Tenant scoping: owner sees everything ({}), business_admin only their business.
   const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
@@ -123,7 +253,7 @@ export default function AdminCampaigns() {
     },
     onError: (e) => {
       toast.error(e?.message || 'Error al guardar la campaña');
-    }
+    },
   });
 
   const deleteCampaignMutation = useMutation({
@@ -134,7 +264,7 @@ export default function AdminCampaigns() {
     },
     onError: (e) => {
       toast.error(e?.message || 'Error al eliminar la campaña');
-    }
+    },
   });
 
   // Offer mutations
@@ -157,7 +287,7 @@ export default function AdminCampaigns() {
     },
     onError: (e) => {
       toast.error(e?.message || 'Error al guardar la oferta');
-    }
+    },
   });
 
   const deleteOfferMutation = useMutation({
@@ -168,7 +298,7 @@ export default function AdminCampaigns() {
     },
     onError: (e) => {
       toast.error(e?.message || 'Error al eliminar la oferta');
-    }
+    },
   });
 
   // Send campaign notifications
@@ -177,16 +307,16 @@ export default function AdminCampaigns() {
       // Fetch users with notification preferences enabled, scoped to this tenant
       // (owner -> all). Filtering unscoped would email every tenant's customers.
       const allPreferences = await base44.entities.NotificationPreference.filter(scope);
-      const enabledUsers = (allPreferences || []).filter(pref => pref.campaigns_enabled && pref.user_email);
+      const enabledUsers = (allPreferences || []).filter((pref) => pref.campaigns_enabled && pref.user_email);
 
       // Send emails to all subscribed users
-      const emailPromises = enabledUsers.map(pref => 
+      const emailPromises = enabledUsers.map((pref) =>
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
           subject: `🎉 Nueva campaña: ${campaign.name}`,
-          body: `Hola,\n\n¡Tenemos una nueva campaña para ti!\n\n**${campaign.name}**\n${campaign.description}\n\n${campaign.type === 'multiplier' ? `Gana puntos x${campaign.multiplier}` : `Recibe ${campaign.bonus_points} puntos bonus`}\n\nVálida desde ${campaign.start_date ? format(new Date(campaign.start_date), "d 'de' MMMM", { locale: es }) : 'hoy'} hasta ${campaign.end_date ? format(new Date(campaign.end_date), "d 'de' MMMM", { locale: es }) : 'nuevo aviso'}.\n\n¡Aprovecha ahora!\n\nEquipo Puntos+`
-        })
+          body: `Hola,\n\n¡Tenemos una nueva campaña para ti!\n\n**${campaign.name}**\n${campaign.description}\n\n${campaign.type === 'multiplier' ? `Gana puntos x${campaign.multiplier}` : `Recibe ${campaign.bonus_points} puntos bonus`}\n\nVálida desde ${campaign.start_date ? format(new Date(campaign.start_date), "d 'de' MMMM", { locale: es }) : 'hoy'} hasta ${campaign.end_date ? format(new Date(campaign.end_date), "d 'de' MMMM", { locale: es }) : 'nuevo aviso'}.\n\n¡Aprovecha ahora!\n\nEquipo Puntos+`,
+        }),
       );
 
       await Promise.all(emailPromises);
@@ -197,22 +327,22 @@ export default function AdminCampaigns() {
     },
     onError: () => {
       toast.error('Error al enviar notificaciones');
-    }
+    },
   });
 
   // Send offer notifications
   const notifyOfferMutation = useMutation({
     mutationFn: async (offer) => {
       const allPreferences = await base44.entities.NotificationPreference.filter(scope);
-      const enabledUsers = (allPreferences || []).filter(pref => pref.offers_enabled && pref.user_email);
+      const enabledUsers = (allPreferences || []).filter((pref) => pref.offers_enabled && pref.user_email);
 
-      const emailPromises = enabledUsers.map(pref => 
+      const emailPromises = enabledUsers.map((pref) =>
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
           subject: `🎁 Nueva oferta disponible: ${offer.title}`,
-          body: `Hola,\n\n¡Tenemos una nueva oferta especial para ti!\n\n**${offer.title}**\n${offer.description}\n\nCosto: ${(offer.points_cost || 0).toLocaleString('es-MX')} puntos\nValor: $${(offer.value_mxn || 0).toLocaleString('es-MX')} MXN\n\n${offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!'}\n\n¡Canjea ahora en la app!\n\nEquipo Puntos+`
-        })
+          body: `Hola,\n\n¡Tenemos una nueva oferta especial para ti!\n\n**${offer.title}**\n${offer.description}\n\nCosto: ${(offer.points_cost || 0).toLocaleString('es-MX')} puntos\nValor: $${(offer.value_mxn || 0).toLocaleString('es-MX')} MXN\n\n${offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!'}\n\n¡Canjea ahora en la app!\n\nEquipo Puntos+`,
+        }),
       );
 
       await Promise.all(emailPromises);
@@ -223,7 +353,7 @@ export default function AdminCampaigns() {
     },
     onError: () => {
       toast.error('Error al enviar notificaciones');
-    }
+    },
   });
 
   const handleEditCampaign = (campaign) => {
@@ -237,7 +367,7 @@ export default function AdminCampaigns() {
       end_date: campaign.end_date ? campaign.end_date.split('T')[0] : '',
       multiplier: campaign.multiplier || 2,
       bonus_points: campaign.bonus_points || 0,
-      min_purchase: campaign.min_purchase || 0
+      min_purchase: campaign.min_purchase || 0,
     });
     setShowCampaignDialog(true);
   };
@@ -254,288 +384,135 @@ export default function AdminCampaigns() {
       category: offer.category || 'shopping',
       status: offer.status || 'active',
       stock: offer.stock ?? -1,
-      image_url: offer.image_url || ''
+      image_url: offer.image_url || '',
     });
     setShowOfferDialog(true);
   };
 
   const resetCampaignForm = () => {
-    setCampaignForm({
-      name: '',
-      description: '',
-      type: 'multiplier',
-      status: 'draft',
-      start_date: '',
-      end_date: '',
-      multiplier: 2,
-      bonus_points: 0,
-      min_purchase: 0
-    });
+    setCampaignForm(EMPTY_CAMPAIGN);
     setEditingCampaign(null);
   };
 
   const resetOfferForm = () => {
-    setOfferForm({
-      title: '',
-      description: '',
-      short_description: '',
-      type: 'discount',
-      points_cost: 100,
-      value_mxn: 50,
-      category: 'shopping',
-      status: 'active',
-      stock: -1,
-      image_url: ''
-    });
+    setOfferForm(EMPTY_OFFER);
     setEditingOffer(null);
   };
 
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-violet-600">Cargando...</div>
-      </div>
-    );
-  }
+  if (!ready) return <PageLoader />;
 
-  const statusColors = {
-    draft: 'bg-slate-100 text-slate-700',
-    active: 'bg-emerald-100 text-emerald-700',
-    paused: 'bg-yellow-100 text-yellow-700',
-    ended: 'bg-red-100 text-red-700',
-    inactive: 'bg-slate-100 text-slate-700',
-    soldout: 'bg-red-100 text-red-700'
-  };
+  const allCampaigns = campaigns || [];
+  const allOffers = offers || [];
+  const activeCampaigns = allCampaigns.filter((c) => c.status === 'active').length;
+  const activeOffers = allOffers.filter((o) => o.status === 'active').length;
+
+  const openNewCampaign = () => { resetCampaignForm(); setShowCampaignDialog(true); };
+  const openNewOffer = () => { resetOfferForm(); setShowOfferDialog(true); };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-8">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-16 z-40">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <Link to={createPageUrl('AdminDashboard')}>
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Campañas y Ofertas</h1>
-                <p className="text-slate-500 text-sm">Gestiona promociones y recompensas</p>
-              </div>
-            </div>
+    <PageShell>
+      <PageHeader
+        icon={Sparkles}
+        eyebrow="Marketing"
+        title="Campañas y recompensas"
+        description="Gestiona promociones de puntos y el catálogo de recompensas canjeables."
+        actions={tab === 'campaigns' ? (
+          <Button onClick={openNewCampaign} className="bg-violet-600 hover:bg-violet-700"><Plus className="mr-2 h-4 w-4" />Nueva campaña</Button>
+        ) : (
+          <Button onClick={openNewOffer} className="bg-violet-600 hover:bg-violet-700"><Plus className="mr-2 h-4 w-4" />Nueva recompensa</Button>
+        )}
+      />
+
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatTile label="Campañas" value={allCampaigns.length} icon={Sparkles} tone="violet" loading={loadingCampaigns} />
+        <StatTile label="Campañas activas" value={activeCampaigns} icon={CheckCircle2} tone="emerald" loading={loadingCampaigns} />
+        <StatTile label="Recompensas" value={allOffers.length} icon={Gift} tone="gold" loading={loadingOffers} />
+        <StatTile label="Recompensas activas" value={activeOffers} icon={CheckCircle2} tone="emerald" loading={loadingOffers} />
+      </div>
+
+      <Tabs value={tab} onValueChange={setTab} className="mb-6">
+        <TabsList>
+          <TabsTrigger value="campaigns" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            Campañas
+          </TabsTrigger>
+          <TabsTrigger value="offers" className="flex items-center gap-2">
+            <Gift className="h-4 w-4" />
+            Recompensas
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {/* Campaigns Tab */}
+      {tab === 'campaigns' && (
+        loadingCampaigns ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white" />)}
           </div>
+        ) : allCampaigns.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {allCampaigns.map((campaign, i) => (
+              <CampaignCard
+                key={campaign.id}
+                campaign={campaign}
+                index={i}
+                onEdit={handleEditCampaign}
+                onDelete={(id) => deleteCampaignMutation.mutate(id)}
+                onNotify={(c) => notifyCampaignMutation.mutate(c)}
+                notifyDisabled={notifyCampaignMutation.isPending}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Sparkles}
+            title="Aún no tienes campañas"
+            description="Crea tu primera campaña para premiar a tus clientes con puntos extra."
+            action={<Button onClick={openNewCampaign} className="bg-violet-600 hover:bg-violet-700"><Plus className="mr-2 h-4 w-4" />Nueva campaña</Button>}
+          />
+        )
+      )}
 
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList>
-              <TabsTrigger value="campaigns" className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                Campañas
-              </TabsTrigger>
-              <TabsTrigger value="offers" className="flex items-center gap-2">
-                <Gift className="h-4 w-4" />
-                Ofertas
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 pt-6">
-        {/* Campaigns Tab */}
-        {tab === 'campaigns' && (
-          <>
-            <div className="flex justify-between items-center mb-6">
-              <p className="text-slate-600">{campaigns?.length || 0} campañas</p>
-              <Button 
-                onClick={() => { resetCampaignForm(); setShowCampaignDialog(true); }}
-                className="bg-violet-600 hover:bg-violet-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Campaña
-              </Button>
-            </div>
-
-            {loadingCampaigns ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[1, 2].map((i) => (
-                  <Card key={i} className="animate-pulse"><CardContent className="p-6 h-36" /></Card>
-                ))}
-              </div>
-            ) : (campaigns?.length || 0) === 0 ? (
-              <div className="text-center py-12">
-                <Sparkles className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">No hay campañas</p>
-                <p className="text-slate-400 text-sm mt-1">Crea tu primera campaña</p>
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(campaigns || []).map((campaign, index) => (
-                <motion.div
-                  key={campaign.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h3 className="font-semibold text-slate-900">{campaign.name}</h3>
-                          <p className="text-sm text-slate-500 mt-1">{campaign.description}</p>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" aria-label="Acciones de campaña">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditCampaign(campaign)}>
-                              <Edit className="h-4 w-4 mr-2" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => notifyCampaignMutation.mutate(campaign)}
-                              disabled={notifyCampaignMutation.isPending}
-                            >
-                              <Send className="h-4 w-4 mr-2" /> Notificar usuarios
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => deleteCampaignMutation.mutate(campaign.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" /> Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      <div className="flex items-center gap-2 mb-4">
-                        <Badge className={statusColors[campaign.status]}>
-                          {campaign.status === 'active' && <Play className="h-3 w-3 mr-1" />}
-                          {campaign.status === 'paused' && <Pause className="h-3 w-3 mr-1" />}
-                          {campaign.status}
-                        </Badge>
-                        <Badge variant="outline">
-                          {campaign.type === 'multiplier' && `x${campaign.multiplier}`}
-                          {campaign.type === 'bonus' && `+${campaign.bonus_points} pts`}
-                        </Badge>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {campaign.start_date ? format(new Date(campaign.start_date), "d MMM", { locale: es }) : 'Sin fecha'}
-                          {' - '}
-                          {campaign.end_date ? format(new Date(campaign.end_date), "d MMM", { locale: es }) : 'Sin fecha'}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-            )}
-          </>
-        )}
-
-        {/* Offers Tab */}
-        {tab === 'offers' && (
-          <>
-            <div className="flex justify-between items-center mb-6">
-              <p className="text-slate-600">{offers?.length || 0} ofertas</p>
-              <Button 
-                onClick={() => { resetOfferForm(); setShowOfferDialog(true); }}
-                className="bg-violet-600 hover:bg-violet-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Oferta
-              </Button>
-            </div>
-
-            {loadingOffers ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="animate-pulse"><CardContent className="p-6 h-40" /></Card>
-                ))}
-              </div>
-            ) : (offers?.length || 0) === 0 ? (
-              <div className="text-center py-12">
-                <Gift className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500 font-medium">No hay ofertas</p>
-                <p className="text-slate-400 text-sm mt-1">Crea tu primera oferta</p>
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(offers || []).map((offer, index) => (
-                <motion.div
-                  key={offer.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="overflow-hidden">
-                    {offer.image_url && (
-                      <img src={offer.image_url} alt={offer.title} className="h-32 w-full object-cover" />
-                    )}
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-slate-900 line-clamp-1">{offer.title}</h3>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Acciones de oferta">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditOffer(offer)}>
-                              <Edit className="h-4 w-4 mr-2" /> Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => notifyOfferMutation.mutate(offer)}
-                              disabled={notifyOfferMutation.isPending}
-                            >
-                              <Send className="h-4 w-4 mr-2" /> Notificar usuarios
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => deleteOfferMutation.mutate(offer.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" /> Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                      <p className="text-sm text-slate-500 line-clamp-2 mb-3">{offer.short_description}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-violet-500" />
-                          <span className="font-bold text-violet-600">{(offer.points_cost || 0).toLocaleString('es-MX')}</span>
-                        </div>
-                        <Badge className={statusColors[offer.status]}>
-                          {offer.status}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-            )}
-          </>
-        )}
-      </div>
+      {/* Offers Tab */}
+      {tab === 'offers' && (
+        loadingOffers ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white" />)}
+          </div>
+        ) : allOffers.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {allOffers.map((offer, i) => (
+              <OfferCard
+                key={offer.id}
+                offer={offer}
+                index={i}
+                onEdit={handleEditOffer}
+                onDelete={(id) => deleteOfferMutation.mutate(id)}
+                onNotify={(o) => notifyOfferMutation.mutate(o)}
+                notifyDisabled={notifyOfferMutation.isPending}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Gift}
+            title="Aún no tienes recompensas"
+            description="Crea tu primera recompensa para que tus clientes canjeen sus puntos."
+            action={<Button onClick={openNewOffer} className="bg-violet-600 hover:bg-violet-700"><Plus className="mr-2 h-4 w-4" />Nueva recompensa</Button>}
+          />
+        )
+      )}
 
       {/* Campaign Dialog */}
       <Dialog open={showCampaignDialog} onOpenChange={(open) => { setShowCampaignDialog(open); if (!open) resetCampaignForm(); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingCampaign ? 'Editar Campaña' : 'Nueva Campaña'}</DialogTitle>
+            <DialogTitle>{editingCampaign ? 'Editar campaña' : 'Nueva campaña'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); saveCampaignMutation.mutate(campaignForm); }} className="space-y-4">
             <div>
               <Label>Nombre</Label>
-              <Input value={campaignForm.name} onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })} required />
+              <Input value={campaignForm.name} onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })} required autoFocus />
             </div>
             <div>
               <Label>Descripción</Label>
@@ -590,8 +567,8 @@ export default function AdminCampaigns() {
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCampaignDialog(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saveCampaignMutation.isPending}>
-                {saveCampaignMutation.isPending ? 'Guardando...' : 'Guardar'}
+              <Button type="submit" disabled={saveCampaignMutation.isPending} className="bg-violet-600 hover:bg-violet-700">
+                {saveCampaignMutation.isPending ? 'Guardando…' : 'Guardar'}
               </Button>
             </DialogFooter>
           </form>
@@ -602,12 +579,12 @@ export default function AdminCampaigns() {
       <Dialog open={showOfferDialog} onOpenChange={(open) => { setShowOfferDialog(open); if (!open) resetOfferForm(); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingOffer ? 'Editar Oferta' : 'Nueva Oferta'}</DialogTitle>
+            <DialogTitle>{editingOffer ? 'Editar recompensa' : 'Nueva recompensa'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); saveOfferMutation.mutate(offerForm); }} className="space-y-4 max-h-[70vh] overflow-y-auto">
             <div>
               <Label>Título</Label>
-              <Input value={offerForm.title} onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })} required />
+              <Input value={offerForm.title} onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })} required autoFocus />
             </div>
             <div>
               <Label>Descripción corta</Label>
@@ -678,13 +655,13 @@ export default function AdminCampaigns() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowOfferDialog(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saveOfferMutation.isPending}>
-                {saveOfferMutation.isPending ? 'Guardando...' : 'Guardar'}
+              <Button type="submit" disabled={saveOfferMutation.isPending} className="bg-violet-600 hover:bg-violet-700">
+                {saveOfferMutation.isPending ? 'Guardando…' : 'Guardar'}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageShell>
   );
 }
