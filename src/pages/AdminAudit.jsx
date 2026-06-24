@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
@@ -9,13 +7,11 @@ import { motion } from 'framer-motion';
 import {
   Activity,
   Search,
-  ArrowLeft,
   AlertTriangle,
   CheckCircle,
   XCircle,
-  User
+  User,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,6 +31,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { format } from 'date-fns';
+import {
+  PageShell,
+  PageHeader,
+  SectionCard,
+  EmptyState,
+  Toolbar,
+  PageLoader,
+} from '@/components/backoffice/Kit';
 
 const actionConfig = {
   earn: { label: 'Acumular', color: 'bg-emerald-100 text-emerald-700' },
@@ -57,6 +61,80 @@ const roleConfig = {
   system: { label: 'Sistema', color: 'bg-slate-50 text-slate-600' },
 };
 
+function AuditStatus({ status }) {
+  if (status === 'success') {
+    return (
+      <span className="flex items-center gap-1 text-sm text-emerald-600">
+        <CheckCircle className="h-4 w-4" />
+        Éxito
+      </span>
+    );
+  }
+  if (status === 'failed') {
+    return (
+      <span className="flex items-center gap-1 text-sm text-red-600">
+        <XCircle className="h-4 w-4" />
+        Fallido
+      </span>
+    );
+  }
+  if (status === 'blocked') {
+    return (
+      <span className="flex items-center gap-1 text-sm text-orange-600">
+        <AlertTriangle className="h-4 w-4" />
+        Bloqueado
+      </span>
+    );
+  }
+  return <span className="text-sm text-slate-400">—</span>;
+}
+
+function AuditRow({ log, index }) {
+  return (
+    <motion.tr
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: Math.min(index * 0.02, 0.3) }}
+      className="hover:bg-slate-50"
+    >
+      <TableCell className="font-mono text-xs text-slate-500 tnum">
+        {log.created_date ? format(new Date(log.created_date), 'dd/MM/yy HH:mm:ss') : '-'}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
+            <User className="h-3 w-3 text-slate-500" />
+          </div>
+          <span className="block max-w-[150px] truncate text-sm" title={log.actor_email}>
+            {log.actor_email}
+          </span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge className={roleConfig[log.actor_role]?.color || 'bg-slate-100'}>
+          {roleConfig[log.actor_role]?.label || log.actor_role}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <Badge className={actionConfig[log.action]?.color || 'bg-slate-100'}>
+          {actionConfig[log.action]?.label || log.action}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-sm text-slate-600">
+        {log.entity_type}
+      </TableCell>
+      <TableCell className="max-w-[200px]">
+        <span className="block truncate text-sm text-slate-600" title={log.payload_summary}>
+          {log.payload_summary || '-'}
+        </span>
+      </TableCell>
+      <TableCell>
+        <AuditStatus status={log.status} />
+      </TableCell>
+    </motion.tr>
+  );
+}
+
 export default function AdminAudit() {
   const { user, role, ready } = useRequirePage('AdminAudit');
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,7 +155,7 @@ export default function AdminAudit() {
 
   // Filter logs
   const filteredLogs = auditLogs?.filter(log => {
-    const matchesSearch = 
+    const matchesSearch =
       log.actor_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.payload_summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.entity_type?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -87,92 +165,75 @@ export default function AdminAudit() {
     return matchesSearch && matchesAction && matchesRole && matchesStatus;
   }) || [];
 
-  if (!ready) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-violet-600">Cargando...</div>
-      </div>
-    );
-  }
+  if (!ready) return <PageLoader />;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-8">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3 mb-4">
-            <Link to={createPageUrl('AdminDashboard')}>
-              <Button variant="ghost" size="icon">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Auditoría</h1>
-              <p className="text-slate-500 text-sm">{filteredLogs.length} registros</p>
-            </div>
-          </div>
+    <PageShell>
+      <PageHeader
+        icon={Activity}
+        eyebrow="Seguridad"
+        title="Auditoría"
+        description={`${filteredLogs.length} registro(s) de actividad del programa.`}
+        accent="sky"
+      />
 
-          {/* Filters */}
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Buscar..."
-                aria-label="Buscar registros de auditoría"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-50 border-0"
-              />
-            </div>
-            <Select value={actionFilter} onValueChange={setActionFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Acción" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="earn">Acumular</SelectItem>
-                <SelectItem value="burn">Canjear</SelectItem>
-                <SelectItem value="adjust">Ajuste</SelectItem>
-                <SelectItem value="reverse">Reversión</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Rol" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="business_admin">Negocio</SelectItem>
-                <SelectItem value="merchant">Comercio</SelectItem>
-                <SelectItem value="customer">Cliente</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="success">Éxito</SelectItem>
-                <SelectItem value="failed">Fallido</SelectItem>
-                <SelectItem value="blocked">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <Toolbar>
+        <div className="relative min-w-[200px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Buscar…"
+            aria-label="Buscar registros de auditoría"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="border-slate-200 bg-white pl-10"
+          />
         </div>
-      </div>
+        <Select value={actionFilter} onValueChange={setActionFilter}>
+          <SelectTrigger className="w-32 border-slate-200 bg-white">
+            <SelectValue placeholder="Acción" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="earn">Acumular</SelectItem>
+            <SelectItem value="burn">Canjear</SelectItem>
+            <SelectItem value="adjust">Ajuste</SelectItem>
+            <SelectItem value="reverse">Reversión</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-32 border-slate-200 bg-white">
+            <SelectValue placeholder="Rol" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="business_admin">Negocio</SelectItem>
+            <SelectItem value="merchant">Comercio</SelectItem>
+            <SelectItem value="customer">Cliente</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-32 border-slate-200 bg-white">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="success">Éxito</SelectItem>
+            <SelectItem value="failed">Fallido</SelectItem>
+            <SelectItem value="blocked">Bloqueado</SelectItem>
+          </SelectContent>
+        </Select>
+      </Toolbar>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 pt-6">
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-14 rounded-lg" />
-            ))}
-          </div>
-        ) : filteredLogs.length > 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden overflow-x-auto">
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-14 rounded-lg" />
+          ))}
+        </div>
+      ) : filteredLogs.length > 0 ? (
+        <SectionCard bodyClassName="p-0">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
@@ -187,76 +248,19 @@ export default function AdminAudit() {
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((log, index) => (
-                  <motion.tr
-                    key={log.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.02 }}
-                    className="hover:bg-slate-50"
-                  >
-                    <TableCell className="font-mono text-xs text-slate-500">
-                      {log.created_date ? format(new Date(log.created_date), "dd/MM/yy HH:mm:ss") : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="h-7 w-7 rounded-full bg-slate-100 flex items-center justify-center">
-                          <User className="h-3 w-3 text-slate-500" />
-                        </div>
-                        <span className="text-sm truncate max-w-[150px]" title={log.actor_email}>
-                          {log.actor_email}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={roleConfig[log.actor_role]?.color || 'bg-slate-100'}>
-                        {roleConfig[log.actor_role]?.label || log.actor_role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={actionConfig[log.action]?.color || 'bg-slate-100'}>
-                        {actionConfig[log.action]?.label || log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-slate-600">
-                      {log.entity_type}
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <span className="text-sm text-slate-600 truncate block" title={log.payload_summary}>
-                        {log.payload_summary || '-'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {log.status === 'success' && (
-                        <span className="flex items-center gap-1 text-emerald-600 text-sm">
-                          <CheckCircle className="h-4 w-4" />
-                          Éxito
-                        </span>
-                      )}
-                      {log.status === 'failed' && (
-                        <span className="flex items-center gap-1 text-red-600 text-sm">
-                          <XCircle className="h-4 w-4" />
-                          Fallido
-                        </span>
-                      )}
-                      {log.status === 'blocked' && (
-                        <span className="flex items-center gap-1 text-orange-600 text-sm">
-                          <AlertTriangle className="h-4 w-4" />
-                          Bloqueado
-                        </span>
-                      )}
-                    </TableCell>
-                  </motion.tr>
+                  <AuditRow key={log.id} log={log} index={index} />
                 ))}
               </TableBody>
             </Table>
           </div>
-        ) : (
-          <div className="text-center py-12">
-            <Activity className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 font-medium">No hay registros</p>
-          </div>
-        )}
-      </div>
-    </div>
+        </SectionCard>
+      ) : (
+        <EmptyState
+          icon={Activity}
+          title="No hay registros"
+          description="No se encontraron registros de auditoría con los filtros actuales."
+        />
+      )}
+    </PageShell>
   );
 }

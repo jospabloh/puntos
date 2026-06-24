@@ -77,41 +77,48 @@ function RoleChip({ role }) {
   );
 }
 
-/* ── Back-office sidebar navigation (module scope = stable identity) ────── */
-function BackOfficeNav({ nav, role, currentPageName, onNavigate }) {
+/* ── Back-office sidebar navigation (module scope = stable identity) ──────
+   `groups` is an array of { label?, items[] }. The platform owner gets two
+   groups (Plataforma + Administración) so they can run the whole platform AND
+   their own tenant from one sidebar; a business admin gets a single group. */
+function NavLink({ item, currentPageName, onNavigate }) {
+  const Icon = item.icon;
+  const active = currentPageName === item.page;
+  return (
+    <Link
+      to={createPageUrl(item.page)}
+      onClick={onNavigate}
+      className={cn(
+        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
+        active ? 'bg-white text-violet-700 shadow-sm ring-1 ring-violet-100' : 'text-slate-500 hover:bg-white/60 hover:text-slate-800',
+      )}
+    >
+      <Icon className={cn('h-[18px] w-[18px]', active ? 'text-violet-600' : 'text-slate-400 group-hover:text-violet-500')} />
+      <span>{item.name}</span>
+      {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
+    </Link>
+  );
+}
+
+function BackOfficeNav({ groups, role, currentPageName, onNavigate }) {
   return (
     <nav className="space-y-1">
-      {nav.map((item) => {
-        const Icon = item.icon;
-        const active = currentPageName === item.page;
-        return (
-          <Link
-            key={item.page}
-            to={createPageUrl(item.page)}
-            onClick={onNavigate}
-            className={cn(
-              'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-              active ? 'bg-white text-violet-700 shadow-sm ring-1 ring-violet-100' : 'text-slate-500 hover:bg-white/60 hover:text-slate-800',
-            )}
-          >
-            <Icon className={cn('h-[18px] w-[18px]', active ? 'text-violet-600' : 'text-slate-400 group-hover:text-violet-500')} />
-            <span>{item.name}</span>
-            {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
-          </Link>
-        );
-      })}
+      {groups.map((group, gi) => (
+        <div key={group.label || gi} className={gi > 0 ? 'pt-3' : ''}>
+          {group.label && (
+            <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{group.label}</div>
+          )}
+          <div className="space-y-1">
+            {group.items.map((item) => (
+              <NavLink key={item.page} item={item} currentPageName={currentPageName} onNavigate={onNavigate} />
+            ))}
+          </div>
+        </div>
+      ))}
       <div className="my-3 border-t border-slate-200/70" />
-      {role !== ROLES.OWNER && (
-        <Link to={createPageUrl('MerchantPOS')} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/60 hover:text-slate-800">
-          <Store className="h-[18px] w-[18px] text-slate-400" /> Punto de venta
-        </Link>
-      )}
-      <Link to={createPageUrl('Permissions')} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/60 hover:text-slate-800">
-        <ShieldCheck className="h-[18px] w-[18px] text-slate-400" /> Permisos
-      </Link>
-      <Link to={createPageUrl('Home')} onClick={onNavigate} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 hover:bg-white/60 hover:text-slate-800">
-        <Wallet className="h-[18px] w-[18px] text-slate-400" /> Mi cuenta
-      </Link>
+      <NavLink item={{ name: 'Punto de venta', page: 'MerchantPOS', icon: Store }} currentPageName={currentPageName} onNavigate={onNavigate} />
+      <NavLink item={{ name: 'Permisos', page: 'Permissions', icon: ShieldCheck }} currentPageName={currentPageName} onNavigate={onNavigate} />
+      <NavLink item={{ name: 'Mi cuenta', page: 'Home', icon: Wallet }} currentPageName={currentPageName} onNavigate={onNavigate} />
     </nav>
   );
 }
@@ -119,7 +126,11 @@ function BackOfficeNav({ nav, role, currentPageName, onNavigate }) {
 /* ── Back-office sidebar shell (owner + business admin) ─────────────────── */
 function BackOfficeShell({ user, role, currentPageName, children }) {
   const [open, setOpen] = useState(false);
-  const nav = role === ROLES.OWNER ? OWNER_NAV : ADMIN_NAV;
+  // The owner runs the whole platform AND can administer any tenant, so they get
+  // both nav groups; a business admin gets only their tenant's administration.
+  const groups = role === ROLES.OWNER
+    ? [{ label: 'Plataforma', items: OWNER_NAV }, { label: 'Administración', items: ADMIN_NAV }]
+    : [{ items: ADMIN_NAV }];
   const subtitle = role === ROLES.OWNER ? 'Consola' : 'Administración';
 
   return (
@@ -136,7 +147,7 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
         {/* Desktop sidebar */}
         <aside className="hidden md:flex sticky top-0 h-screen w-64 shrink-0 flex-col border-r border-slate-200/60 bg-violet-50/40 px-4 py-5">
           <div className="px-2"><Wordmark subtitle={subtitle} /></div>
-          <div className="mt-6 flex-1 overflow-y-auto"><BackOfficeNav nav={nav} role={role} currentPageName={currentPageName} /></div>
+          <div className="mt-6 flex-1 overflow-y-auto"><BackOfficeNav groups={groups} role={role} currentPageName={currentPageName} /></div>
           <div className="mt-4 rounded-2xl bg-white/70 p-3 ring-1 ring-slate-100">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white">
@@ -159,7 +170,7 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
             <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" />
             <aside className="absolute left-0 top-0 h-full w-72 bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="px-2 pb-4"><Wordmark subtitle={subtitle} /></div>
-              <BackOfficeNav nav={nav} role={role} currentPageName={currentPageName} onNavigate={() => setOpen(false)} />
+              <BackOfficeNav groups={groups} role={role} currentPageName={currentPageName} onNavigate={() => setOpen(false)} />
               <button onClick={() => base44.auth.logout()} className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50">
                 <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
               </button>
