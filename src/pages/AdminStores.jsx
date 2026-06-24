@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
-import { ROLES } from '@/lib/rbac';
+import { getActiveBusinessId, getActiveBusinessName } from '@/lib/activeTenant';
 import { motion } from 'framer-motion';
 import {
   Store, Plus, Search, MapPin, Phone, Edit, Trash2, MoreVertical, Copy, Coins, CheckCircle2,
@@ -119,8 +119,9 @@ export default function AdminStores() {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const queryClient = useQueryClient();
 
-  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
-  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
+  const activeBusinessId = getActiveBusinessId(user);
+  const scope = { business_id: activeBusinessId };
+  const scopeKey = activeBusinessId || 'none';
 
   const { data: stores, isLoading } = useQuery({
     queryKey: ['allStores', scopeKey],
@@ -131,14 +132,14 @@ export default function AdminStores() {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (editingStore) {
-        const { code, ...rest } = data; // eslint-disable-line no-unused-vars
+        const { code, ...rest } = data;  
         return base44.entities.Store.update(editingStore.id, rest);
       }
-      const { code, ...rest } = data; // eslint-disable-line no-unused-vars
+      const { code, ...rest } = data;  
       // Prefer the service-role function (unique code, server-authoritative).
       let store = null;
       try {
-        const res = await base44.functions.invoke('createStore', rest);
+        const res = await base44.functions.invoke('createStore', { ...rest, business_id: activeBusinessId, business_name: getActiveBusinessName(user) });
         if (res?.data?.success) store = res.data.store;
       } catch { /* function not reachable yet → client fallback below */ }
       if (!store) {
@@ -146,8 +147,8 @@ export default function AdminStores() {
         store = await base44.entities.Store.create({
           ...rest,
           code: genCode,
-          business_id: user.business_id,
-          business_name: user.business_name,
+          business_id: activeBusinessId,
+          business_name: getActiveBusinessName(user),
           merchant_id: user.id,
           merchant_email: user.email,
           merchant_name: user.full_name || user.email?.split('@')[0],

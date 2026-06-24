@@ -35,8 +35,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const businessId = user.business_id || user.data?.business_id;
-    const businessName = user.business_name || user.data?.business_name;
+    const ownBusinessId = user.business_id || user.data?.business_id;
+    const ownBusinessName = user.business_name || user.data?.business_name;
+    // The platform owner (role admin) may create a store inside ANY tenant they
+    // are administering — honor the explicit business_id override. Everyone else
+    // is pinned to their own business.
+    const isAdmin = user.role === 'admin';
+    const businessId = (isAdmin && body?.business_id) ? body.business_id : ownBusinessId;
+    const businessName = (isAdmin && body?.business_id) ? (body?.business_name || '') : ownBusinessName;
     if (!businessId) return Response.json({ error: 'No tienes un negocio asignado' }, { status: 403 });
 
     const body = await req.json().catch(() => ({}));

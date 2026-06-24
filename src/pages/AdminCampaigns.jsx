@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
-import { ROLES } from '@/lib/rbac';
+import { getActiveBusinessId, getActiveBusinessName } from '@/lib/activeTenant';
 import { motion } from 'framer-motion';
 import {
   Sparkles,
@@ -216,8 +216,9 @@ export default function AdminCampaigns() {
   const [offerForm, setOfferForm] = useState(EMPTY_OFFER);
 
   // Tenant scoping: owner sees everything ({}), business_admin only their business.
-  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
-  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
+  const activeBusinessId = getActiveBusinessId(user);
+  const scope = { business_id: activeBusinessId };
+  const scopeKey = activeBusinessId || 'none';
 
   // Fetch campaigns
   const { data: campaigns, isLoading: loadingCampaigns } = useQuery({
@@ -241,8 +242,8 @@ export default function AdminCampaigns() {
       }
       return base44.entities.Campaign.create({
         ...data,
-        business_id: user.business_id,
-        business_name: user.business_name,
+        business_id: activeBusinessId,
+        business_name: getActiveBusinessName(user),
       });
     },
     onSuccess: () => {
@@ -275,8 +276,8 @@ export default function AdminCampaigns() {
       }
       return base44.entities.Offer.create({
         ...data,
-        business_id: user.business_id,
-        business_name: user.business_name,
+        business_id: activeBusinessId,
+        business_name: getActiveBusinessName(user),
       });
     },
     onSuccess: () => {

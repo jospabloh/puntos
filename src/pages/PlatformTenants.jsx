@@ -67,6 +67,8 @@ import {
 } from '@/components/ui/table';
 import { useRequirePage } from '@/lib/useCurrentUser';
 import { PLAN_ORDER, getPlan, formatLimit } from '@/lib/licensePlans';
+import { setActiveBusiness } from '@/lib/activeTenant';
+import { createPageUrl } from '@/utils';
 
 const DAY_MS = 864e5;
 const now = () => new Date().toISOString();
@@ -539,13 +541,16 @@ export default function PlatformTenants() {
                 </Button>
               </div>
 
-              <DialogFooter className="mt-4">
-                <Button variant="ghost" onClick={() => setSelected(null)}>
-                  Cerrar
+              <DialogFooter className="mt-4 sm:justify-between">
+                <Button variant="outline" onClick={() => { setActiveBusiness(selected.id, selected.name); window.location.href = createPageUrl('AdminDashboard'); }}>
+                  <Building2 className="h-4 w-4 mr-1.5" /> Administrar este negocio
                 </Button>
-                <Button className="bg-violet-600 hover:bg-violet-700" disabled={busy} onClick={() => saveMutation.mutate()}>
-                  <Save className="h-4 w-4 mr-1.5" /> Guardar
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="ghost" onClick={() => setSelected(null)}>Cerrar</Button>
+                  <Button className="bg-violet-600 hover:bg-violet-700" disabled={busy} onClick={() => saveMutation.mutate()}>
+                    <Save className="h-4 w-4 mr-1.5" /> Guardar
+                  </Button>
+                </div>
               </DialogFooter>
             </>
           )}
