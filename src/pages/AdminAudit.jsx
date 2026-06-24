@@ -52,6 +52,7 @@ const actionConfig = {
 const roleConfig = {
   customer: { label: 'Cliente', color: 'bg-blue-50 text-blue-600' },
   merchant: { label: 'Comercio', color: 'bg-purple-50 text-purple-600' },
+  business_admin: { label: 'Negocio', color: 'bg-indigo-50 text-indigo-600' },
   admin: { label: 'Admin', color: 'bg-red-50 text-red-600' },
   system: { label: 'Sistema', color: 'bg-slate-50 text-slate-600' },
 };
@@ -141,6 +142,7 @@ export default function AdminAudit() {
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="business_admin">Negocio</SelectItem>
                 <SelectItem value="merchant">Comercio</SelectItem>
                 <SelectItem value="customer">Cliente</SelectItem>
               </SelectContent>
@@ -192,7 +194,7 @@ export default function AdminAudit() {
                     className="hover:bg-slate-50"
                   >
                     <TableCell className="font-mono text-xs text-slate-500">
-                      {format(new Date(log.created_date), "dd/MM/yy HH:mm:ss")}
+                      {log.created_date ? format(new Date(log.created_date), "dd/MM/yy HH:mm:ss") : '-'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
