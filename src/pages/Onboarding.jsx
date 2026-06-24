@@ -206,7 +206,8 @@ export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [path, setPath] = useState(null); // 'business' | 'customer'
   const [storeCode, setStoreCode] = useState('');
-  const [biz, setBiz] = useState({ businessName: '', storeName: '', storeCode: '', phone: '' });
+  const [biz, setBiz] = useState({ businessName: '', storeName: '', phone: '' });
+  const [created, setCreated] = useState(null); // { business, store } after registration
 
   const setBizField = useCallback((field, value) => {
     setBiz((b) => ({ ...b, [field]: value }));
@@ -298,11 +299,10 @@ export default function Onboarding() {
 
   const businessMutation = useMutation({
     mutationFn: async () => {
-      if (!biz.businessName || !biz.storeName || !biz.storeCode) throw new Error('Completa los campos obligatorios');
+      if (!biz.businessName || !biz.storeName) throw new Error('Completa los campos obligatorios');
       const res = await base44.functions.invoke('createBusiness', {
         businessName: biz.businessName,
         storeName: biz.storeName,
-        storeCode: biz.storeCode.toUpperCase(),
         phone: biz.phone,
       });
       if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo crear el negocio');
@@ -319,11 +319,11 @@ export default function Onboarding() {
           onboarding_completed: true,
         },
       });
-      return business;
+      return { business, store };
     },
-    onSuccess: () => {
+    onSuccess: ({ business, store }) => {
       toast.success('¡Tu negocio está listo!');
-      setTimeout(() => { window.location.href = createPageUrl('AdminDashboard'); }, 900);
+      setCreated({ business, store }); // show the generated store code before continuing
     },
     onError: (e) => toast.error(e.message),
   });
@@ -372,10 +372,38 @@ export default function Onboarding() {
     );
   }
 
+  // ── Business created: reveal the auto-assigned store code ────────────────
+  if (created) {
+    const code = created.store?.code || '';
+    const copy = () => { try { navigator.clipboard.writeText(code); toast.success('Código copiado'); } catch { /* ignore */ } };
+    const panelDone = (
+      <BrandPanel
+        tone="violet" brand={created.business?.name} code={code}
+        perks={BUSINESS_PERKS} headline="¡Tu programa está activo!"
+        sub="Comparte el código con tus clientes para que empiecen a acumular puntos."
+      />
+    );
+    return (
+      <Shell panel={panelDone}>
+        <MobileCard tone="violet" brand={created.business?.name} code={code} />
+        <StepHeader eyebrow="Listo" title="¡Tu negocio está creado!" sub="Este es el código que tus clientes usarán para unirse." />
+        <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5 text-center">
+          <div className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">Código de tu tienda</div>
+          <div className="mt-1 font-display text-3xl font-bold tracking-[0.3em] text-slate-900">{code}</div>
+          <Button variant="outline" onClick={copy} className="mt-3 h-9">Copiar código</Button>
+          <p className="mt-3 text-xs text-slate-400">Puedes verlo y crear más tiendas desde el panel.</p>
+        </div>
+        <Button onClick={() => { window.location.href = createPageUrl('AdminDashboard'); }} className="mt-5 h-12 w-full bg-violet-600 text-base hover:bg-violet-700">
+          Ir a mi panel<ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </Shell>
+    );
+  }
+
   // Brand panel adapts to the chosen path / step.
   const tone = path === 'customer' ? 'gold' : 'violet';
   const panelBrand = path === 'customer' ? '' : biz.businessName;
-  const panelCode = path === 'customer' ? storeCode : biz.storeCode;
+  const panelCode = path === 'customer' ? storeCode : '';
   const panel = (
     <BrandPanel
       tone={tone} brand={panelBrand} code={panelCode} joining={path === 'customer'}
@@ -438,17 +466,14 @@ export default function Onboarding() {
         {/* Step 2 — business */}
         {step === 2 && path === 'business' && (
           <motion.div key="s2b" variants={fieldVariants} initial="initial" animate="animate" exit="exit">
-            <MobileCard tone="violet" brand={biz.businessName} code={biz.storeCode} />
+            <MobileCard tone="violet" brand={biz.businessName} code="" />
             <StepHeader step={2} eyebrow="Negocio" title="Registra tu negocio" sub={`Empieza tu prueba gratuita de ${TRIAL_DAYS} días.`} />
             <div className="space-y-4">
               <Field label="Nombre del negocio">
                 <Input autoFocus value={biz.businessName} onChange={(e) => setBizField('businessName', e.target.value)} placeholder="Café de la Esquina" className="h-11" />
               </Field>
-              <Field label="Nombre de tu primera tienda">
+              <Field label="Nombre de tu primera tienda" hint="Le asignaremos un código único para que tus clientes se unan.">
                 <Input value={biz.storeName} onChange={(e) => setBizField('storeName', e.target.value)} placeholder="Sucursal Centro" className="h-11" />
-              </Field>
-              <Field label="Código de tienda" hint="Lo compartirás con tus clientes para que se unan.">
-                <Input value={biz.storeCode} onChange={(e) => setBizField('storeCode', e.target.value.toUpperCase())} placeholder="CAFE001" maxLength={20} className="h-11 font-mono tracking-widest" />
               </Field>
               <Field label="Teléfono de contacto (opcional)">
                 <Input value={biz.phone} onChange={(e) => setBizField('phone', e.target.value)} placeholder="+52 …" className="h-11" />
@@ -461,7 +486,7 @@ export default function Onboarding() {
 
               <div className="flex gap-3 pt-1">
                 <Button variant="outline" onClick={() => { setStep(1); setPath(null); }} className="h-12 flex-1"><ArrowLeft className="mr-2 h-4 w-4" />Volver</Button>
-                <Button onClick={() => businessMutation.mutate()} disabled={!biz.businessName || !biz.storeName || !biz.storeCode || businessMutation.isPending} className="h-12 flex-1 bg-violet-600 text-base hover:bg-violet-700">
+                <Button onClick={() => businessMutation.mutate()} disabled={!biz.businessName || !biz.storeName || businessMutation.isPending} className="h-12 flex-1 bg-violet-600 text-base hover:bg-violet-700">
                   {businessMutation.isPending ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Creando…</> : <><CheckCircle className="mr-2 h-5 w-5" />Crear negocio</>}
                 </Button>
               </div>

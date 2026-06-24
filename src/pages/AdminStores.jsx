@@ -76,27 +76,30 @@ export default function AdminStores() {
     enabled: !!user,
   });
 
-  // Create/Update mutation
+  // Create/Update mutation.
+  // The store `code` is generated server-side (unique) and is immutable once set —
+  // customers join by it — so it is never sent from the client.
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (editingStore) {
-        return base44.entities.Store.update(editingStore.id, data);
+        const { code, ...rest } = data; // eslint-disable-line no-unused-vars
+        return base44.entities.Store.update(editingStore.id, rest);
       }
-      return base44.entities.Store.create({
-        ...data,
-        business_id: user.business_id,
-        business_name: user.business_name,
-      });
+      const { code, ...rest } = data; // eslint-disable-line no-unused-vars
+      const res = await base44.functions.invoke('createStore', rest);
+      if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo crear la tienda');
+      return res.data.store;
     },
-    onSuccess: () => {
+    onSuccess: (store) => {
       queryClient.invalidateQueries(['allStores']);
       setShowDialog(false);
       setEditingStore(null);
       resetForm();
-      toast.success(editingStore ? 'Tienda actualizada' : 'Tienda creada');
+      if (editingStore) toast.success('Tienda actualizada');
+      else toast.success(`Tienda creada · código ${store?.code || ''}`);
     },
-    onError: () => {
-      toast.error('Error al guardar la tienda');
+    onError: (e) => {
+      toast.error(e?.message || 'Error al guardar la tienda');
     }
   });
 
@@ -318,13 +321,16 @@ export default function AdminStores() {
                 />
               </div>
               <div>
-                <Label>Código</Label>
+                <Label>Código {editingStore ? '' : '(automático)'}</Label>
                 <Input
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  placeholder="STORE001"
-                  required
+                  value={editingStore ? formData.code : 'Se genera al crear'}
+                  readOnly
+                  disabled
+                  className="font-mono text-slate-500"
                 />
+                <p className="mt-1 text-xs text-slate-400">
+                  {editingStore ? 'El código no se puede cambiar.' : 'Se asigna un código único automáticamente.'}
+                </p>
               </div>
             </div>
 
