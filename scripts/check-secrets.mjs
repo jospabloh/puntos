@@ -30,7 +30,8 @@ function tracked() {
 }
 
 const SKIP_EXT = /\.(png|jpe?g|gif|webp|ico|svg|woff2?|ttf|eot|pdf|lock)$/i;
-const SKIP_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml)$/;
+// Skip lockfiles and THIS file (it contains the detection patterns by design).
+const SKIP_FILE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|check-secrets\.mjs)$/;
 
 // A real env file (has values), as opposed to the allowed template.
 const REAL_ENV = /(^|\/)\.env(\.(local|development|production|test))?$/;
