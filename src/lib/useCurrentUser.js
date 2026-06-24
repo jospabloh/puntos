@@ -19,8 +19,19 @@ export function useCurrentUser() {
         // Base44 stores custom user fields under `data`. Flatten them to the top
         // level so consumers can read user.business_id / user.storeId uniformly,
         // while built-in top-level fields (role, email, full_name, id) win.
-        if (u.data && typeof u.data === 'object') return { ...u.data, ...u };
-        return u;
+        const fu = (u.data && typeof u.data === 'object') ? { ...u.data, ...u } : { ...u };
+        // Resolve platform context server-side (APP_OWNER_EMAIL is a server secret
+        // the client can't read). Recognizes the configured owner and self-heals
+        // their role to admin. Best-effort: harmless if the function isn't live.
+        try {
+          const ctx = await base44.functions.invoke('getAppContext');
+          if (ctx?.data) {
+            fu.is_owner = Boolean(ctx.data.isOwner);
+            fu.support_email = ctx.data.supportEmail || null;
+            if (ctx.data.isOwner && ctx.data.role === 'admin') fu.role = 'admin';
+          }
+        } catch { /* getAppContext optional */ }
+        return fu;
       } catch (e) {
         return null;
       }
