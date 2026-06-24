@@ -1,0 +1,38 @@
+{
+  "name": "LoyaltyAccount",
+  "type": "object",
+  "description": "A customer's loyalty membership within a tenant's program. Financial fields are write-restricted by field-level RLS to admin/merchant/business_admin; balances are written server-side.",
+  "properties": {
+    "current_balance": { "type": "number", "default": 0, "description": "Saldo actual de puntos (cache; fuente de verdad es el ledger)", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "last_activity": { "type": "string", "format": "date-time", "description": "Última actividad en el programa" },
+    "lifetime_earned": { "type": "number", "default": 0, "description": "Total de puntos ganados históricamente", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "lifetime_redeemed": { "type": "number", "default": 0, "description": "Total de puntos canjeados históricamente", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "metadata": { "type": "object", "description": "Datos adicionales flexibles" },
+    "onboarding_completed": { "type": "boolean", "default": false, "description": "Si ya completó el onboarding" },
+    "phone": { "type": "string", "description": "Teléfono opcional" },
+    "qr_token": { "type": "string", "description": "Token único para QR (regenerable)" },
+    "qr_token_expires": { "type": "string", "format": "date-time", "description": "Expiración del token QR" },
+    "status": { "type": "string", "enum": ["active", "suspended", "closed"], "default": "active", "description": "Estado de la cuenta", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "store_code": { "type": "string", "description": "Código de la tienda (denormalizado)", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "store_id": { "type": "string", "description": "ID de la tienda (solo para clientes)", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "store_name": { "type": "string", "description": "Nombre de la tienda (denormalizado)", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "business_id": { "type": "string", "description": "ID del negocio (tenant) dueño del programa", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "subscription_plan": { "type": "string", "enum": ["trial", "monthly", "annual"], "default": "trial", "description": "Plan de suscripción del cliente", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "subscription_status": { "type": "string", "enum": ["trial", "active", "inactive", "canceled"], "default": "trial", "description": "Estado de la suscripción", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "tier": { "type": "string", "enum": ["bronze", "silver", "gold", "platinum"], "default": "bronze", "description": "Nivel de membresía", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "trial_end_date": { "type": "string", "format": "date-time", "description": "Fin de la prueba", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "trial_start_date": { "type": "string", "format": "date-time", "description": "Inicio de la prueba", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "user_email": { "type": "string", "description": "Email del usuario para búsqueda rápida", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "user_id": { "type": "string", "description": "ID del usuario propietario", "rls": { "write": { "$or": [ { "user_condition": { "role": "admin" } }, { "user_condition": { "role": "merchant" } }, { "user_condition": { "role": "business_admin" } } ] } } },
+    "user_name": { "type": "string", "description": "Nombre del cliente" },
+    "welcome_message_shown": { "type": "boolean", "default": false, "description": "Si ya se mostró la bienvenida del trial" }
+  },
+  "required": ["user_id", "user_email"],
+  "rls": {
+    "create": { "$or": [ { "data.user_id": "{{user.id}}" }, { "user_condition": { "role": "admin" } } ] },
+    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.store_id": "{{user.data.storeId}}" } ] }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.business_id": "{{user.data.business_id}}" } ] }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.store_id": "{{user.data.storeId}}" } ] }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

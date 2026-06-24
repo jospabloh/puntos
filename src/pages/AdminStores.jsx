@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRequirePage } from '@/lib/useCurrentUser';
+import { ROLES } from '@/lib/rbac';
 import { motion } from 'framer-motion';
 import { 
   Store, 
@@ -45,7 +47,7 @@ import {
 import { toast } from 'sonner';
 
 export default function AdminStores() {
-  const [user, setUser] = useState(null);
+  const { user, role, ready } = useRequirePage('AdminStores');
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
@@ -63,27 +65,14 @@ export default function AdminStores() {
   });
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      if (userData.role !== 'admin') {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-      setUser(userData);
-    } catch (e) {
-      base44.auth.redirectToLogin();
-    }
-  };
+  // Tenant scoping: owner sees everything ({}), business_admin only their business.
+  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
+  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
 
   // Fetch stores
   const { data: stores, isLoading } = useQuery({
-    queryKey: ['allStores'],
-    queryFn: () => base44.entities.Store.list('-created_date'),
+    queryKey: ['allStores', scopeKey],
+    queryFn: () => base44.entities.Store.filter(scope, '-created_date'),
     enabled: !!user,
   });
 
@@ -93,7 +82,11 @@ export default function AdminStores() {
       if (editingStore) {
         return base44.entities.Store.update(editingStore.id, data);
       }
-      return base44.entities.Store.create(data);
+      return base44.entities.Store.create({
+        ...data,
+        business_id: user.business_id,
+        business_name: user.business_name,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['allStores']);
@@ -160,7 +153,7 @@ export default function AdminStores() {
     store.city?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  if (!user) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-violet-600">Cargando...</div>

@@ -1,0 +1,60 @@
+{
+  "name": "Business",
+  "type": "object",
+  "description": "Tenant. A business that runs its own Puntos+ loyalty program. The platform owner (ACACIA) provisions and licenses these.",
+  "properties": {
+    "name": { "type": "string", "description": "Nombre comercial del negocio" },
+    "legal_name": { "type": "string", "description": "Razón social" },
+    "rfc": { "type": "string", "description": "RFC fiscal" },
+    "industry": { "type": "string", "description": "Giro / industria" },
+    "contact_email": { "type": "string", "description": "Email de contacto principal del negocio" },
+    "phone": { "type": "string", "description": "Teléfono de contacto" },
+    "address": { "type": "string", "description": "Dirección" },
+    "city": { "type": "string", "description": "Ciudad" },
+    "state": { "type": "string", "description": "Estado" },
+    "logo_url": { "type": "string", "description": "URL del logotipo" },
+    "primary_color": { "type": "string", "default": "#7c3aed", "description": "Color de marca primario" },
+    "owner_user_id": { "type": "string", "description": "ID del usuario dueño del negocio" },
+    "owner_email": { "type": "string", "description": "Email del dueño del negocio" },
+    "invite_code": { "type": "string", "description": "Código único para que el equipo se una al negocio" },
+    "invite_code_active": { "type": "boolean", "default": true, "description": "Si el código de invitación está activo" },
+    "status": { "type": "string", "enum": ["active", "suspended"], "default": "active", "description": "Estado operativo del negocio" },
+    "billing_status": { "type": "string", "enum": ["trial", "active", "view_only", "suspended", "archived"], "default": "trial", "description": "Estado de facturación / licencia" },
+    "license_plan": { "type": "string", "enum": ["starter", "growth", "pro", "enterprise"], "default": "starter", "description": "Plan de licencia actual" },
+    "license_cycle": { "type": "string", "enum": ["monthly", "annual"], "default": "monthly", "description": "Ciclo de facturación" },
+    "licensed_user_limit": { "type": "number", "default": 2, "description": "Límite de usuarios de equipo permitidos por la licencia" },
+    "licensed_store_limit": { "type": "number", "default": 1, "description": "Límite de tiendas permitidas por la licencia" },
+    "trial_start_at": { "type": "string", "format": "date-time", "description": "Inicio de la prueba gratuita" },
+    "trial_end_at": { "type": "string", "format": "date-time", "description": "Fin de la prueba gratuita" },
+    "license_activated_at": { "type": "string", "format": "date-time", "description": "Cuándo se activó la licencia pagada" },
+    "license_expires_at": { "type": "string", "format": "date-time", "description": "Cuándo expira la licencia pagada" },
+    "payment_reference": { "type": "string", "description": "Referencia de pago / folio" },
+    "activation_notes": { "type": "string", "description": "Notas de activación del dueño de plataforma" },
+    "activated_by_admin": { "type": "string", "description": "Email del admin de plataforma que activó" },
+    "auto_renewal": { "type": "boolean", "default": false, "description": "Renovación automática de licencia" },
+    "support_contacted_at": { "type": "string", "format": "date-time", "description": "Última vez que el negocio contactó soporte" },
+    "view_only_since": { "type": "string", "format": "date-time", "description": "Fecha en que entró en modo solo lectura" },
+    "archived_at": { "type": "string", "format": "date-time", "description": "Fecha de archivado" },
+    "scheduled_delete_at": { "type": "string", "format": "date-time", "description": "Fecha programada de eliminación permanente" },
+    "metadata": { "type": "object", "description": "Configuración adicional flexible" }
+  },
+  "required": ["name"],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        { "id": "{{user.data.business_id}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "id": "{{user.data.business_id}}" } ] },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "user_condition": { "role": "admin" }
+    }
+  }
+}

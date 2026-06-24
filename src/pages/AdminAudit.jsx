@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
+import { useRequirePage } from '@/lib/useCurrentUser';
+import { ROLES } from '@/lib/rbac';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -55,33 +57,20 @@ const roleConfig = {
 };
 
 export default function AdminAudit() {
-  const [user, setUser] = useState(null);
+  const { user, role, ready } = useRequirePage('AdminAudit');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      if (userData.role !== 'admin') {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-      setUser(userData);
-    } catch (e) {
-      base44.auth.redirectToLogin();
-    }
-  };
+  // Tenant scoping: owner sees everything ({}), business_admin only their business.
+  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
+  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
 
   // Fetch audit logs
   const { data: auditLogs, isLoading } = useQuery({
-    queryKey: ['auditLogs'],
-    queryFn: () => base44.entities.AuditLog.list('-created_date', 500),
+    queryKey: ['auditLogs', scopeKey],
+    queryFn: () => base44.entities.AuditLog.filter(scope, '-created_date', 500),
     enabled: !!user,
   });
 
@@ -97,7 +86,7 @@ export default function AdminAudit() {
     return matchesSearch && matchesAction && matchesRole && matchesStatus;
   }) || [];
 
-  if (!user) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-violet-600">Cargando...</div>

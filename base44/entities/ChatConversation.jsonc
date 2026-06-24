@@ -1,0 +1,26 @@
+{
+  "name": "ChatConversation",
+  "type": "object",
+  "description": "Customer support/assistant conversation. Owned by the customer; readable by owner and the tenant's business_admin.",
+  "properties": {
+    "user_id": { "type": "string", "description": "ID del usuario" },
+    "user_email": { "type": "string", "description": "Email del usuario" },
+    "business_id": { "type": "string", "description": "ID del negocio (tenant)" },
+    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
+    "status": { "type": "string", "enum": ["active", "resolved", "escalated"], "default": "active" },
+    "category": { "type": "string", "enum": ["balance", "redemption", "earn", "offer", "support", "other"], "description": "Categoría principal" },
+    "summary": { "type": "string", "description": "Resumen de la conversación" },
+    "satisfaction_rating": { "type": "number", "description": "Calificación del usuario (1-5)" },
+    "messages_count": { "type": "number", "default": 0 },
+    "last_message_at": { "type": "string", "format": "date-time" },
+    "resolved_at": { "type": "string", "format": "date-time" },
+    "metadata": { "type": "object" }
+  },
+  "required": ["user_id"],
+  "rls": {
+    "create": { "data.user_id": "{{user.id}}" },
+    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" } ] },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

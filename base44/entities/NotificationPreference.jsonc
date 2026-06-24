@@ -1,0 +1,21 @@
+{
+  "name": "NotificationPreference",
+  "type": "object",
+  "description": "Per-user notification toggles. Owned by the user.",
+  "properties": {
+    "user_id": { "type": "string", "description": "ID del usuario" },
+    "user_email": { "type": "string", "description": "Email del usuario" },
+    "business_id": { "type": "string", "description": "ID del negocio (tenant)" },
+    "campaigns_enabled": { "type": "boolean", "default": true, "description": "Notificaciones de nuevas campañas" },
+    "offers_enabled": { "type": "boolean", "default": true, "description": "Notificaciones de nuevas ofertas" },
+    "points_activity_enabled": { "type": "boolean", "default": true, "description": "Notificaciones de movimientos de puntos" },
+    "email_enabled": { "type": "boolean", "default": true, "description": "Recibir notificaciones por email" }
+  },
+  "required": ["user_id", "user_email"],
+  "rls": {
+    "create": { "data.user_id": "{{user.id}}" },
+    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" } ] },
+    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" } ] },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

@@ -77,12 +77,108 @@
 
 
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Puntos+ design tokens
+   Brand: refined violet. Signature accent: "puntos gold" (amber) — points are
+   the product, so the currency gets the warm metallic accent that violet SaaS
+   never uses. Ink is a deep indigo, not pure black, to keep the whole surface
+   on-brand.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --pp-ink: 258 52% 12%;          /* #1a1033 deep indigo ink */
+  --pp-violet: 262 83% 58%;       /* #7c3aed brand */
+  --pp-violet-deep: 263 70% 35%;  /* #4c1d95 */
+  --pp-gold: 38 92% 50%;          /* #f59e0b puntos accent */
+  --pp-gold-soft: 45 93% 64%;     /* #fbbf24 */
+  --pp-pink: 330 81% 60%;         /* #ec4899 secondary spark */
+  --pp-mist: 262 60% 97%;         /* tinted surface */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, .font-display {
+    font-family: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.018em;
+  }
+
+  /* Tabular figures for points/money so columns line up */
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  /* The gradient lockup used for the wordmark and key numbers */
+  .pp-gradient-text {
+    background: linear-gradient(120deg, hsl(var(--pp-violet)) 0%, hsl(var(--pp-pink)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .pp-gold-text {
+    background: linear-gradient(120deg, hsl(var(--pp-gold)) 0%, hsl(var(--pp-gold-soft)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  /* Frosted card used across customer + back-office surfaces */
+  .pp-glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid rgba(124, 58, 237, 0.10);
+  }
+  /* The control-room shell background for back-office pages */
+  .pp-shell-bg {
+    background:
+      radial-gradient(1100px 520px at 15% -8%, rgba(124, 58, 237, 0.10), transparent 60%),
+      radial-gradient(900px 480px at 100% 0%, rgba(236, 72, 153, 0.08), transparent 55%),
+      linear-gradient(180deg, #fbfaff 0%, #f6f4fc 100%);
+  }
+  /* Hairline grid texture for hero panels */
+  .pp-grid-texture {
+    background-image:
+      linear-gradient(rgba(124, 58, 237, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124, 58, 237, 0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .pp-card-hover {
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+  .pp-card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px -24px rgba(76, 29, 149, 0.45);
+    border-color: rgba(124, 58, 237, 0.28);
+  }
+  /* Legacy aliases kept so pre-existing pages keep their styling after the
+     Layout's inline <style> was removed. Mapped to the new brand. */
+  .gradient-text {
+    background: linear-gradient(120deg, hsl(var(--pp-violet)) 0%, hsl(var(--pp-pink)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px) saturate(1.4);
+    border: 1px solid rgba(124, 58, 237, 0.10);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
   }
 }

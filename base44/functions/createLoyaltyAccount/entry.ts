@@ -57,6 +57,12 @@ Deno.serve(async (req) => {
       onboarding_completed: true
     };
 
+    // Tenant context. Runs as service role, so it can set the field-level
+    // RLS-restricted `business_id` that a normal customer cannot write itself.
+    // For customers it is derived from the store; for merchants/owners it is
+    // passed explicitly. Falls back gracefully when absent (legacy single-program).
+    const businessParam = body?.business;
+
     let payload;
     if (type === 'customer') {
       const store = body?.store;
@@ -68,12 +74,16 @@ Deno.serve(async (req) => {
         store_id: store.id,
         store_code: store.code,
         store_name: store.name,
+        business_id: store.business_id || businessParam?.id,
+        business_name: store.business_name || businessParam?.name,
         subscription_status: 'active'
       };
     } else {
       const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       payload = {
         ...base,
+        business_id: businessParam?.id,
+        business_name: businessParam?.name,
         subscription_status: 'trial',
         subscription_plan: 'trial',
         trial_start_date: nowIso,

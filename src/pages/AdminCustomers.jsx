@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { makeIdempotencyKey } from '@/lib/utils';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRequirePage } from '@/lib/useCurrentUser';
+import { ROLES } from '@/lib/rbac';
 import {
   Users,
   Search,
@@ -63,7 +65,7 @@ const tierConfig = {
 };
 
 export default function AdminCustomers() {
-  const [user, setUser] = useState(null);
+  const { user, role, ready } = useRequirePage('AdminCustomers');
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -71,27 +73,14 @@ export default function AdminCustomers() {
   const [adjustData, setAdjustData] = useState({ points: 0, reason: '' });
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
-    try {
-      const userData = await base44.auth.me();
-      if (userData.role !== 'admin') {
-        window.location.href = createPageUrl('Home');
-        return;
-      }
-      setUser(userData);
-    } catch (e) {
-      base44.auth.redirectToLogin();
-    }
-  };
+  // Tenant scoping: owner sees everything ({}), business_admin only their business.
+  const scope = role === ROLES.OWNER ? {} : { business_id: user?.business_id };
+  const scopeKey = role === ROLES.OWNER ? 'all' : user?.business_id;
 
   // Fetch all accounts
   const { data: accounts, isLoading } = useQuery({
-    queryKey: ['allAccounts'],
-    queryFn: () => base44.entities.LoyaltyAccount.list('-created_date', 500),
+    queryKey: ['allAccounts', scopeKey],
+    queryFn: () => base44.entities.LoyaltyAccount.filter(scope, '-created_date', 500),
     enabled: !!user,
   });
 
@@ -119,6 +108,8 @@ export default function AdminCustomers() {
 
       // Create ledger entry
       await base44.entities.PointsLedger.create({
+        business_id: user.business_id,
+        business_name: user.business_name,
         account_id: selectedCustomer.id,
         user_id: selectedCustomer.user_id,
         type: 'ADJUST',
@@ -144,9 +135,11 @@ export default function AdminCustomers() {
 
       // Audit log
       await base44.entities.AuditLog.create({
+        business_id: user.business_id,
+        business_name: user.business_name,
         actor_id: user.id,
         actor_email: user.email,
-        actor_role: 'admin',
+        actor_role: role === ROLES.OWNER ? 'admin' : role,
         action: 'adjust',
         entity_type: 'PointsLedger',
         target_user_id: selectedCustomer.user_id,
@@ -177,7 +170,7 @@ export default function AdminCustomers() {
     return matchesSearch && matchesTier;
   }) || [];
 
-  if (!user) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-violet-600">Cargando...</div>

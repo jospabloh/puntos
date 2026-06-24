@@ -1,0 +1,34 @@
+{
+  "name": "Offer",
+  "type": "object",
+  "description": "A reward customers redeem with points. Active offers are publicly readable; management is tenant-scoped.",
+  "properties": {
+    "title": { "type": "string", "description": "Título de la oferta" },
+    "description": { "type": "string", "description": "Descripción detallada" },
+    "short_description": { "type": "string", "description": "Descripción corta para cards" },
+    "business_id": { "type": "string", "description": "ID del negocio (tenant)" },
+    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
+    "type": { "type": "string", "enum": ["discount", "product", "experience", "cashback"], "description": "Tipo de recompensa" },
+    "campaign_id": { "type": "string", "description": "Campaña asociada" },
+    "points_cost": { "type": "number", "description": "Costo en puntos" },
+    "value_mxn": { "type": "number", "description": "Valor en pesos" },
+    "image_url": { "type": "string", "description": "Imagen de la oferta" },
+    "category": { "type": "string", "enum": ["food", "shopping", "travel", "entertainment", "services", "other"], "description": "Categoría" },
+    "status": { "type": "string", "enum": ["active", "inactive", "soldout"], "default": "active" },
+    "stock": { "type": "number", "description": "Cantidad disponible (-1 = ilimitado)" },
+    "redemptions_count": { "type": "number", "default": 0, "description": "Veces canjeada" },
+    "eligible_tiers": { "type": "array", "items": { "type": "string" }, "description": "Niveles elegibles" },
+    "eligible_stores": { "type": "array", "items": { "type": "string" }, "description": "Tiendas donde se puede canjear" },
+    "start_date": { "type": "string", "format": "date-time" },
+    "end_date": { "type": "string", "format": "date-time" },
+    "terms": { "type": "string", "description": "Términos y condiciones" },
+    "recommendation_tags": { "type": "array", "items": { "type": "string" }, "description": "Tags para el recomendador" }
+  },
+  "required": ["title", "points_cost", "type"],
+  "rls": {
+    "create": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.status": "active" }, { "data.business_id": "{{user.data.business_id}}" } ] },
+    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
+    "delete": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] }
+  }
+}

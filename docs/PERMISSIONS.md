@@ -1,163 +1,170 @@
-# Puntos+ — Roles and Permissions Matrix
+# Puntos+ — Roles & Permissions Matrix
 
-Version: 1.4.7 | Updated: 2026-06-22
+Version: 2.0.0 | Updated: 2026-06-24
 
----
-
-## Roles
-
-| Role | Description | How Assigned |
-|------|-------------|--------------|
-| `admin` | Full access to admin panel, all data, all operations | Set via `base44.auth.updateMe` or directly in auth system |
-| `merchant` | Access to POS; can earn/burn points for customers of active stores | Set during merchant onboarding |
-| `user` (customer) | Access to own wallet, history, offers | Set during customer onboarding |
-| (unauthenticated) | Public pages only; redirected to login | Default before login |
-
-**Admin defaults:** All admin capabilities are `true` by default.  
-**Member/merchant defaults:** All capabilities not listed as `true` default to `false`.  
-**New features** must be added to this matrix before release with safe defaults.
+Puntos+ is a **multi-tenant SaaS**. The capability matrix below is the canonical
+contract; it is mirrored in code at `src/lib/rbac.js` (`PERMISSIONS`) and rendered
+in-app at `/Permissions`. When you add a capability, add it in **both** places
+with the narrowest safe default.
 
 ---
 
-## Route / Page Access
+## Tiers (roles)
 
-| Page | Route | admin | merchant | customer | Enforcement File | Enforcement Method |
-|------|-------|-------|----------|----------|------------------|--------------------|
-| Home | `/Home` | ✅ | ✅ | ✅ | `Home.jsx` | Redirects to login if no auth |
-| Wallet | `/Wallet` | ✅ | ✅ | ✅ | `Wallet.jsx` | Redirects to login if no auth |
-| Offers | `/Offers` | ✅ | ✅ | ✅ | `Offers.jsx` | Redirects to login if no auth |
-| History | `/History` | ✅ | ✅ | ✅ | `History.jsx` | Redirects to login if no auth |
-| Chat | `/Chat` | ✅ | ✅ | ✅ | `Chat.jsx` | Redirects to login if no auth |
-| Profile | `/Profile` | ✅ | ✅ | ✅ | `Profile.jsx` | Redirects to login if no auth |
-| Onboarding | `/Onboarding` | ✅ | ✅ | ✅ | `Onboarding.jsx` | Redirects completed accounts to Home |
-| MerchantPOS | `/MerchantPOS` | ✅ | ✅ | ❌ | `MerchantPOS.jsx:75` | `role !== 'merchant' && role !== 'admin' && merchant_role !== 'merchant'` → redirect Home |
-| AdminDashboard | `/AdminDashboard` | ✅ | ❌ | ❌ | `AdminDashboard.jsx:59` | `role !== 'admin'` → redirect Home |
-| AdminStores | `/AdminStores` | ✅ | ❌ | ❌ | `AdminStores.jsx:71` | `role !== 'admin'` → redirect Home |
-| AdminCampaigns | `/AdminCampaigns` | ✅ | ❌ | ❌ | `AdminCampaigns.jsx:91` | `role !== 'admin'` → redirect Home |
-| AdminCustomers | `/AdminCustomers` | ✅ | ❌ | ❌ | `AdminCustomers.jsx:82` | `role !== 'admin'` → redirect Home |
-| AdminAudit | `/AdminAudit` | ✅ | ❌ | ❌ | `AdminAudit.jsx:72` | `role !== 'admin'` → redirect Home |
+| App role | Base44 `role` (RLS) | Scope | Description |
+|----------|---------------------|-------|-------------|
+| **owner** | `admin` | Cross-tenant (all businesses) + service-role | Platform owner (ACACIA). Manages tenants, licenses, and the support console. |
+| **business_admin** | `business_admin` | One tenant (`business_id`) | Tenant owner/admin. Manages stores, team, customers, campaigns, billing, support. |
+| **staff** | `merchant` | One store/tenant (`storeId` / `business_id`) | Cashier/operator. Point of sale only. |
+| **customer** | `customer` (legacy `user`) | Own account (`user_id`) | End consumer. Wallet, offers, history, redemptions. |
 
-**Notes:**
-- Route protection is UI-only (client-side redirect). The Base44 platform enforces entity-level access at the data layer via RLS.
-- Unauthenticated users are redirected by `base44.auth.redirectToLogin()`.
+Role is resolved by `getAppRole(user)` in `src/lib/rbac.js`. The **owner is the
+super-tier** — `can(owner, …)` is always `true`. Per-tenant overrides may be
+stored in the `PermissionProfile` entity (consumed by `can(user, key, override)`).
+
+> Backward compatibility: legacy customers carry Base44 `role: 'user'`; `getAppRole`
+> treats `'user'` as `customer`. Legacy merchants carry `role: 'merchant'` and/or
+> `merchant_role: 'merchant'`; both resolve to `staff`.
 
 ---
 
-## Entity / Data Access
+## Capability matrix
 
-| Entity | Admin | Merchant | Customer | Isolation Scope | Notes |
-|--------|-------|----------|----------|-----------------|-------|
-| `LoyaltyAccount` read | ✅ all | ✅ own store only (by `store_id` + `user_email`) | ✅ own account (by `user_email`) | By `user_email` or `store_id` | Admin sees all; merchant filtered in POS search |
-| `LoyaltyAccount` write | ✅ | ✅ (balance updates via POS) | ✅ (QR token refresh, profile only) | User-owned + field-level RLS | Financial/identity fields (`current_balance`, `lifetime_*`, `tier`, `status`, `subscription_*`, `trial_*`, `store_*`, `user_id`, `user_email`) are write-restricted to admin/merchant via field-level RLS. Customer balance writes happen only server-side (`redeemOffer`, `createLoyaltyAccount`) |
-| `PointsLedger` read | ✅ all | ✅ by `store_id` | ✅ by `account_id` | `account_id` / `store_id` | Customer and merchant filtered at query time |
-| `PointsLedger` create | ✅ | ✅ (EARN/BURN) | ❌ | `store_id` required for merchant ops | Idempotency key enforced for EARN |
-| `AuditLog` read | ✅ all | ✅ own store (by `store_id`) | ✅ own / targeted (by `actor_id` or `target_user_id`) | `actor_id` / `target_user_id` / `store_id` | RLS: admin all; user own or targeted; merchant by store. AdminAudit page |
-| `AuditLog` create | ✅ | ✅ (own ops) | ❌ | Actor fields set server-side | Merchant creates for EARN/BURN/ADJUST ops |
-| `Store` read | ✅ all | ✅ active stores | ✅ (store name in account) | `status: active` filter | Merchants see all active stores in POS selector |
-| `Store` write | ✅ | ❌ | ❌ | Admin only | AdminStores CRUD |
-| `Offer` read | ✅ | ✅ | ✅ (active only) | `status: active` filter | All authenticated users |
-| `Offer` write | ✅ | ❌ | ❌ | Admin only | AdminCampaigns |
-| `Campaign` read | ✅ | ❌ | ❌ | Admin only | |
-| `Campaign` write | ✅ | ❌ | ❌ | Admin only | AdminCampaigns |
-| `Redemption` read | ✅ all | ✅ own store (by `store_id`) | ✅ own (by `user_id`) | `user_id` / `store_id` | RLS: admin all; user own; merchant by store. Created on offer redemption |
-| `Redemption` create | ✅ | ❌ | ✅ | Own account only | Offers.jsx; balance check enforced client-side |
-| `NotificationPreference` read | ✅ | ❌ | ✅ own | `user_id` | Profile.jsx |
-| `NotificationPreference` write | ✅ | ❌ | ✅ own | `user_id` | Profile.jsx |
+✅ = allowed by default · — = denied. Owner holds every capability implicitly.
 
----
+### Platform (owner only)
+| Capability | owner | business_admin | staff | customer |
+|---|---|---|---|---|
+| `platform:view_console` | ✅ | — | — | — |
+| `tenants:view` / `:create` / `:update` / `:suspend` / `:delete` | ✅ | — | — | — |
+| `licenses:view` / `:assign` / `:activate` | ✅ | — | — | — |
+| `support:view_console` / `:reply_all` / `:internal_note` | ✅ | — | — | — |
+| `platform:impersonate` | ✅ | — | — | — |
 
-## Loyalty Points Operations
+### Tenant administration
+| Capability | owner | business_admin | staff | customer |
+|---|---|---|---|---|
+| `business:view` / `:update_settings` / `:view_billing` / `:request_upgrade` | ✅ | ✅ | — | — |
+| `users:view` / `:invite` / `:update_role` / `:remove` | ✅ | ✅ | — | — |
+| `stores:view` | ✅ | ✅ | ✅ | — |
+| `stores:create` / `:update` / `:delete` | ✅ | ✅ | — | — |
+| `campaigns:view` / `:manage` | ✅ | ✅ | — | — |
+| `offers:view` | ✅ | ✅ | ✅ | ✅ |
+| `offers:manage` | ✅ | ✅ | — | — |
+| `customers:view` / `:adjust_points` / `:export` | ✅ | ✅ | — | — |
+| `audit:view` | ✅ | ✅ | — | — |
+| `analytics:view` | ✅ | ✅ | — | — |
 
-| Operation | admin | merchant | customer | Permission Key | Enforcement Location |
-|-----------|-------|----------|----------|----------------|----------------------|
-| Earn points (POS purchase) | ✅ | ✅ | ❌ | `role === 'merchant' or 'admin'` | `MerchantPOS.jsx:75` |
-| Burn points (POS redemption) | ✅ | ✅ | ❌ | `role === 'merchant' or 'admin'` | `MerchantPOS.jsx:75` |
-| Redeem offer (self) | ✅ | ❌ | ✅ | Authenticated user | `Offers.jsx:119` |
-| Manual adjust points | ✅ | ❌ | ❌ | `role === 'admin'` | `AdminCustomers.jsx:82` |
-| View own balance | ✅ | ✅ | ✅ | Authenticated | `Home.jsx`, `Wallet.jsx` |
-| View all balances | ✅ | ❌ | ❌ | `role === 'admin'` | `AdminCustomers.jsx` |
-| View own transaction history | ✅ | ✅ | ✅ | Authenticated + `account_id` filter | `History.jsx` |
-| View all transactions | ✅ | ❌ | ❌ | `role === 'admin'` | `AdminDashboard.jsx`, `AdminCustomers.jsx` |
+### Point of sale
+| Capability | owner | business_admin | staff | customer |
+|---|---|---|---|---|
+| `pos:access` / `pos:earn` / `pos:burn` | ✅ | ✅ | ✅ | — |
 
----
+### Support (tenant side)
+| Capability | owner | business_admin | staff | customer |
+|---|---|---|---|---|
+| `support:create_ticket` / `:view_own_tickets` / `:reply_own` | ✅ | ✅ | — | — |
 
-## Wallet / Pass Operations
-
-| Operation | admin | merchant | customer | Enforcement |
-|-----------|-------|----------|----------|-------------|
-| Generate Google Wallet pass | ✅ | — | ✅ | `createGoogleWalletPass`: `base44.auth.me()` check |
-| Generate Apple Wallet pass | ✅ | — | ✅ | `createAppleWalletPass`: `base44.auth.me()` check |
-| Refresh QR token | ✅ | — | ✅ | Own account only — `LoyaltyAccount.update(account.id)` |
-| Auto-regenerate expired QRs | admin/system only | — | — | `regenerateExpiredQR`: `role === 'admin'` |
+### Customer-facing
+| Capability | owner | business_admin | staff | customer |
+|---|---|---|---|---|
+| `wallet:view` / `wallet:generate_pass` | ✅ | ✅ | ✅ | ✅ |
+| `rewards:redeem` | ✅ | — | — | ✅ |
+| `history:view_own` / `chat:use` / `profile:edit_own` | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
-## Serverless Functions
+## Route / page access
 
-| Function | Caller Required Role | Auth Check | Purpose |
-|----------|---------------------|------------|---------|
-| `createGoogleWalletPass` | Any authenticated user | `base44.auth.me()` → 401 if missing | Generate Google Wallet JWT for current user |
-| `createAppleWalletPass` | Any authenticated user | `base44.auth.me()` → 401 if missing | Generate Apple Wallet .pkpass for current user |
-| `checkTrialExpiration` | `admin` | `role !== 'admin'` → 403 | Scheduled: expire/suspend trial accounts |
-| `regenerateExpiredQR` | `admin` | `role !== 'admin'` → 403 | Scheduled: refresh expired QR tokens |
-| `sendWeeklySummary` | `admin` | `role !== 'admin'` → 403 | Scheduled: send weekly activity emails |
-| `cleanupInactiveUsers` | `admin` | `role !== 'admin'` → 403 | Scheduled: send re-engagement emails |
-| `updateWalletPasses` | `admin` | `role !== 'admin'` → 403 | Scheduled stub: update wallet pass balances (not yet implemented) |
-| `redeemOffer` | Any authenticated user | `base44.auth.me()` → 401 if missing | Validate funds/stock and perform offer redemption server-side (service role); writes Redemption, PointsLedger BURN and balance |
-| `createLoyaltyAccount` | Any authenticated user | `base44.auth.me()` → 401 if missing | Create the caller's LoyaltyAccount during onboarding with server-enforced safe values (balance 0); one account per user |
+Enforced client-side by `useRequirePage(pageName)` (`src/lib/useCurrentUser.js`)
+against `PAGE_ACCESS` in `src/lib/rbac.js`. The authoritative enforcement is
+Base44 **RLS at the data layer** (below).
 
----
+| Page | owner | business_admin | staff | customer |
+|------|:---:|:---:|:---:|:---:|
+| PlatformDashboard / PlatformTenants / PlatformLicenses / PlatformSupport | ✅ | — | — | — |
+| AdminDashboard / AdminStores / AdminCampaigns / AdminCustomers / AdminAudit | ✅ | ✅ | — | — |
+| BusinessSettings / BusinessUsers / BusinessBilling / BusinessSupport | ✅ | ✅ | — | — |
+| MerchantPOS | ✅ | ✅ | ✅ | — |
+| Permissions | ✅ | ✅ | ✅ | ✅ |
+| Home / Wallet / Offers / History / Chat / Profile | ✅ | ✅ | ✅ | ✅ |
+| Onboarding | (no-layout; routes by chosen path / invitation) |
 
-## Navigation / UI Visibility
-
-| UI Element | Shown to admin | Shown to merchant | Shown to customer | Enforcement File |
-|------------|---------------|------------------|------------------|------------------|
-| Admin nav items (Dashboard, Stores, Campaigns, Customers, Audit) | ✅ | ❌ | ❌ | `Layout.jsx:46-47` |
-| POS nav link | ✅ | ✅ | ❌ | `Layout.jsx:47` |
-| Customer nav (Home, Wallet, Offers, History, Chat) | ✅ | ✅ | ✅ | `Layout.jsx:50-56` |
-| "Admin" button in header | ✅ | ❌ | ❌ | `Layout.jsx:153` |
-| "POS" button in header | ✅ | ✅ | ❌ | `Layout.jsx:158` |
-| Trial banner | — | ✅ (trial only) | — | `Home.jsx`, `Wallet.jsx`, `History.jsx`, `MerchantPOS.jsx` |
-| Suspended account modal | — | ✅ (suspended) | — | `Home.jsx`, `Wallet.jsx`, `History.jsx`, `Offers.jsx` |
+The back-office (owner + business_admin pages) renders inside a **sidebar shell**;
+staff/customers get the consumer top/bottom nav. See `src/Layout.jsx`.
 
 ---
 
-## Permission Gaps and Open Items
+## Entity / data access (RLS)
 
-| ID | Severity | Description | Status |
-|----|----------|-------------|--------|
-| G-1 | Medium | Merchants can see and transact for any active store (not restricted to their own) | Open — by design (single-program model), documented |
-| G-2 | Medium | Client-side balance calculation race condition for concurrent transactions | Partially resolved (v1.4.5) — customer redemption now atomic server-side (`redeemOffer`); merchant POS earn/burn still client-side |
-| G-8 | Critical | Normal users could alter their own `current_balance`/financial fields via direct `LoyaltyAccount` update | ✅ Resolved (v1.4.5) — field-level RLS restricts financial-field writes to admin/merchant; customer balance writes moved to service-role functions |
-| G-9 | Medium | `redeemOffer` did not propagate `store_id` to `Redemption` and `PointsLedger` records — merchant-scoped RLS could not filter them | ✅ Resolved (v1.4.6) — `store_id: account.store_id` added to both records in `redeemOffer/entry.ts` |
-| G-3 | Medium | BURN idempotency uses `Date.now()`; rapid duplicate calls are possible within the same millisecond | ✅ Resolved (v1.4.3) — keys now use a crypto-random suffix via `makeIdempotencyKey()` |
-| G-4 | Low | Route access is enforced only client-side; Base44 RLS is the actual data-layer enforcement | Acceptable — Base44 platform handles data layer |
-| G-5 | Low | Hardcoded admin notification email in `checkTrialExpiration` and `Onboarding` | ✅ Resolved (v1.4.3) — moved to `ADMIN_NOTIFICATION_EMAIL` / `VITE_ADMIN_NOTIFICATION_EMAIL` |
-| G-6 | Medium | `react-quill`/`quill` XSS vulnerability in admin campaign editor | ✅ Resolved (v1.4.3) — unused `react-quill` dependency removed; `npm audit` clean |
-| G-7 | Medium | `updateWalletPasses/entry.ts` is a stub — wallet push updates not yet implemented | Open — requires Google/Apple Wallet API integration |
-| G-10 | Low | `createGoogleWalletPass` and `createAppleWalletPass` returned `error.message` to client | ✅ Resolved (v1.4.6) — generic message returned; details logged server-side only |
-| G-11 | Low | `createGoogleWalletPass` returned `objectId` (contains `account.id`) to client in response | ✅ Resolved (v1.4.6) — `objectId` removed from response; only `url` returned |
-| H-1 | High | `esbuild` 0.17–0.28 (GHSA-gv7w-rqvm-qjhr) — supply-chain vulnerability in build toolchain (not deployed runtime). Fix requires vite@8 (breaking change) | ✅ Resolved (v1.4.7) — `npm audit fix` resolved all open dependency vulnerabilities; `npm audit` now reports 0 vulnerabilities |
-| G-12 | High ×3 / Moderate / Low | `ws` (GHSA-96hv-2xvq-fx4p) memory exhaustion DoS and related `engine.io-client` vulnerabilities in transitive dependencies | ✅ Resolved (v1.4.7) — `npm audit fix` applied; 0 vulnerabilities remaining |
-| G-13 | Low | `createLoyaltyAccount`, `regenerateExpiredQR`, and `checkTrialExpiration` returned `error.message` in HTTP 500 response — inconsistent with G-10 fix | ✅ Resolved (v1.4.7) — generic messages returned; details logged server-side only |
+All entities live in `base44/entities/*.jsonc` and are deployed to the Base44
+backend. The multi-tenant isolation strategy and its two-halves gotcha are
+documented in `CLAUDE.md`. Summary of effective access:
+
+| Entity | owner | business_admin | staff | customer | Isolation key |
+|--------|-------|----------------|-------|----------|---------------|
+| `Business` | all | own (`id == business_id`) | — | — | `id` |
+| `PermissionProfile` | all | own tenant | read own tenant | read own tenant | `data.business_id` |
+| `SupportTicket` / `SupportTicketMessage` | all | own tenant | — | — | `data.business_id` (+ `is_internal_note=false` for tenant) |
+| `LicenseEvent` | all | read own tenant | — | — | `data.business_id` |
+| `Invitation` | all | own tenant | own email | own email | `data.business_id` / `data.email` |
+| `LoyaltyAccount` | all | own tenant | own store/tenant | own (`user_id`) | `data.business_id` / `data.store_id` / `data.user_id` |
+| `PointsLedger` | all | own tenant | own store/tenant | own (`user_id`) | `data.business_id` / `data.store_id` |
+| `Store` | all | own tenant | active + own tenant | active (join) | `data.business_id` / `data.status` |
+| `Campaign` / `Offer` | all | own tenant | active | active | `data.business_id` / `data.status` |
+| `Redemption` | all | own tenant | own store/tenant | own (`user_id`) | `data.business_id` / `data.store_id` |
+| `AuditLog` | all | own tenant | own store | own / targeted | `data.business_id` / `data.store_id` |
+| `ChatConversation` | all | own tenant | — | own (`user_id`) | `data.user_id` / `data.business_id` |
+| `NotificationPreference` | all | — | — | own (`user_id`) | `data.user_id` |
+
+**Field-level RLS** on `LoyaltyAccount` restricts financial/identity fields
+(`current_balance`, `lifetime_*`, `tier`, `status`, `subscription_*`, `trial_*`,
+`store_*`, `business_*`, `user_*`) to `admin` / `merchant` / `business_admin`;
+customer balance writes happen only server-side (`redeemOffer`,
+`createLoyaltyAccount`).
 
 ---
 
-## Admin Onboarding Checklist
+## License plans (feature gating)
 
-When adding a new admin user:
-1. Set `role: 'admin'` in the authentication system.
-2. Verify the user can access `/AdminDashboard`.
-3. Confirm the user cannot access data from outside the program scope.
-4. Review `AuditLog` for any unexpected admin actions.
+Defined in `src/lib/licensePlans.js` and gated via `planHasFeature` / `checkLimit`.
 
-When adding a new merchant user:
-1. Complete merchant onboarding (creates Store and LoyaltyAccount with trial).
-2. Verify `role: 'merchant'` is set.
-3. Verify the merchant can access `/MerchantPOS`.
-4. Confirm the trial end date is set correctly in `LoyaltyAccount`.
+| | Starter | Growth | Pro | Enterprise |
+|---|---|---|---|---|
+| Precio / mes | Gratis | $899 | $2,490 | Contáctanos |
+| Tiendas | 1 | 5 | 25 | ∞ |
+| Usuarios equipo | 2 | 10 | 50 | ∞ |
+| Clientes | 250 | 5,000 | 50,000 | ∞ |
+| Campañas | — | ✅ | ✅ | ✅ |
+| Wallet passes | — | ✅ | ✅ | ✅ |
+| Analítica avanzada | — | ✅ | ✅ | ✅ |
+| Referidos | — | ✅ | ✅ | ✅ |
+| Asistente IA | — | — | ✅ | ✅ |
+| API / Soporte prioritario | — | — | ✅ | ✅ |
 
-When adding a new customer:
-1. Complete customer onboarding with a valid store code.
-2. Verify `role: 'user'` is set and `onboarding_completed: true`.
-3. Verify a `LoyaltyAccount` record exists with `store_id` populated.
+Billing lifecycle (`Business.billing_status`): `trial → active → view_only →
+suspended → archived`, derived to UI banners by `deriveLicense()` in
+`src/lib/useTenant.js`. Every transition is recorded as a `LicenseEvent`.
+
+---
+
+## Serverless functions
+
+| Function | Caller | Auth | Purpose |
+|----------|--------|------|---------|
+| `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Now stamps `business_id` from the store/owner context (service role). |
+| `redeemOffer` | any authed | `auth.me()` → 401 | Server-side offer redemption (atomic balance). |
+| `createGoogleWalletPass` / `createAppleWalletPass` | any authed | `auth.me()` → 401 | Wallet passes. |
+| `checkTrialExpiration` / `regenerateExpiredQR` / `sendWeeklySummary` / `cleanupInactiveUsers` / `updateWalletPasses` | `admin` | role gate | Scheduled jobs. |
+
+---
+
+## Adding a capability or page (checklist)
+
+1. Add the `module:action` key to `PERMISSIONS` in `src/lib/rbac.js` with the
+   narrowest default role list.
+2. If it's a page, add it to `PAGE_ACCESS` and register it in `src/pages.config.js`.
+3. If it reads/writes a new field or entity, update the entity `.jsonc` RLS using
+   the patterns in `CLAUDE.md`, run `npm run validate:rls`, and **deploy** the
+   schema to Base44 (`update_entity_schema`).
+4. Update this matrix and the `/Permissions` page renders it automatically.

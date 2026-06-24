@@ -1,0 +1,39 @@
+{
+  "name": "PermissionProfile",
+  "type": "object",
+  "description": "Per-tenant override of the default capability matrix. Keys are '<module>:<action>' (see src/lib/rbac.js). Absent keys fall back to the code default.",
+  "properties": {
+    "business_id": { "type": "string", "description": "ID del negocio dueño de este perfil" },
+    "role_key": { "type": "string", "enum": ["business_admin", "staff", "customer"], "description": "Rol al que aplica este perfil" },
+    "label": { "type": "string", "description": "Etiqueta legible del perfil" },
+    "permissions": { "type": "object", "additionalProperties": true, "description": "Mapa 'modulo:accion' => true/false que sobrescribe los valores por defecto" },
+    "updated_by": { "type": "string", "description": "Email de quien lo actualizó por última vez" }
+  },
+  "required": ["business_id", "role_key"],
+  "rls": {
+    "read": {
+      "$or": [
+        { "data.business_id": "{{user.data.business_id}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "create": {
+      "$or": [
+        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
+}
