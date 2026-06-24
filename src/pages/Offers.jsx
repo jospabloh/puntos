@@ -125,8 +125,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
     },
     onSuccess: () => {
       setRedeemStatus('success');
-      queryClient.invalidateQueries(['loyaltyAccount']);
-      queryClient.invalidateQueries(['allOffers']);
+      queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
+      queryClient.invalidateQueries({ queryKey: ['allOffers'] });
     },
     onError: (error) => {
       setRedeemError(error?.message || '');

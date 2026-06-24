@@ -116,7 +116,7 @@ export default function AdminCampaigns() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['allCampaigns']);
+      queryClient.invalidateQueries({ queryKey: ['allCampaigns'] });
       setShowCampaignDialog(false);
       setEditingCampaign(null);
       toast.success(editingCampaign ? 'Campaña actualizada' : 'Campaña creada');
@@ -129,7 +129,7 @@ export default function AdminCampaigns() {
   const deleteCampaignMutation = useMutation({
     mutationFn: (id) => base44.entities.Campaign.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['allCampaigns']);
+      queryClient.invalidateQueries({ queryKey: ['allCampaigns'] });
       toast.success('Campaña eliminada');
     },
     onError: (e) => {
@@ -150,7 +150,7 @@ export default function AdminCampaigns() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['allOffers']);
+      queryClient.invalidateQueries({ queryKey: ['allOffers'] });
       setShowOfferDialog(false);
       setEditingOffer(null);
       toast.success(editingOffer ? 'Oferta actualizada' : 'Oferta creada');
@@ -163,7 +163,7 @@ export default function AdminCampaigns() {
   const deleteOfferMutation = useMutation({
     mutationFn: (id) => base44.entities.Offer.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['allOffers']);
+      queryClient.invalidateQueries({ queryKey: ['allOffers'] });
       toast.success('Oferta eliminada');
     },
     onError: (e) => {

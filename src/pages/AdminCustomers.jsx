@@ -158,8 +158,8 @@ export default function AdminCustomers() {
       return { points, newBalance };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['allAccounts']);
-      queryClient.invalidateQueries(['customerTransactions']);
+      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['customerTransactions'] });
       setShowAdjustDialog(false);
       setAdjustData({ points: 0, reason: '' });
       toast.success('Ajuste realizado correctamente');
@@ -208,6 +208,7 @@ export default function AdminCustomers() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 placeholder="Buscar por nombre o email..."
+                aria-label="Buscar clientes"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-slate-50 border-0"

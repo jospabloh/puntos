@@ -67,7 +67,7 @@ export default function Wallet() {
       return { qr_token: newToken, qr_token_expires: tokenExpires };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['loyaltyAccount']);
+      queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
     },
     onError: () => {
       toast.error('No se pudo actualizar el código QR. Intenta de nuevo.');
@@ -80,7 +80,7 @@ export default function Wallet() {
 
     const unsubscribe = base44.entities.LoyaltyAccount.subscribe((event) => {
       if (event.data?.id === account.id) {
-        queryClient.invalidateQueries(['loyaltyAccount']);
+        queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
       }
     });
 

@@ -222,7 +222,7 @@ export default function MerchantPOS() {
       setTicketId('');
       setSelectedCustomer(null);
       setCustomerSearch('');
-      queryClient.invalidateQueries(['storeTransactions']);
+      queryClient.invalidateQueries({ queryKey: ['storeTransactions'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Error al procesar la transacción');
@@ -294,7 +294,7 @@ export default function MerchantPOS() {
       setBurnPoints('');
       setSelectedCustomer(null);
       setCustomerSearch('');
-      queryClient.invalidateQueries(['storeTransactions']);
+      queryClient.invalidateQueries({ queryKey: ['storeTransactions'] });
     },
     onError: (error) => {
       toast.error(error.message || 'Error al procesar el canje');

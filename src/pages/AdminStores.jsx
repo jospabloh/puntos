@@ -102,7 +102,7 @@ export default function AdminStores() {
       return res.data.store;
     },
     onSuccess: (store) => {
-      queryClient.invalidateQueries(['allStores']);
+      queryClient.invalidateQueries({ queryKey: ['allStores'] });
       setShowDialog(false);
       setEditingStore(null);
       resetForm();
@@ -118,7 +118,7 @@ export default function AdminStores() {
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Store.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['allStores']);
+      queryClient.invalidateQueries({ queryKey: ['allStores'] });
       setStoreToDelete(null);
       toast.success('Tienda eliminada');
     },
@@ -211,6 +211,7 @@ export default function AdminStores() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Buscar tiendas..."
+              aria-label="Buscar tiendas"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 bg-slate-50 border-0"

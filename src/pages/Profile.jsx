@@ -105,7 +105,7 @@ export default function Profile() {
             points_activity_enabled: true,
             email_enabled: true
           });
-          queryClient.invalidateQueries(['notifPreferences']);
+          queryClient.invalidateQueries({ queryKey: ['notifPreferences'] });
         } else {
           setNotifPrefs({
             campaigns_enabled: preferences[0].campaigns_enabled ?? true,
@@ -131,7 +131,7 @@ export default function Profile() {
     },
     onSuccess: () => {
       loadUser();
-      queryClient.invalidateQueries(['loyaltyAccount']);
+      queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });
       setIsEditing(false);
       toast.success('Perfil actualizado');
     },
@@ -151,7 +151,7 @@ export default function Profile() {
       await base44.entities.NotificationPreference.update(preferences[0].id, next);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['notifPreferences']);
+      queryClient.invalidateQueries({ queryKey: ['notifPreferences'] });
       toast.success('Preferencias actualizadas');
     },
     onError: (_error, variables) => {
