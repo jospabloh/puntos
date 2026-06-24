@@ -47,6 +47,34 @@ async function getGoogleAccessToken(serviceAccount) {
   return json.access_token;
 }
 
+const APNS_HOST = 'https://api.push.apple.com';
+
+/** Mint a token-based APNs JWT (ES256, .p8 key). Valid ~1h; reused across a run. */
+async function mintApnsJwt(keyP8, keyId, teamId) {
+  const privateKey = await importPKCS8(keyP8, 'ES256');
+  return await new SignJWT({})
+    .setProtectedHeader({ alg: 'ES256', kid: keyId })
+    .setIssuer(teamId)
+    .setIssuedAt()
+    .sign(privateKey);
+}
+
+/** Send the empty background push that tells a device to pull the latest pass. */
+async function sendApnsPush(jwt, topic, pushToken) {
+  const res = await fetch(`${APNS_HOST}/3/device/${pushToken}`, {
+    method: 'POST',
+    headers: {
+      'authorization': `bearer ${jwt}`,
+      'apns-topic': topic,
+      'apns-push-type': 'background',
+      'apns-priority': '5',
+      'content-type': 'application/json',
+    },
+    body: '{}',
+  });
+  return res.status; // 200 = delivered; 410 = token no longer valid
+}
+
 /** PATCH one loyalty object's points balance. Returns 'updated' | 'absent' | 'error'. */
 async function patchGoogleObject(accessToken, objectId, balance) {
   const res = await fetch(`${WALLET_OBJECT_API}/${encodeURIComponent(objectId)}`, {
@@ -77,11 +105,14 @@ Deno.serve(async (req) => {
     const issuerId = Deno.env.get('GOOGLE_WALLET_ISSUER_ID');
     const googleConfigured = Boolean(serviceAccountJson && issuerId);
 
-    const appleConfigured = Boolean(
-      Deno.env.get('APPLE_WALLET_TEAM_ID') &&
-      Deno.env.get('APPLE_WALLET_PASS_TYPE_ID') &&
-      Deno.env.get('APPLE_WALLET_CERT_P12_BASE64'),
-    );
+    // Apple push uses token-based APNs (.p8) so it works over HTTP/2 fetch
+    // without client-cert mTLS. When the APNs key isn't configured we report it
+    // honestly rather than faking a push.
+    const apnsKey = Deno.env.get('APPLE_APNS_KEY_P8');
+    const apnsKeyId = Deno.env.get('APPLE_APNS_KEY_ID');
+    const appleTeamId = Deno.env.get('APPLE_WALLET_TEAM_ID');
+    const applePassTypeId = Deno.env.get('APPLE_WALLET_PASS_TYPE_ID');
+    const apnsConfigured = Boolean(apnsKey && apnsKeyId && appleTeamId && applePassTypeId);
 
     // Only active accounts that hold a QR token can have a live pass.
     const accounts = await base44.asServiceRole.entities.LoyaltyAccount.filter({ status: 'active' });
@@ -91,13 +122,45 @@ Deno.serve(async (req) => {
       success: true,
       total_active_accounts: accounts.length,
       google: { configured: googleConfigured, updated: 0, absent: 0, errors: 0 },
-      // Apple push is intentionally not faked — see header.
-      apple: { configured: appleConfigured, push_supported: false, pending: appleConfigured ? withToken.length : 0 },
+      apple: { apns_configured: apnsConfigured, push_supported: apnsConfigured, registrations: 0, pushed: 0, expired: 0, errors: 0 },
     };
 
+    // ── Apple Wallet: push registered devices to pull the latest pass ────────
+    if (apnsConfigured) {
+      try {
+        const regs = (await base44.asServiceRole.entities.WalletRegistration.filter({ active: true })) || [];
+        result.apple.registrations = regs.length;
+        if (regs.length > 0) {
+          const jwt = await mintApnsJwt(apnsKey, apnsKeyId, appleTeamId);
+          for (const reg of regs) {
+            if (!reg.push_token) continue;
+            try {
+              const status = await sendApnsPush(jwt, applePassTypeId, reg.push_token);
+              if (status === 200) {
+                result.apple.pushed += 1;
+              } else if (status === 410) {
+                // Device token no longer valid — deactivate the registration.
+                result.apple.expired += 1;
+                await base44.asServiceRole.entities.WalletRegistration.update(reg.id, { active: false });
+              } else {
+                result.apple.errors += 1;
+              }
+            } catch (e) {
+              result.apple.errors += 1;
+              console.error('APNs push failed:', e.message);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Apple Wallet push pass failed:', e.message);
+      }
+    }
+
+    const appleSummary = `Apple: ${result.apple.pushed} pushed, ${result.apple.expired} expired, ${result.apple.errors} errors${apnsConfigured ? '' : ' (APNs not configured)'}.`;
+
     if (!googleConfigured) {
-      result.success = appleConfigured ? true : false;
-      result.message = 'Google Wallet not configured; nothing to push.';
+      result.success = apnsConfigured;
+      result.message = `Google Wallet not configured. ${appleSummary}`;
       return Response.json(result);
     }
 
@@ -126,7 +189,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    result.message = `Google Wallet: ${result.google.updated} updated, ${result.google.absent} not-yet-saved, ${result.google.errors} errors.`;
+    result.message = `Google: ${result.google.updated} updated, ${result.google.absent} not-yet-saved, ${result.google.errors} errors. ${appleSummary}`;
     return Response.json(result);
   } catch (error) {
     console.error('Update wallet error:', error);

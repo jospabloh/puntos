@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.2] — 2026-06-24 — Apple Wallet update service (G-7 follow-through)
+
+Completes the Apple side of wallet balance updates that v2.0.1 scoped out.
+
+### Added
+- **`passkitWebService` function** — implements Apple's PassKit Web Service:
+  device register / unregister, list-updatable-passes (`passesUpdatedSince`),
+  and serve-latest-pass. Authenticates each request by recomputing the pass
+  `authenticationToken = HMAC_SHA256(secret, serial)` (no per-account secret
+  stored). Runs as service role since the caller is an Apple device, not a
+  logged-in user.
+- **`WalletRegistration` entity** (service-role-only RLS, deployed live) — the
+  device registry backing the web service.
+- **Token-based APNs push in `updateWalletPasses`** — mints an ES256 (.p8) APNs
+  JWT and sends the background push that makes registered devices pull the latest
+  pass; deactivates registrations APNs reports as expired (`410`). Works over
+  Deno's HTTP/2 fetch without client-cert mTLS.
+- **`createAppleWalletPass`** now advertises `webServiceURL` +
+  `authenticationToken` when `APPLE_WALLET_WEB_SERVICE_URL` is set, so passes can
+  be registered and refreshed. When unset, behavior is unchanged.
+
+### Configuration
+New optional Base44 function env vars (see `.env.example`):
+`APPLE_WALLET_WEB_SERVICE_URL`, `APPLE_WALLET_AUTH_SECRET`, `APPLE_APNS_KEY_P8`,
+`APPLE_APNS_KEY_ID`. With pass certs only (no web-service URL), passes still
+generate as before. Adding the web-service URL enables manual refresh; adding the
+APNs key enables automatic push.
+
+### Notes
+- Verified by `validate:rls` (17 entities) + `lint` + `build`. End-to-end device
+  registration / APNs delivery still requires real Apple credentials + a deployed
+  function URL to exercise — not runnable from CI/sandbox.
+- Functions deploy to the Base44 functions environment on push (Builder sync);
+  `WalletRegistration` RLS is already live.
+
+---
+
 ## [2.0.1] — 2026-06-24 — Tenant-create hardening + wallet balance-push
 
 ### Security
