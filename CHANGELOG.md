@@ -5,6 +5,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.1] — 2026-06-24 — Tenant-create hardening + wallet balance-push
+
+### Security
+- **CRITICAL — `Business.create` locked to platform admins.** The Base44 RLS
+  scanner flagged `Business` with an open `create: {}` rule (any authenticated
+  user could create tenants). `create` is now `{"user_condition":{"role":"admin"}}`
+  (deployed live). Self-serve business onboarding moves to a new **service-role
+  function `createBusiness`**, which provisions the `Business` + first `Store` +
+  owner `LoyaltyAccount` + `trial_started` `LicenseEvent` with server-enforced safe
+  values, then the client promotes the user via `auth.updateMe`. This also fixes a
+  latent bug: under tenant RLS a brand-new user could not create the first `Store`
+  client-side (not yet `business_admin`) — that now happens server-side.
+
+### Fixed
+- **G-7 — `updateWalletPasses` now performs a real Google Wallet balance push.**
+  Replaces the placeholder log loop with an OAuth2 service-account token exchange
+  and a `PATCH` of each user's `loyaltyObject` points via the Google Wallet REST
+  API (passes not yet saved by the user → 404 → skipped). The function reports
+  `{updated, absent, errors}` instead of pretending success.
+  - **Apple Wallet** balance push remains **not implemented** and is now reported
+    honestly (`push_supported: false`) rather than logged as updated. A real Apple
+    push needs a PassKit web service (device register/unregister endpoints + an
+    APNs push signed with the Pass Type ID cert) and a device registry — tracked as
+    a follow-up.
+
+### Notes
+- Wallet code was verified by production build + a preview-server boot smoke (app
+  and JS bundle serve cleanly); authenticated QR-refresh / pass-generation /
+  balance-push flows require live Base44 + Apple/Google Wallet credentials to
+  exercise end-to-end.
+- `createBusiness` and `updateWalletPasses` deploy to the Base44 functions
+  environment on push (Builder sync). The `Business.create` RLS change is already
+  live; the brief window until the function syncs only affects new business
+  onboarding (existing tenants unaffected).
+
+---
+
 ## [2.0.0] — 2026-06-24 — Multi-tenant SaaS
 
 Puntos+ becomes a **multi-tenant, multi-user SaaS**: one platform owner (ACACIA)

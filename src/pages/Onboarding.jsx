@@ -13,14 +13,6 @@ import { toast } from 'sonner';
 import { createPageUrl } from '../utils';
 import { TRIAL_DAYS } from '@/lib/licensePlans';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const randomCode = (n = 6) => {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const bytes = new Uint8Array(n);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
-};
-
 export default function Onboarding() {
   const [user, setUser] = useState(null);
   const [invitation, setInvitation] = useState(null);
@@ -125,56 +117,22 @@ export default function Onboarding() {
   const businessMutation = useMutation({
     mutationFn: async () => {
       if (!biz.businessName || !biz.storeName || !biz.storeCode) throw new Error('Completa los campos obligatorios');
-      const code = biz.storeCode.toUpperCase();
-      const existing = await base44.entities.Store.filter({ code });
-      if (existing.length > 0) throw new Error('Ese código de tienda ya está en uso');
 
-      const now = new Date();
-      const trialEnd = new Date(Date.now() + TRIAL_DAYS * DAY_MS);
-      const inviteCode = randomCode(6);
-
-      // 1) Create the tenant.
-      const business = await base44.entities.Business.create({
-        name: biz.businessName,
-        contact_email: user.email,
-        owner_user_id: user.id,
-        owner_email: user.email,
+      // Provision the tenant server-side (service role): Business + first Store +
+      // owner account + license event. Business.create is locked to admins, so this
+      // must go through the function rather than a direct client create.
+      const res = await base44.functions.invoke('createBusiness', {
+        businessName: biz.businessName,
+        storeName: biz.storeName,
+        storeCode: biz.storeCode.toUpperCase(),
         phone: biz.phone,
-        status: 'active',
-        billing_status: 'trial',
-        license_plan: 'starter',
-        license_cycle: 'monthly',
-        licensed_user_limit: 2,
-        licensed_store_limit: 1,
-        invite_code: inviteCode,
-        invite_code_active: true,
-        trial_start_at: now.toISOString(),
-        trial_end_at: trialEnd.toISOString(),
-        primary_color: '#7c3aed',
       });
+      if (!res?.data?.success) {
+        throw new Error(res?.data?.error || 'No se pudo crear el negocio');
+      }
+      const { business, store } = res.data;
 
-      // 2) Create the first store under the tenant.
-      const store = await base44.entities.Store.create({
-        name: biz.storeName,
-        code,
-        business_id: business.id,
-        business_name: business.name,
-        merchant_id: user.id,
-        merchant_name: user.full_name || user.email.split('@')[0],
-        merchant_email: user.email,
-        phone: biz.phone,
-        status: 'active',
-        points_rate: 1,
-        min_purchase: 0,
-        daily_earn_limit: 1000,
-      });
-
-      // 3) Loyalty account for the owner (trial tracking) — service role stamps business_id.
-      try {
-        await base44.functions.invoke('createLoyaltyAccount', { type: 'merchant', business: { id: business.id, name: business.name } });
-      } catch { /* non-blocking */ }
-
-      // 4) Promote the user to business admin of this tenant.
+      // Promote the caller to business admin of this tenant (user edits own record).
       await base44.auth.updateMe({
         role: 'business_admin',
         data: {
@@ -187,21 +145,6 @@ export default function Onboarding() {
           onboarding_completed: true,
         },
       });
-
-      // 5) Record the trial start in the license ledger.
-      try {
-        await base44.entities.LicenseEvent.create({
-          business_id: business.id,
-          business_name: business.name,
-          event_type: 'trial_started',
-          to_plan: 'starter',
-          to_status: 'trial',
-          effective_at: now.toISOString(),
-          expires_at: trialEnd.toISOString(),
-          actor_email: user.email,
-          notes: `Prueba gratuita de ${TRIAL_DAYS} días iniciada en el alta del negocio.`,
-        });
-      } catch { /* best effort */ }
 
       return business;
     },
