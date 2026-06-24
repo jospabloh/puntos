@@ -240,9 +240,9 @@ export default function Onboarding() {
       const inv = invitation;
       const isAdmin = inv.role === 'business_admin';
       await base44.auth.updateMe({
-        role: isAdmin ? 'business_admin' : 'merchant',
+        role: user?.role === 'admin' ? 'admin' : (isAdmin ? 'business_admin' : 'merchant'),
         data: {
-          app_role: isAdmin ? 'business_admin' : 'staff',
+          app_role: user?.role === 'admin' ? 'owner' : (isAdmin ? 'business_admin' : 'staff'),
           business_id: inv.business_id,
           business_name: inv.business_name,
           storeId: inv.store_id || undefined,
@@ -277,9 +277,9 @@ export default function Onboarding() {
         throw new Error(res?.data?.error || 'No se pudo crear tu cuenta');
       }
       await base44.auth.updateMe({
-        role: 'customer',
+        role: user?.role === 'admin' ? 'admin' : 'customer',
         data: {
-          app_role: 'customer',
+          app_role: user?.role === 'admin' ? 'owner' : 'customer',
           business_id: store.business_id || undefined,
           business_name: store.business_name || undefined,
           storeId: store.id,
@@ -308,9 +308,9 @@ export default function Onboarding() {
       if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo crear el negocio');
       const { business, store } = res.data;
       await base44.auth.updateMe({
-        role: 'business_admin',
+        role: user?.role === 'admin' ? 'admin' : 'business_admin',
         data: {
-          app_role: 'business_admin',
+          app_role: user?.role === 'admin' ? 'owner' : 'business_admin',
           business_id: business.id,
           business_name: business.name,
           storeId: store.id,
