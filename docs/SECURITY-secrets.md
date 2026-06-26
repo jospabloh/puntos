@@ -27,6 +27,7 @@ value was ever shared, logged, or exposed.
 
 | Secret | Used by | Notes |
 |--------|---------|-------|
+| `INGEST_HMAC_SECRET` | `acaciaControl` | HMAC secret verifying signed Mission Control requests. **Shared** with Mission Control — both sides must rotate together. |
 | `GOOGLE_WALLET_SERVICE_ACCOUNT` | `createGoogleWalletPass`, `updateWalletPasses` | Full service-account JSON (contains a private key). |
 | `GOOGLE_WALLET_ISSUER_ID` | `createGoogleWalletPass`, `updateWalletPasses` | Issuer id (low sensitivity). |
 | `APPLE_WALLET_CERT_P12_BASE64` | `createAppleWalletPass`, `passkitWebService` | Pass-signing cert (P12, base64). |
@@ -34,6 +35,8 @@ value was ever shared, logged, or exposed.
 | `APPLE_WALLET_TEAM_ID` / `APPLE_WALLET_PASS_TYPE_ID` | Apple wallet functions | Identifiers (low sensitivity). |
 | `APPLE_WALLET_AUTH_SECRET` | `createAppleWalletPass`, `passkitWebService` | HMAC secret for the pass `authenticationToken`. |
 | `APPLE_APNS_KEY_P8` / `APPLE_APNS_KEY_ID` | `updateWalletPasses` | APNs auth key (.p8) + key id. |
+| `APP_OWNER_EMAIL` | `getAppContext` | Platform-owner address that gates self-promotion to the `admin` (owner) tier. Not a credential, but **access-control sensitive** — keep server-side only, never `VITE_`-prefixed. |
+| `APP_SUPPORT_EMAIL` | `getAppContext` | Support address surfaced to users. Low sensitivity; kept server-side for consistency. |
 | `ADMIN_NOTIFICATION_EMAIL` | `checkTrialExpiration` | Recipient address (not a credential, but kept server-side). |
 
 > Removed in this change: the unused `VITE_ADMIN_NOTIFICATION_EMAIL` (the client
@@ -45,6 +48,13 @@ Rotation happens in the provider console + the Base44 function environment — i
 **not** a code change. After rotating, redeploy/restart functions so they pick up
 the new value.
 
+0. **Mission Control HMAC secret (`INGEST_HMAC_SECRET`)**
+   - This secret is **shared** between Mission Control and `acaciaControl`; both
+     verify the same signature. Rotate **both sides together** or admin requests
+     start failing with `bad signature`.
+   - Generate a new high-entropy value (e.g. `openssl rand -hex 32`), set it in the
+     Mission Control config **and** in `INGEST_HMAC_SECRET` in the Base44 function
+     env, then redeploy/restart both. Confirm with the `ping` action.
 1. **Google Wallet service account**
    - Google Cloud Console → IAM → Service Accounts → the wallet SA → Keys →
      create a new key, then delete the old one.
