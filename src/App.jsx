@@ -7,6 +7,8 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import ContinueAs from '@/components/auth/ContinueAs';
+import { getRememberedIdentity } from '@/lib/lastIdentity';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -33,7 +35,13 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
+      // If we remember who signed in last, show the "Continuar como" card instead
+      // of bouncing straight to the generic login. The card's button still goes
+      // through the real Base44 auth flow (silent if the session is alive).
+      if (getRememberedIdentity()) {
+        return <ContinueAs />;
+      }
+      // No remembered identity → behave exactly as before.
       navigateToLogin();
       return null;
     }
