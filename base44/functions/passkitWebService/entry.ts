@@ -127,7 +127,11 @@ Deno.serve(async (req) => {
       APPLE_WALLET_CERT_PASSWORD: Deno.env.get('APPLE_WALLET_CERT_PASSWORD'),
       APPLE_WALLET_ICON_PNG_BASE64: Deno.env.get('APPLE_WALLET_ICON_PNG_BASE64'),
     };
-    const secret = Deno.env.get('APPLE_WALLET_AUTH_SECRET') || env.APPLE_WALLET_CERT_PASSWORD || '';
+    const secret = Deno.env.get('APPLE_WALLET_AUTH_SECRET') || env.APPLE_WALLET_CERT_PASSWORD;
+    if (!secret) {
+      console.error('passkitWebService: APPLE_WALLET_AUTH_SECRET is not set — refusing to serve passes with an empty signing key.');
+      return Response.json({ error: 'Service not configured' }, { status: 503 });
+    }
     const webServiceURL = Deno.env.get('APPLE_WALLET_WEB_SERVICE_URL') || null;
 
     const url = new URL(req.url);

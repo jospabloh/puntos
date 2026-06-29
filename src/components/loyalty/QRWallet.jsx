@@ -60,7 +60,15 @@ export default function QRWallet({ account, onRefreshToken }) {
       toast.dismiss();
       
       if (response.data?.url) {
-        window.open(response.data.url, '_blank');
+        try {
+          const parsed = new URL(response.data.url);
+          if (parsed.protocol !== 'https:' || parsed.hostname !== 'pay.google.com') {
+            throw new Error('URL de destino no es de confianza');
+          }
+          window.open(parsed.href, '_blank', 'noopener,noreferrer');
+        } catch {
+          toast.error('La URL del pase no es válida o no es de confianza.');
+        }
       }
     } catch (error) {
       toast.dismiss();
