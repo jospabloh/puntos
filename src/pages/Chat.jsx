@@ -148,7 +148,7 @@ REGLAS:
 - Mantén respuestas cortas (máximo 3-4 oraciones)
 
 PREGUNTA DEL USUARIO:
-<user_input>${userMessage.replace(/<\/user_input>/g, '')}</user_input>`,
+<user_input>${userMessage.replace(/<[^>]*>/g, '').replace(/[^\p{L}\p{N}\p{P}\p{Z}\p{S}\n]/gu, '').trim()}</user_input>`,
         add_context_from_internet: false
       });
 

@@ -49,6 +49,13 @@ import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { PageShell, PageHeader, StatTile, StatusPill, EmptyState, PageLoader } from '@/components/backoffice/Kit';
 
+// Strip all HTML tags and control characters — produces safe plain text for emails.
+const toPlainText = (str) =>
+  String(str || '')
+    .replace(/<[^>]*>/g, '')          // strip HTML tags
+    .replace(/[^\p{L}\p{N}\p{P}\p{Z}\p{S}\n]/gu, '') // keep letters, numbers, punctuation, symbols, spaces, newlines
+    .trim();
+
 const EMPTY_CAMPAIGN = {
   name: '',
   description: '',
@@ -315,14 +322,14 @@ export default function AdminCampaigns() {
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
-          subject: `Nueva campaña: ${campaign.name.replace(/[<>&"]/g, '')}`,
+          subject: `Nueva campaña: ${toPlainText(campaign.name)}`,
           body: [
             'Hola,',
             '',
             '¡Tenemos una nueva campaña para ti!',
             '',
-            campaign.name.replace(/[<>&"]/g, ''),
-            (campaign.description || '').replace(/[<>&"]/g, ''),
+            toPlainText(campaign.name),
+            toPlainText(campaign.description),
             '',
             campaign.type === 'multiplier'
               ? `Gana puntos x${campaign.multiplier}`
@@ -358,14 +365,14 @@ export default function AdminCampaigns() {
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
-          subject: `Nueva oferta disponible: ${offer.title.replace(/[<>&"]/g, '')}`,
+          subject: `Nueva oferta disponible: ${toPlainText(offer.title)}`,
           body: [
             'Hola,',
             '',
             '¡Tenemos una nueva oferta especial para ti!',
             '',
-            offer.title.replace(/[<>&"]/g, ''),
-            (offer.description || '').replace(/[<>&"]/g, ''),
+            toPlainText(offer.title),
+            toPlainText(offer.description),
             '',
             `Costo: ${(offer.points_cost || 0).toLocaleString('es-MX')} puntos`,
             `Valor: $${(offer.value_mxn || 0).toLocaleString('es-MX')} MXN`,
