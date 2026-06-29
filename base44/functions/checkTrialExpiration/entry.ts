@@ -13,11 +13,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Authenticate as admin (this should only run as scheduled task)
-    const user = await base44.auth.me();
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
+    // Scheduled automation — no user session; use service role directly.
 
     const now = new Date();
     const in3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
