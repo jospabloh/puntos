@@ -1,6 +1,6 @@
 # Puntos+ — User Manual
 
-Version: 1.4.7 | Updated: 2026-06-22
+Version: 2.0.5 | Updated: 2026-06-29
 
 ---
 
@@ -9,19 +9,34 @@ Version: 1.4.7 | Updated: 2026-06-22
 1. [Overview](#overview)
 2. [Getting Started](#getting-started)
 3. [Customer Guide](#customer-guide)
-4. [Merchant Guide](#merchant-guide)
-5. [Admin Guide](#admin-guide)
-6. [Permissions](#permissions)
-7. [Wallet Passes](#wallet-passes)
-8. [Trial and Subscription](#trial-and-subscription)
-9. [Notifications](#notifications)
-10. [FAQ](#faq)
+4. [Staff / Cashier Guide](#staff--cashier-guide)
+5. [Business Admin Guide](#business-admin-guide)
+6. [Platform Owner Guide](#platform-owner-guide)
+7. [Roles and Permissions](#roles-and-permissions)
+8. [Wallet Passes](#wallet-passes)
+9. [License Plans and Billing](#license-plans-and-billing)
+10. [Team Management](#team-management)
+11. [Trial and Subscription](#trial-and-subscription)
+12. [Notifications](#notifications)
+13. [FAQ](#faq)
 
 ---
 
 ## Overview
 
-Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty programs. Customers earn points on purchases and redeem them for rewards.
+Puntos+ is a **multi-tenant SaaS loyalty platform**. The platform owner (ACACIA)
+licenses independent businesses; each business runs its own loyalty program with
+stores, staff, customers, points, and rewards. Businesses do not share data — each
+tenant's customers, points, and transactions are fully isolated.
+
+There are four roles in Puntos+:
+
+| Role | Description |
+|------|-------------|
+| **Platform Owner** | ACACIA. Manages all businesses, licenses, and platform support. |
+| **Business Admin** | Owner/admin of a single tenant's loyalty program. |
+| **Staff / Cashier** | Operates the point of sale for a business. |
+| **Customer** | End consumer using their loyalty wallet. |
 
 ---
 
@@ -32,10 +47,22 @@ Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty
 - Authenticate through your configured identity provider.
 - First-time users are redirected to the **Onboarding** flow.
 
+### Persistent Sessions — "Continue As"
+- If you have previously signed in, the app shows a **"Continue As"** screen with
+  your identity on load, so you do not need to type your email again.
+- If you need to switch accounts, click **Switch account** on that screen.
+- Session state is kept synchronized across browser tabs automatically.
+
 ### Onboarding
-- Choose your account type: **Customer** or **Merchant**.
-- **Customers** enter the store code provided by their merchant.
-- **Merchants** enter their business name and a unique store code, then start a 30-day free trial.
+There are three onboarding paths:
+
+1. **Register a Business** — Create a new business and start a 30-day free trial.
+   The server provisions your business, first store, and loyalty account with safe
+   defaults. You receive a unique store code to share with your customers.
+2. **Join as a Customer** — Enter the store code provided by your business to link
+   your loyalty account to their program.
+3. **Accept a Team Invitation** — If a business admin has invited you, follow the
+   link in the invitation email. Your role and business are set automatically.
 
 ---
 
@@ -47,33 +74,32 @@ Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty
 - Provides quick access to your QR code, offers, and history.
 
 ### My Wallet (`/Wallet`)
-- View your current points balance.
+- View your current points balance and tier.
 - Display your QR code to be scanned at the point of sale.
 - The QR code refreshes every 5 minutes for security. You can also refresh it manually.
 - Add your loyalty card to **Google Wallet** or **Apple Wallet** from this page.
 
 ### Earning Points
 - Show your QR code or provide your email to the cashier.
-- The merchant registers your purchase amount.
-- Points are credited: **1 point per $10 MXN** (rate may vary by store).
-- A confirmation notification appears in your activity feed.
+- The cashier registers your purchase amount.
+- Points are credited based on the store's configured rate (default: 1 point per $10 MXN).
+- A confirmation appears in your activity feed.
 
 ### Redeeming Points
 - Go to **Ofertas** to browse available rewards.
 - Select an offer and tap **Canjear**.
-- Confirm the redemption; your balance is deducted immediately.
+- Confirm the redemption; your balance is deducted immediately (server-side, atomic).
 - A confirmation code is displayed — show it when using your benefit.
 
 ### Transaction History (`/History`)
 - View all point movements: earned, redeemed, bonuses, and adjustments.
-- Filter by type (Earned, Redeemed, Bonus) and date range.
-- Search by store name, description, or ticket ID.
+- Filter by type and date range.
+- Search by store name, description, or ticket number.
 
 ### Offers (`/Offers`)
-- Browse all active rewards.
-- Filter by category: Food, Shopping, Travel, Entertainment, Services.
+- Browse all active rewards for your enrolled business.
 - AI-powered recommendations appear based on your balance and activity.
-- An offer can only be redeemed if you have sufficient points.
+- An offer can only be redeemed if you have sufficient points and the offer is active.
 
 ### Chat (`/Chat`)
 - AI assistant to answer questions about your account, points, and offers.
@@ -86,13 +112,15 @@ Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty
 
 ---
 
-## Merchant Guide
+## Staff / Cashier Guide
+
+Staff members have access to the Point of Sale screen only.
 
 ### Accessing the POS
-- From the navigation, click **POS** to open the Point of Sale screen.
+- From the navigation, click **POS**.
 - Select the active store from the dropdown.
 
-### Accumulating Points (Earn)
+### Earning Points (Acumular)
 1. Select the **Acumular** tab.
 2. Search for the customer by email or QR code (minimum 3 characters).
 3. Select the customer from the results.
@@ -100,7 +128,7 @@ Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty
 5. Review the points preview and click **Registrar compra**.
 6. A success dialog confirms the points credited.
 
-### Redeeming Points (Burn)
+### Redeeming Points (Canjear)
 1. Select the **Canjear** tab.
 2. Search for and select the customer.
 3. Enter the number of points to redeem (maximum is the customer's available balance).
@@ -109,103 +137,200 @@ Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty
 ### Transaction History (POS)
 - The **Historial** tab shows the 20 most recent transactions for the selected store.
 
-### Trial Mode
-- New merchant accounts start with a **30-day free trial**.
-- A trial banner is displayed at the top of the screen while in trial mode.
-- A welcome dialog appears on first login to POS.
-- Email reminders are sent at 7 days remaining, 3 days remaining, and on expiration.
-- If the trial expires without activation, a **7-day grace period** applies before the account is suspended.
-- Contact the administrator to activate a full subscription.
-
-### Suspended Account
-- If your account is suspended, a modal is displayed and POS functions are blocked.
-- Contact the administrator to reactivate.
-
 ---
 
-## Admin Guide
+## Business Admin Guide
+
+Business admins manage their entire loyalty program from the back-office.
 
 ### Dashboard (`/AdminDashboard`)
-- Overview of key metrics: active customers, points in circulation, earned/redeemed by date range.
-- Bar chart of daily/weekly points activity.
-- Tier distribution pie chart.
-- Quick links to Stores, Campaigns, Customers, and Audit.
-- Flagged transactions alert (if any transactions have `status: flagged`).
+- Overview of key metrics: active customers, points in circulation, earned/redeemed
+  by date range, tier distribution.
+- Flagged transaction alerts if any transactions have been marked for review.
 
 ### Stores (`/AdminStores`)
-- View all stores.
-- **Create** a new store: set name, code, address, points rate, minimum purchase, and daily earn limit.
-- **Edit** an existing store.
-- **Delete** a store.
-- Set store status: Active, Inactive, Suspended.
+- View all your stores.
+- **Create** a new store: the system generates a globally unique store code;
+  customers use this code to join your program.
+- **Edit** an existing store's name, address, points rate, minimum purchase amount,
+  and daily earn limit.
+- **Delete** a store (with confirmation dialog).
+- Set store status: Active, Inactive, or Suspended.
 
 ### Campaigns & Offers (`/AdminCampaigns`)
 
 **Campaigns:**
-- Create promotions: Multiplier (e.g., 2x points), Fixed Bonus (extra points per purchase), or Threshold.
+- Create promotions: Multiplier (e.g., 2× points), Fixed Bonus, or Threshold.
 - Set campaign dates and status (Draft, Active, Paused, Ended).
-- Send email notifications to all subscribed users for a campaign.
+- Send email notifications to subscribed customers for a campaign.
 
-**Offers:**
+**Offers / Rewards:**
 - Create rewards customers can redeem with their points.
 - Set title, description, points cost, MXN value, category, status, and stock.
 - Set stock to `-1` for unlimited.
-- Send email notifications to all subscribed users for an offer.
+- Send email notifications to subscribed customers for an offer.
 
 ### Customers (`/AdminCustomers`)
-- View all loyalty accounts with tier, balance, earned, and redeemed totals.
+- View all loyalty accounts: tier, balance, lifetime earned/redeemed.
 - Search by name or email; filter by tier.
 - **View details**: full account stats and last 20 transactions.
-- **Adjust Points**: manually add or subtract points with a required reason. All adjustments are recorded in the audit log.
+- **Adjust Points**: manually add or subtract points (requires a written reason).
+  All adjustments are recorded in the audit log.
 
 ### Audit Log (`/AdminAudit`)
-- Full audit trail of all point-impacting actions.
-- Columns: timestamp, actor email, role, action type, entity, detail, status.
-- Filter by action (earn, burn, adjust, reverse), role, and status.
-- All earn, burn, adjust, and reverse operations create an `AuditLog` record.
+- Full audit trail of all point-impacting actions (earn, burn, adjust, reverse).
+- Filter by action type, role, and status.
 
-### Permissions
-- Granting member/merchant access is managed by updating user roles in the authentication system.
-- Admin users automatically have full access to all Admin pages.
-- Non-admin users are redirected to the Home page if they attempt to access Admin routes.
+### Business Settings (`/BusinessSettings`)
+- Update your business name, branding, and contact information.
+- Settings apply to the entire tenant program.
+
+### Team / Users (`/BusinessUsers`)
+- View all team members and their roles.
+- **Invite** new staff members by email.
+- **Update** a team member's role (business_admin ↔ staff).
+- **Remove** a team member from the program.
+- Seat limits are enforced by your license plan (see [License Plans](#license-plans-and-billing)).
+- Invite and save actions are blocked when the tenant is view-only or suspended.
+
+### Billing (`/BusinessBilling`)
+- View your current license plan, usage (stores, team members, customers), and
+  billing lifecycle status.
+- **Request an upgrade** to a higher plan.
+- View billing history and license events.
+
+### Support (`/BusinessSupport`)
+- Submit support tickets and track their status.
+- Reply to existing threads.
+- Rate the support interaction when resolved.
 
 ---
 
-## Permissions
+## Platform Owner Guide
 
-| Feature | Customer | Merchant | Admin |
-|---------|----------|----------|-------|
-| View own wallet / balance | ✅ | — | ✅ |
-| Earn points (POS) | ❌ | ✅ | ✅ |
-| Burn points (POS) | ❌ | ✅ | ✅ |
-| View own transaction history | ✅ | — | ✅ |
-| Redeem offers (self) | ✅ | — | ✅ |
-| View all customer accounts | ❌ | ❌ | ✅ |
-| Adjust customer points | ❌ | ❌ | ✅ |
-| Manage stores | ❌ | ❌ | ✅ |
-| Manage campaigns / offers | ❌ | ❌ | ✅ |
-| View audit log | ❌ | ❌ | ✅ |
-| Generate wallet passes | ✅ | — | ✅ |
-| View dashboard metrics | ❌ | ❌ | ✅ |
+The platform owner (ACACIA) has access to a separate control plane for managing
+all tenants. These pages are not visible to business admins or customers.
+
+### Platform Dashboard (`/PlatformDashboard`)
+- Cross-tenant metrics: total tenants, MRR/ARR estimates, active customers across
+  the platform, license plan distribution.
+
+### Tenants (`/PlatformTenants`)
+- View all registered businesses.
+- **Create** a business (for manual provisioning).
+- **Update** tenant details, plan, and billing status.
+- **Lifecycle actions**: set to View-Only, Suspend, or Archive a tenant
+  (with confirmation dialogs).
+
+### Licenses (`/PlatformLicenses`)
+- Manage license assignments, activations, and renewals across all tenants.
+- View per-tenant usage and plan limits.
+
+### Support Console (`/PlatformSupport`)
+- View all support tickets from all tenants in one place.
+- Reply to any ticket.
+- Add **internal notes** (visible only to platform staff, not the tenant).
+
+---
+
+## Roles and Permissions
+
+| Capability | Customer | Staff | Business Admin | Platform Owner |
+|------------|----------|-------|----------------|----------------|
+| View own wallet / balance | ✅ | ✅ | ✅ | ✅ |
+| Earn points (POS) | — | ✅ | ✅ | ✅ |
+| Burn points (POS) | — | ✅ | ✅ | ✅ |
+| View own transaction history | ✅ | ✅ | ✅ | ✅ |
+| Redeem offers (self) | ✅ | — | — | ✅ |
+| View all customer accounts | — | — | ✅ | ✅ |
+| Adjust customer points manually | — | — | ✅ | ✅ |
+| Manage stores | — | — | ✅ | ✅ |
+| Manage campaigns / offers | — | — | ✅ | ✅ |
+| View audit log | — | — | ✅ | ✅ |
+| Generate wallet passes | ✅ | ✅ | ✅ | ✅ |
+| View analytics / dashboard | — | — | ✅ | ✅ |
+| Invite / manage team members | — | — | ✅ | ✅ |
+| View / manage billing | — | — | ✅ | ✅ |
+| Submit support tickets | — | — | ✅ | ✅ |
+| Manage all tenants | — | — | — | ✅ |
+| Manage licenses | — | — | — | ✅ |
+| View platform support console | — | — | — | ✅ |
+
+**Default access rules:**
+- **Business Admins** have full access to all features within their own tenant only.
+  They cannot see or access another tenant's data.
+- **Staff members** have POS access only by default. Additional capabilities can be
+  granted by the business admin via the Permissions configuration.
+- **Customers** can only access their own loyalty wallet, offers, history, and profile.
+- New features default to **off** for staff and customers until a business admin
+  explicitly enables them.
+
+For the full granular permissions matrix, see `docs/PERMISSIONS.md`.
 
 ---
 
 ## Wallet Passes
 
 ### Google Wallet
-- From **My Wallet**, click **Google**.
-- A signed JWT is generated and you are redirected to Google Pay's save URL.
-- Your loyalty card is added to your Google Wallet with current balance and tier.
+- From **My Wallet**, click **Google Wallet**.
+- A signed loyalty pass is generated and you are redirected to Google Pay's save URL.
+- Your loyalty card is added to your Google Wallet with your current balance and tier.
+- When scheduled balance syncs run, your Google Wallet pass is updated automatically.
 
 ### Apple Wallet
-- From **My Wallet**, click **Apple**.
+- From **My Wallet**, click **Apple Wallet**.
 - A `.pkpass` file is generated and downloaded.
 - Open the file on an iOS device to add it to Apple Wallet.
 - The pass displays your points balance, tier, and QR barcode.
+- If the web service is configured by the platform, your Apple Wallet pass can be
+  updated automatically when your balance changes (device must have registered with
+  the PassKit web service by adding the pass).
 
 ### Important Notes
-- Wallet passes display the balance **at the time of generation**. Use the in-app QR code for the most current balance at POS.
-- Wallet credentials (certificates, service accounts) are stored as server-side environment variables and are never exposed to the client.
+- Wallet passes display the balance **at the time of generation or last push**.
+  Use the in-app QR code for the most current balance at the point of sale.
+- Wallet credentials (certificates, service accounts, APNs keys) are stored as
+  server-side environment variables and are never exposed to the client.
+
+---
+
+## License Plans and Billing
+
+Each business operates on a license plan. Plans determine limits on stores, team
+members, customers, and available features.
+
+| Plan | Stores | Team Members | Customers | Campaigns | Wallet Passes |
+|------|--------|--------------|-----------|-----------|---------------|
+| Starter (Free) | 1 | 2 | 250 | — | — |
+| Growth | 5 | 10 | 5,000 | ✅ | ✅ |
+| Pro | 25 | 50 | 50,000 | ✅ | ✅ |
+| Enterprise | Unlimited | Unlimited | Unlimited | ✅ | ✅ |
+
+**Billing lifecycle:**
+- **Trial** (30 days) → **Active** → **View-Only** → **Suspended** → **Archived**.
+- During trial, all features within your plan are available.
+- **View-Only**: the program is readable but new invites and writes are blocked.
+- **Suspended**: POS and customer-facing features are blocked. Contact support to reactivate.
+- Lifecycle transitions are recorded as license events and visible in **Billing**.
+
+---
+
+## Team Management
+
+Business admins can build and manage their team from **BusinessUsers**.
+
+### Inviting a Team Member
+1. Go to **Usuarios** in the back-office.
+2. Click **Invitar**.
+3. Enter the team member's email and select their role (Staff or Business Admin).
+4. An invitation is sent by email. The link is valid for a limited time.
+5. Seat limits are enforced — you cannot invite more members than your plan allows.
+
+### Managing Existing Members
+- **Update Role**: change a member between Staff and Business Admin.
+- **Remove**: remove a member from your team. They lose access immediately.
+- **Revoke Invitation**: cancel a pending invitation before it is accepted
+  (a confirmation dialog is shown).
 
 ---
 
@@ -220,7 +345,7 @@ Puntos+ is a loyalty and rewards platform. Businesses (merchants) create loyalty
 | Day 35 | Final reminder email |
 | Day 37 | Account suspended automatically |
 
-To activate a full subscription, contact the Puntos+ administrator.
+To activate a full subscription, request an upgrade from **Billing** or contact support.
 
 ---
 
@@ -231,23 +356,39 @@ From **Profile**, you can enable or disable:
 - **Offers**: email alerts for new rewards.
 - **Points Activity**: updates on earned/redeemed points.
 
-The weekly summary email is sent automatically to active customers who had transactions in the previous 7 days.
+The weekly summary email is sent automatically to active customers who had
+transactions in the previous 7 days.
 
 ---
 
 ## FAQ
 
 **Q: My QR code says "Expirado". What do I do?**
-A: Tap the **Refrescar QR** button. The code is valid for 5 minutes and refreshes automatically.
+A: Tap **Refrescar QR**. The code is valid for 5 minutes and refreshes automatically.
 
 **Q: Can I use my QR code at any store?**
-A: Only at the store your account is registered with.
+A: Only at the store your loyalty account is registered with.
 
 **Q: Can my points expire?**
-A: Points do not expire unless specified by the program rules.
+A: Points do not expire unless the business specifies otherwise in their program rules.
 
 **Q: My balance doesn't match what I expected.**
-A: Go to **Historial** for a full transaction list. If there is an error, contact the store administrator.
+A: Go to **Historial** for a complete transaction list. If there is a discrepancy,
+contact the store administrator.
 
 **Q: How do I add more stores?**
-A: Admin users can create additional stores from the Admin panel under **Tiendas**.
+A: Business admins can create stores from **Tiendas**. The system generates a unique
+store code automatically.
+
+**Q: What happens when my trial expires?**
+A: Your account moves to View-Only for a grace period, then Suspended if no upgrade
+is made. Your data is not deleted. Contact support or request an upgrade from Billing.
+
+**Q: I was invited to a team but don't see the right screens.**
+A: Make sure you signed in with the same email address the invitation was sent to,
+and that you completed the invitation onboarding flow. Contact your business admin
+if access is still missing.
+
+**Q: Can I switch between accounts?**
+A: Click **Switch account** on the "Continue As" screen at sign-in, or sign out from
+Profile and sign in with a different account.

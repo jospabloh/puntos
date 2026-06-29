@@ -1,6 +1,6 @@
 # Puntos+ — Roles & Permissions Matrix
 
-Version: 2.0.0 | Updated: 2026-06-24
+Version: 2.0.5 | Updated: 2026-06-29
 
 Puntos+ is a **multi-tenant SaaS**. The capability matrix below is the canonical
 contract; it is mirrored in code at `src/lib/rbac.js` (`PERMISSIONS`) and rendered
@@ -153,11 +153,14 @@ suspended → archived`, derived to UI banners by `deriveLicense()` in
 | Function | Caller | Auth | Purpose |
 |----------|--------|------|---------|
 | `createBusiness` | any authed | `auth.me()` → 401 | Provision a tenant (Business + first Store + owner account + LicenseEvent) with server-enforced safe values. Required because `Business.create` is admin-only. |
+| `createStore` | any authed | `auth.me()` → 401 | Add a store to the caller's tenant with a server-generated globally-unique code. Platform owner may specify a target `business_id`. |
 | `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Stamps `business_id` from the store/owner context (service role). |
 | `redeemOffer` | any authed | `auth.me()` → 401 | Server-side offer redemption (atomic balance). |
+| `getAppContext` | any authed | `auth.me()` → unauthenticated empty | Resolve platform context (owner flag, support email). Self-heals owner role to `admin` if email matches `APP_OWNER_EMAIL` (server-side secret gate). |
 | `createGoogleWalletPass` / `createAppleWalletPass` | any authed | `auth.me()` → 401 | Wallet passes. Apple pass advertises the PassKit web service when configured. |
 | `passkitWebService` | Apple device | pass `authenticationToken` (HMAC) | Apple PassKit web service: device register/unregister, list-updatable, serve-latest-pass (service role). |
 | `updateWalletPasses` | `admin` | role gate | Scheduled: Google Wallet balance push + token-based APNs push to registered Apple devices. |
+| `acaciaControl` | ACACIA Mission Control | HMAC-SHA256 (`INGEST_HMAC_SECRET`) | Admin bridge for Mission Control reads (usage, licenses, contacts, tickets) and writes (license sync, ticket replies, follow-up emails). Replay-protected (5-min timestamp window). |
 | `checkTrialExpiration` / `regenerateExpiredQR` / `sendWeeklySummary` / `cleanupInactiveUsers` | `admin` | role gate | Scheduled jobs. |
 
 ---
