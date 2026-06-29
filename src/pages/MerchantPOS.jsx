@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
-import { makeIdempotencyKey } from '@/lib/utils';
 import { getActiveBusinessId } from '@/lib/activeTenant';
+import { isStaff } from '@/lib/rbac';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,13 +80,22 @@ export default function MerchantPOS() {
     }
   };
 
-  // Fetch active stores. The platform owner sees all; a tenant operator sees only
-  // their own business's stores.
+  // Fetch active stores. The platform owner sees all; a tenant admin sees their
+  // whole business; staff/cashiers are pinned to the single store they were
+  // assigned (G-1). The server functions enforce this too — this filter is just
+  // so the operator never sees a store they cannot transact in.
   const { data: stores } = useQuery({
-    queryKey: ['stores', user?.business_id, user?.role],
-    queryFn: () => {
-      const scope = { status: 'active', business_id: getActiveBusinessId(user) };
-      return base44.entities.Store.filter(scope);
+    queryKey: ['stores', getActiveBusinessId(user), user?.role, user?.store_id || user?.storeId],
+    queryFn: async () => {
+      const all = await base44.entities.Store.filter({
+        status: 'active',
+        business_id: getActiveBusinessId(user),
+      });
+      if (isStaff(user)) {
+        const assigned = user.store_id || user.storeId;
+        return all.filter((s) => s.id === assigned);
+      }
+      return all;
     },
     enabled: !!user,
   });
@@ -140,82 +149,30 @@ export default function MerchantPOS() {
     enabled: !!selectedStore?.id,
   });
 
-  // Earn points mutation
+  // Earn points mutation — runs server-side. The points formula and the balance
+  // write happen in the earnPoints service-role function so the client cannot
+  // forge a balance (G-2). The browser only sends store, account and amount.
   const earnMutation = useMutation({
     mutationFn: async () => {
       const amount = parseFloat(earnAmount);
-      if (isNaN(amount) || amount < (selectedStore?.min_purchase || 0)) {
+      if (isNaN(amount) || amount <= 0) {
         throw new Error('Monto inválido');
       }
-
-      // Calculate points (1 point per $10 MXN by default)
-      const rate = selectedStore?.points_rate || 1;
-      const pointsEarned = Math.floor(amount / 10) * rate;
-
-      if (pointsEarned < 1) {
-        throw new Error('Compra muy pequeña para ganar puntos');
+      if (!selectedStore || !selectedCustomer) {
+        throw new Error('Selecciona una tienda y un cliente');
       }
 
-      // Generate idempotency key
-      const idempotencyKey = makeIdempotencyKey(
-        `earn_${selectedStore.id}_${selectedCustomer.id}`,
-        ticketId || undefined
-      );
-
-      // Check for duplicate
-      const existing = await base44.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
-      if (existing.length > 0) {
-        throw new Error('Esta transacción ya fue procesada');
-      }
-
-      // Calculate new balance
-      const newBalance = selectedCustomer.current_balance + pointsEarned;
-
-      // Create ledger entry
-      await base44.entities.PointsLedger.create({
+      const response = await base44.functions.invoke('earnPoints', {
+        store_id: selectedStore.id,
         account_id: selectedCustomer.id,
-        user_id: selectedCustomer.user_id,
-        business_id: selectedStore.business_id || user.business_id,
-        business_name: selectedStore.business_name || user.business_name,
-        store_id: selectedStore.id,
-        store_name: selectedStore.name,
-        type: 'EARN',
-        points: pointsEarned,
-        balance_after: newBalance,
-        amount: amount,
-        currency: 'MXN',
-        reference_type: 'purchase',
-        ticket_id: ticketId || `T${Date.now()}`,
-        idempotency_key: idempotencyKey,
-        description: `Compra en ${selectedStore.name}`,
-        operator_id: user.id,
-        operator_email: user.email,
-        multiplier: rate,
-        status: 'completed'
+        amount,
+        ticket_id: ticketId || undefined,
       });
-
-      // Update account balance
-      await base44.entities.LoyaltyAccount.update(selectedCustomer.id, {
-        current_balance: newBalance,
-        lifetime_earned: (selectedCustomer.lifetime_earned || 0) + pointsEarned,
-        last_activity: new Date().toISOString()
-      });
-
-      // Create audit log
-      await base44.entities.AuditLog.create({
-        actor_id: user.id,
-        actor_email: user.email,
-        actor_role: 'merchant',
-        action: 'earn',
-        entity_type: 'PointsLedger',
-        target_user_id: selectedCustomer.user_id,
-        business_id: selectedStore.business_id || user.business_id,
-        store_id: selectedStore.id,
-        payload_summary: `+${pointsEarned} pts from $${amount} MXN`,
-        status: 'success'
-      });
-
-      return { pointsEarned, newBalance, amount };
+      const result = response?.data;
+      if (!result?.success) {
+        throw new Error(result?.error || 'No se pudo procesar la transacción');
+      }
+      return { pointsEarned: result.points_earned, newBalance: result.new_balance, amount: result.amount };
     },
     onSuccess: (data) => {
       setShowResult({ type: 'success', data, action: 'earn' });
@@ -230,65 +187,28 @@ export default function MerchantPOS() {
     }
   });
 
-  // Burn points mutation
+  // Burn points mutation — runs server-side. The balance check and deduction
+  // happen in the burnPoints service-role function (G-2).
   const burnMutation = useMutation({
     mutationFn: async () => {
       const points = parseInt(burnPoints);
       if (isNaN(points) || points < 1) {
         throw new Error('Cantidad de puntos inválida');
       }
-
-      if (points > selectedCustomer.current_balance) {
-        throw new Error('Saldo insuficiente');
+      if (!selectedStore || !selectedCustomer) {
+        throw new Error('Selecciona una tienda y un cliente');
       }
 
-      // Generate idempotency key (crypto-random suffix — no timestamp collisions)
-      const idempotencyKey = makeIdempotencyKey(`burn_${selectedStore.id}_${selectedCustomer.id}`);
-
-      // Calculate new balance
-      const newBalance = selectedCustomer.current_balance - points;
-
-      // Create ledger entry
-      await base44.entities.PointsLedger.create({
+      const response = await base44.functions.invoke('burnPoints', {
+        store_id: selectedStore.id,
         account_id: selectedCustomer.id,
-        user_id: selectedCustomer.user_id,
-        business_id: selectedStore.business_id || user.business_id,
-        business_name: selectedStore.business_name || user.business_name,
-        store_id: selectedStore.id,
-        store_name: selectedStore.name,
-        type: 'BURN',
-        points: -points,
-        balance_after: newBalance,
-        reference_type: 'redemption',
-        idempotency_key: idempotencyKey,
-        description: `Canje en ${selectedStore.name}`,
-        operator_id: user.id,
-        operator_email: user.email,
-        status: 'completed'
+        points,
       });
-
-      // Update account balance
-      await base44.entities.LoyaltyAccount.update(selectedCustomer.id, {
-        current_balance: newBalance,
-        lifetime_redeemed: (selectedCustomer.lifetime_redeemed || 0) + points,
-        last_activity: new Date().toISOString()
-      });
-
-      // Create audit log
-      await base44.entities.AuditLog.create({
-        actor_id: user.id,
-        actor_email: user.email,
-        actor_role: 'merchant',
-        action: 'burn',
-        entity_type: 'PointsLedger',
-        target_user_id: selectedCustomer.user_id,
-        business_id: selectedStore.business_id || user.business_id,
-        store_id: selectedStore.id,
-        payload_summary: `-${points} pts burned`,
-        status: 'success'
-      });
-
-      return { pointsBurned: points, newBalance };
+      const result = response?.data;
+      if (!result?.success) {
+        throw new Error(result?.error || 'No se pudo procesar el canje');
+      }
+      return { pointsBurned: result.points_burned, newBalance: result.new_balance };
     },
     onSuccess: (data) => {
       setShowResult({ type: 'success', data, action: 'burn' });

@@ -1,6 +1,6 @@
 # Puntos+ — Roles & Permissions Matrix
 
-Version: 2.0.5 | Updated: 2026-06-29
+Version: 2.0.6 | Updated: 2026-06-29
 
 Puntos+ is a **multi-tenant SaaS**. The capability matrix below is the canonical
 contract; it is mirrored in code at `src/lib/rbac.js` (`PERMISSIONS`) and rendered
@@ -58,7 +58,12 @@ stored in the `PermissionProfile` entity (consumed by `can(user, key, override)`
 ### Point of sale
 | Capability | owner | business_admin | staff | customer |
 |---|---|---|---|---|
-| `pos:access` / `pos:earn` / `pos:burn` | ✅ | ✅ | ✅ | — |
+| `pos:access` / `pos:earn` / `pos:burn` | ✅ | ✅ | ✅¹ | — |
+
+¹ Staff (`merchant`) are pinned to their assigned store: the POS store selector
+shows only that store, and the `earnPoints` / `burnPoints` functions reject
+operations on any other store. Owner and `business_admin` may operate any store
+in the business.
 
 ### Support (tenant side)
 | Capability | owner | business_admin | staff | customer |
@@ -120,8 +125,10 @@ documented in `CLAUDE.md`. Summary of effective access:
 **Field-level RLS** on `LoyaltyAccount` restricts financial/identity fields
 (`current_balance`, `lifetime_*`, `tier`, `status`, `subscription_*`, `trial_*`,
 `store_*`, `business_*`, `user_*`) to `admin` / `merchant` / `business_admin`;
-customer balance writes happen only server-side (`redeemOffer`,
-`createLoyaltyAccount`).
+all balance writes happen only server-side — customer redemption via
+`redeemOffer` / `createLoyaltyAccount`, and POS accumulate/redeem via
+`earnPoints` / `burnPoints`. The merchant POS no longer writes balances from the
+browser.
 
 ---
 
@@ -156,6 +163,8 @@ suspended → archived`, derived to UI banners by `deriveLicense()` in
 | `createStore` | any authed | `auth.me()` → 401 | Add a store to the caller's tenant with a server-generated globally-unique code. Platform owner may specify a target `business_id`. |
 | `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Stamps `business_id` from the store/owner context (service role). |
 | `redeemOffer` | any authed | `auth.me()` → 401 | Server-side offer redemption (atomic balance). |
+| `earnPoints` | operator (`admin` / `business_admin` / `merchant`) | `auth.me()` → 401, role gate → 403 | POS accumulate. Computes points & new balance server-side from the store's rate (client never supplies the balance). Staff are pinned to their assigned store. |
+| `burnPoints` | operator (`admin` / `business_admin` / `merchant`) | `auth.me()` → 401, role gate → 403 | POS redeem. Server-side balance check & deduction. Staff are pinned to their assigned store. |
 | `getAppContext` | any authed | `auth.me()` → unauthenticated empty | Resolve platform context (owner flag, support email). Self-heals owner role to `admin` if email matches `APP_OWNER_EMAIL` (server-side secret gate). |
 | `createGoogleWalletPass` / `createAppleWalletPass` | any authed | `auth.me()` → 401 | Wallet passes. Apple pass advertises the PassKit web service when configured. |
 | `passkitWebService` | Apple device | pass `authenticationToken` (HMAC) | Apple PassKit web service: device register/unregister, list-updatable, serve-latest-pass (service role). |
