@@ -13,7 +13,7 @@ import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
 
-const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding'];
+const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding', 'ForgotPassword'];
 
 // Back-office (sidebar) navigation per role
 const OWNER_NAV = [

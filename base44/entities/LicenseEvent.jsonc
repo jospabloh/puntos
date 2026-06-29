@@ -1,38 +1,93 @@
 {
   "name": "LicenseEvent",
   "type": "object",
-  "description": "Immutable audit trail of license/billing changes for a tenant (plan changes, activations, suspensions, renewals).",
+  "description": "Audit trail of license/billing changes for a tenant.",
   "properties": {
-    "business_id": { "type": "string", "description": "ID del negocio afectado" },
-    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
-    "event_type": { "type": "string", "enum": ["trial_started", "trial_extended", "plan_changed", "license_activated", "license_renewed", "license_expired", "view_only", "suspended", "reactivated", "archived"], "description": "Tipo de evento" },
-    "from_plan": { "type": "string", "description": "Plan anterior" },
-    "to_plan": { "type": "string", "description": "Plan nuevo" },
-    "from_status": { "type": "string", "description": "Estado de facturación anterior" },
-    "to_status": { "type": "string", "description": "Estado de facturación nuevo" },
-    "amount_mxn": { "type": "number", "description": "Monto cobrado si aplica" },
-    "payment_reference": { "type": "string", "description": "Referencia de pago" },
-    "effective_at": { "type": "string", "format": "date-time", "description": "Cuándo entra en vigor" },
-    "expires_at": { "type": "string", "format": "date-time", "description": "Nueva fecha de expiración" },
-    "actor_email": { "type": "string", "description": "Email de quien ejecutó el cambio" },
-    "notes": { "type": "string", "description": "Notas" }
+    "business_id": {
+      "type": "string"
+    },
+    "business_name": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "trial_started",
+        "trial_extended",
+        "plan_changed",
+        "license_activated",
+        "license_renewed",
+        "license_expired",
+        "view_only",
+        "suspended",
+        "reactivated",
+        "archived"
+      ]
+    },
+    "from_plan": {
+      "type": "string"
+    },
+    "to_plan": {
+      "type": "string"
+    },
+    "from_status": {
+      "type": "string"
+    },
+    "to_status": {
+      "type": "string"
+    },
+    "amount_mxn": {
+      "type": "number"
+    },
+    "payment_reference": {
+      "type": "string"
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor_email": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
   },
-  "required": ["business_id", "event_type"],
+  "required": [
+    "business_id",
+    "event_type"
+  ],
   "rls": {
     "create": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
-        { "data.business_id": "{{user.data.business_id}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "data.business_id": "{{user.data.business_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

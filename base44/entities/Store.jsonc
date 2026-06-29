@@ -1,31 +1,172 @@
 {
   "name": "Store",
   "type": "object",
-  "description": "A physical location within a tenant's program. Active stores are publicly readable so customers can join by code.",
   "properties": {
-    "name": { "type": "string", "description": "Nombre de la tienda" },
-    "code": { "type": "string", "description": "Código único de tienda" },
-    "business_id": { "type": "string", "description": "ID del negocio (tenant) dueño" },
-    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
-    "merchant_id": { "type": "string", "description": "ID del merchant propietario" },
-    "merchant_name": { "type": "string", "description": "Nombre del merchant" },
-    "merchant_email": { "type": "string", "description": "Email del merchant" },
-    "address": { "type": "string", "description": "Dirección física" },
-    "city": { "type": "string", "description": "Ciudad" },
-    "state": { "type": "string", "description": "Estado" },
-    "phone": { "type": "string", "description": "Teléfono de contacto" },
-    "status": { "type": "string", "enum": ["active", "inactive", "suspended"], "default": "active" },
-    "points_rate": { "type": "number", "default": 1, "description": "Puntos por cada $10 MXN" },
-    "min_purchase": { "type": "number", "default": 0, "description": "Compra mínima para ganar puntos" },
-    "daily_earn_limit": { "type": "number", "default": 1000, "description": "Límite diario de puntos por cliente" },
-    "logo_url": { "type": "string", "description": "URL del logo" },
-    "metadata": { "type": "object", "description": "Configuración adicional" }
+    "name": {
+      "type": "string",
+      "description": "Nombre de la tienda"
+    },
+    "code": {
+      "type": "string",
+      "description": "C\u00f3digo \u00fanico de tienda"
+    },
+    "business_id": {
+      "type": "string",
+      "description": "ID del negocio (tenant) due\u00f1o"
+    },
+    "business_name": {
+      "type": "string",
+      "description": "Nombre del negocio (denormalizado)"
+    },
+    "merchant_id": {
+      "type": "string",
+      "description": "ID del merchant propietario"
+    },
+    "merchant_name": {
+      "type": "string",
+      "description": "Nombre del merchant"
+    },
+    "merchant_email": {
+      "type": "string",
+      "description": "Email del merchant"
+    },
+    "address": {
+      "type": "string",
+      "description": "Direcci\u00f3n f\u00edsica"
+    },
+    "city": {
+      "type": "string",
+      "description": "Ciudad"
+    },
+    "state": {
+      "type": "string",
+      "description": "Estado"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Tel\u00e9fono de contacto"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "suspended"
+      ],
+      "default": "active"
+    },
+    "points_rate": {
+      "type": "number",
+      "default": 1,
+      "description": "Puntos por cada $10 MXN"
+    },
+    "min_purchase": {
+      "type": "number",
+      "default": 0,
+      "description": "Compra m\u00ednima para ganar puntos"
+    },
+    "daily_earn_limit": {
+      "type": "number",
+      "default": 1000,
+      "description": "L\u00edmite diario de puntos por cliente"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL del logo"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Configuraci\u00f3n adicional"
+    }
   },
-  "required": ["name", "code"],
+  "required": [
+    "name",
+    "code"
+  ],
   "rls": {
-    "create": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
-    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.status": "active" }, { "data.merchant_id": "{{user.id}}" }, { "data.business_id": "{{user.data.business_id}}" } ] },
-    "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.merchant_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
-    "delete": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] }
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.status": "active"
+        },
+        {
+          "data.merchant_id": "{{user.id}}"
+        },
+        {
+          "data.business_id": "{{user.data.business_id}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.merchant_id": "{{user.id}}"
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        }
+      ]
+    }
   }
 }

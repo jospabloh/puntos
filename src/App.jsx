@@ -9,6 +9,9 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ContinueAs from '@/components/auth/ContinueAs';
 import { getRememberedIdentity } from '@/lib/lastIdentity';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -66,6 +69,10 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      {/* Auth pages — no Layout wrapper */}
+      <Route path="/Login" element={<Login />} />
+      <Route path="/Register" element={<Register />} />
+      <Route path="/ForgotPassword" element={<ForgotPassword />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

@@ -26,6 +26,9 @@ import BusinessSettings from './pages/BusinessSettings';
 import BusinessUsers from './pages/BusinessUsers';
 import BusinessBilling from './pages/BusinessBilling';
 import BusinessSupport from './pages/BusinessSupport';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import __Layout from './Layout.jsx';
 
 
@@ -52,6 +55,9 @@ export const PAGES = {
     "BusinessUsers": BusinessUsers,
     "BusinessBilling": BusinessBilling,
     "BusinessSupport": BusinessSupport,
+    "Login": Login,
+    "Register": Register,
+    "ForgotPassword": ForgotPassword,
 }
 
 export const pagesConfig = {

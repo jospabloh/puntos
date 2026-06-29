@@ -1,44 +1,144 @@
 {
   "name": "Invitation",
   "type": "object",
-  "description": "Invitation for a person to join a tenant's team as business_admin or staff. Acceptance is matched server-side by email + the business invite_code.",
+  "description": "Invitation for a person to join a tenant team.",
   "properties": {
-    "business_id": { "type": "string", "description": "ID del negocio que invita" },
-    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
-    "email": { "type": "string", "description": "Email de la persona invitada" },
-    "role": { "type": "string", "enum": ["business_admin", "staff"], "default": "staff", "description": "Rol que tendrá al aceptar" },
-    "store_id": { "type": "string", "description": "Tienda asignada (para staff)" },
-    "store_name": { "type": "string", "description": "Nombre de la tienda asignada" },
-    "status": { "type": "string", "enum": ["pending", "accepted", "revoked", "expired"], "default": "pending", "description": "Estado de la invitación" },
-    "invited_by": { "type": "string", "description": "Email de quien invitó" },
-    "expires_at": { "type": "string", "format": "date-time", "description": "Caducidad de la invitación" },
-    "accepted_at": { "type": "string", "format": "date-time", "description": "Cuándo se aceptó" }
+    "business_id": {
+      "type": "string"
+    },
+    "business_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "business_admin",
+        "staff"
+      ],
+      "default": "staff"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "revoked",
+        "expired"
+      ],
+      "default": "pending"
+    },
+    "invited_by": {
+      "type": "string"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time"
+    }
   },
-  "required": ["business_id", "email", "role"],
+  "required": [
+    "business_id",
+    "email",
+    "role"
+  ],
   "rls": {
     "create": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "data.email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "data.email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "delete": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     }
   }

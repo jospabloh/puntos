@@ -1,31 +1,210 @@
 {
   "name": "AuditLog",
   "type": "object",
-  "description": "Tamper-evident record of privileged actions. Read by owner (all), business_admin (own tenant), staff (own store), and the targeted/acting user.",
   "properties": {
-    "action": { "type": "string", "enum": ["earn", "burn", "adjust", "reverse", "create", "update", "delete", "login", "view", "export"], "description": "Tipo de acción" },
-    "actor_email": { "type": "string", "description": "Email del actor" },
-    "actor_id": { "type": "string", "description": "ID del actor" },
-    "actor_role": { "type": "string", "enum": ["customer", "merchant", "business_admin", "admin", "system"], "description": "Rol del actor" },
-    "business_id": { "type": "string", "description": "ID del negocio (tenant)" },
-    "entity_id": { "type": "string", "description": "ID de la entidad afectada" },
-    "entity_type": { "type": "string", "description": "Tipo de entidad afectada" },
-    "error_message": { "type": "string", "description": "Mensaje de error si falló" },
-    "ip_address": { "type": "string", "description": "IP del request" },
-    "metadata": { "type": "object" },
-    "payload_hash": { "type": "string", "description": "Hash del payload completo" },
-    "payload_summary": { "type": "string", "description": "Resumen del payload" },
-    "risk_flags": { "type": "array", "items": { "type": "string" }, "description": "Banderas de riesgo" },
-    "status": { "type": "string", "enum": ["success", "failed", "blocked"], "default": "success" },
-    "store_id": { "type": "string", "description": "Tienda relacionada" },
-    "target_user_id": { "type": "string", "description": "Usuario afectado (si difiere del actor)" },
-    "user_agent": { "type": "string", "description": "User agent del navegador" }
+    "action": {
+      "description": "Tipo de acci\u00f3n",
+      "enum": [
+        "earn",
+        "burn",
+        "adjust",
+        "reverse",
+        "create",
+        "update",
+        "delete",
+        "login",
+        "view",
+        "export"
+      ],
+      "type": "string"
+    },
+    "actor_email": {
+      "description": "Email del actor",
+      "type": "string"
+    },
+    "actor_id": {
+      "description": "ID del usuario que realiz\u00f3 la acci\u00f3n",
+      "type": "string"
+    },
+    "actor_role": {
+      "description": "Rol del actor",
+      "enum": [
+        "customer",
+        "merchant",
+        "business_admin",
+        "admin",
+        "system"
+      ],
+      "type": "string"
+    },
+    "business_id": {
+      "description": "ID del negocio (tenant)",
+      "type": "string"
+    },
+    "entity_id": {
+      "description": "ID de la entidad",
+      "type": "string"
+    },
+    "entity_type": {
+      "description": "Tipo de entidad afectada",
+      "type": "string"
+    },
+    "error_message": {
+      "description": "Mensaje de error si fall\u00f3",
+      "type": "string"
+    },
+    "ip_address": {
+      "description": "IP del request",
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "payload_hash": {
+      "description": "Hash del payload completo",
+      "type": "string"
+    },
+    "payload_summary": {
+      "description": "Resumen del payload",
+      "type": "string"
+    },
+    "risk_flags": {
+      "description": "Banderas de riesgo",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "status": {
+      "default": "success",
+      "enum": [
+        "success",
+        "failed",
+        "blocked"
+      ],
+      "type": "string"
+    },
+    "store_id": {
+      "description": "Tienda relacionada",
+      "type": "string"
+    },
+    "target_user_id": {
+      "description": "Usuario afectado (si es diferente al actor)",
+      "type": "string"
+    },
+    "user_agent": {
+      "description": "User agent del navegador",
+      "type": "string"
+    }
   },
-  "required": ["actor_id", "action", "entity_type"],
+  "required": [
+    "actor_id",
+    "action",
+    "entity_type"
+  ],
   "rls": {
-    "create": { "$or": [ { "user_condition": { "role": "admin" } }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.actor_id": "{{user.id}}" }, { "data.store_id": "{{user.data.storeId}}" } ] }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.actor_id": "{{user.id}}" }, { "data.business_id": "{{user.data.business_id}}" } ] }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.actor_id": "{{user.id}}" }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
-    "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.actor_id": "{{user.id}}" }, { "data.target_user_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "merchant" } }, { "data.store_id": "{{user.data.storeId}}" } ] }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
-    "update": { "user_condition": { "role": "admin" } },
-    "delete": { "user_condition": { "role": "admin" } }
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "merchant"
+              }
+            },
+            {
+              "data.actor_id": "{{user.id}}"
+            },
+            {
+              "data.store_id": "{{user.data.storeId}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "merchant"
+              }
+            },
+            {
+              "data.actor_id": "{{user.id}}"
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.actor_id": "{{user.id}}"
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.actor_id": "{{user.id}}"
+        },
+        {
+          "data.target_user_id": "{{user.id}}"
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "merchant"
+              }
+            },
+            {
+              "data.store_id": "{{user.data.storeId}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }

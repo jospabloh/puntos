@@ -1,37 +1,107 @@
 {
   "name": "SupportTicketMessage",
   "type": "object",
-  "description": "A single message in a SupportTicket thread. Internal notes (is_internal_note=true) are visible only to the platform owner — enforced both via RLS and the UI.",
+  "description": "A message in a SupportTicket thread.",
   "properties": {
-    "ticket_id": { "type": "string", "description": "ID del ticket al que pertenece" },
-    "business_id": { "type": "string", "description": "ID del negocio (denormalizado para RLS)" },
-    "author_id": { "type": "string", "description": "ID del autor del mensaje" },
-    "author_email": { "type": "string", "description": "Email del autor" },
-    "author_name": { "type": "string", "description": "Nombre del autor" },
-    "author_role": { "type": "string", "enum": ["owner", "tenant"], "description": "Rol del autor en el contexto del ticket" },
-    "body": { "type": "string", "description": "Contenido del mensaje" },
-    "is_internal_note": { "type": "boolean", "default": false, "description": "Nota interna visible solo para el soporte (owner)" },
-    "attachments": { "type": "array", "items": { "type": "string" }, "description": "URLs de archivos adjuntos" }
+    "ticket_id": {
+      "type": "string"
+    },
+    "business_id": {
+      "type": "string"
+    },
+    "author_id": {
+      "type": "string"
+    },
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "author_role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "tenant"
+      ]
+    },
+    "body": {
+      "type": "string"
+    },
+    "is_internal_note": {
+      "type": "boolean",
+      "default": false
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
   },
-  "required": ["ticket_id", "business_id", "body"],
+  "required": [
+    "ticket_id",
+    "business_id",
+    "body"
+  ],
   "rls": {
     "create": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" }, { "data.is_internal_note": false } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            },
+            {
+              "data.is_internal_note": false
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" }, { "data.is_internal_note": false } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            },
+            {
+              "data.is_internal_note": false
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "delete": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

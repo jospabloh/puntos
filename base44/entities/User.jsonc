@@ -1,19 +1,66 @@
 {
   "name": "User",
   "type": "object",
-  "description": "Platform user. `role` drives RLS: admin (platform owner / ACACIA), business_admin (tenant admin), merchant (staff/cashier), customer (end consumer). 'user' is the legacy value, treated as customer.",
   "properties": {
-    "role": { "type": "string", "enum": ["admin", "business_admin", "merchant", "customer", "user"], "description": "Rol de plataforma usado por RLS" },
-    "app_role": { "type": "string", "enum": ["owner", "business_admin", "staff", "customer"], "description": "Rol de aplicación legible (espejo de role)" },
-    "business_id": { "type": "string", "description": "ID del negocio (tenant) al que pertenece" },
-    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
-    "storeId": { "type": "string", "description": "ID de la tienda asignada al cajero (usado por RLS — nótese camelCase)" },
-    "store_id": { "type": "string", "description": "Alias de storeId" },
-    "store_name": { "type": "string", "description": "Nombre de la tienda asignada" },
-    "merchant_role": { "type": "string", "description": "Marca heredada de cajero ('merchant')" },
-    "phone": { "type": "string", "description": "Teléfono de contacto" },
-    "onboarding_completed": { "type": "boolean", "default": false, "description": "Si completó el onboarding" },
-    "last_active_at": { "type": "string", "format": "date-time", "description": "Última actividad significativa" }
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "business_admin",
+        "merchant",
+        "customer",
+        "user"
+      ],
+      "description": "Rol de plataforma: admin (due\u00f1o ACACIA), business_admin (admin del negocio), merchant (equipo/cajero), customer (cliente). 'user' es heredado y se trata como customer."
+    },
+    "app_role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "business_admin",
+        "staff",
+        "customer"
+      ],
+      "description": "Rol de aplicaci\u00f3n (espejo legible del rol)"
+    },
+    "business_id": {
+      "type": "string",
+      "description": "ID del negocio (tenant) al que pertenece el usuario"
+    },
+    "business_name": {
+      "type": "string",
+      "description": "Nombre del negocio (denormalizado)"
+    },
+    "storeId": {
+      "type": "string",
+      "description": "ID de la tienda asignada al cajero (usado por RLS)"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "ID de la tienda asignada (alias)"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Nombre de la tienda asignada"
+    },
+    "merchant_role": {
+      "type": "string",
+      "description": "Marca heredada de cajero ('merchant')"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Tel\u00e9fono de contacto"
+    },
+    "onboarding_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si el usuario complet\u00f3 el onboarding"
+    },
+    "last_active_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "\u00daltima actividad significativa"
+    }
   },
   "required": []
 }

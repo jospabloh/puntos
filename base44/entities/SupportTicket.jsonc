@@ -1,51 +1,177 @@
 {
   "name": "SupportTicket",
   "type": "object",
-  "description": "Support ticket raised by a tenant (business) to the platform owner. Threaded messages live in SupportTicketMessage.",
+  "description": "Support ticket raised by a tenant to the platform owner.",
   "properties": {
-    "business_id": { "type": "string", "description": "ID del negocio que abrió el ticket" },
-    "business_name": { "type": "string", "description": "Nombre del negocio (denormalizado)" },
-    "subject": { "type": "string", "description": "Asunto del ticket" },
-    "description": { "type": "string", "description": "Descripción inicial del problema" },
-    "category": { "type": "string", "enum": ["billing", "technical", "account", "feature_request", "pos", "loyalty", "other"], "default": "other", "description": "Categoría" },
-    "priority": { "type": "string", "enum": ["low", "normal", "high", "urgent"], "default": "normal", "description": "Prioridad" },
-    "status": { "type": "string", "enum": ["open", "in_progress", "waiting_customer", "resolved", "closed"], "default": "open", "description": "Estado del ticket" },
-    "created_by_id": { "type": "string", "description": "ID del usuario que lo creó" },
-    "created_by_email": { "type": "string", "description": "Email del creador" },
-    "assigned_to": { "type": "string", "description": "Email del agente de soporte asignado (owner)" },
-    "first_response_at": { "type": "string", "format": "date-time", "description": "Primera respuesta del soporte" },
-    "resolved_at": { "type": "string", "format": "date-time", "description": "Cuándo se resolvió" },
-    "closed_at": { "type": "string", "format": "date-time", "description": "Cuándo se cerró" },
-    "last_message_at": { "type": "string", "format": "date-time", "description": "Último mensaje en el hilo" },
-    "last_message_by_role": { "type": "string", "enum": ["owner", "tenant"], "description": "Quién envió el último mensaje" },
-    "messages_count": { "type": "number", "default": 0, "description": "Número de mensajes en el hilo" },
-    "unread_for_owner": { "type": "boolean", "default": true, "description": "Hay mensajes sin leer para el soporte" },
-    "unread_for_tenant": { "type": "boolean", "default": false, "description": "Hay mensajes sin leer para el negocio" },
-    "satisfaction_rating": { "type": "number", "description": "Calificación de satisfacción (1-5)" },
-    "metadata": { "type": "object", "description": "Datos adicionales" }
+    "business_id": {
+      "type": "string"
+    },
+    "business_name": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "billing",
+        "technical",
+        "account",
+        "feature_request",
+        "pos",
+        "loyalty",
+        "other"
+      ],
+      "default": "other"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "normal",
+        "high",
+        "urgent"
+      ],
+      "default": "normal"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "in_progress",
+        "waiting_customer",
+        "resolved",
+        "closed"
+      ],
+      "default": "open"
+    },
+    "created_by_id": {
+      "type": "string"
+    },
+    "created_by_email": {
+      "type": "string"
+    },
+    "assigned_to": {
+      "type": "string"
+    },
+    "first_response_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "closed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_message_by_role": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "tenant"
+      ]
+    },
+    "messages_count": {
+      "type": "number",
+      "default": 0
+    },
+    "unread_for_owner": {
+      "type": "boolean",
+      "default": true
+    },
+    "unread_for_tenant": {
+      "type": "boolean",
+      "default": false
+    },
+    "satisfaction_rating": {
+      "type": "number"
+    },
+    "metadata": {
+      "type": "object"
+    }
   },
-  "required": ["business_id", "subject"],
+  "required": [
+    "business_id",
+    "subject"
+  ],
   "rls": {
     "create": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "update": {
       "$or": [
-        { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] },
-        { "user_condition": { "role": "admin" } }
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
       ]
     },
     "delete": {
-      "user_condition": { "role": "admin" }
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }
