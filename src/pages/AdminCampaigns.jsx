@@ -315,8 +315,25 @@ export default function AdminCampaigns() {
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
-          subject: `🎉 Nueva campaña: ${campaign.name}`,
-          body: `Hola,\n\n¡Tenemos una nueva campaña para ti!\n\n**${campaign.name}**\n${campaign.description}\n\n${campaign.type === 'multiplier' ? `Gana puntos x${campaign.multiplier}` : `Recibe ${campaign.bonus_points} puntos bonus`}\n\nVálida desde ${campaign.start_date ? format(new Date(campaign.start_date), "d 'de' MMMM", { locale: es }) : 'hoy'} hasta ${campaign.end_date ? format(new Date(campaign.end_date), "d 'de' MMMM", { locale: es }) : 'nuevo aviso'}.\n\n¡Aprovecha ahora!\n\nEquipo Puntos+`,
+          subject: `Nueva campaña: ${campaign.name.replace(/[<>&"]/g, '')}`,
+          body: [
+            'Hola,',
+            '',
+            '¡Tenemos una nueva campaña para ti!',
+            '',
+            campaign.name.replace(/[<>&"]/g, ''),
+            (campaign.description || '').replace(/[<>&"]/g, ''),
+            '',
+            campaign.type === 'multiplier'
+              ? `Gana puntos x${campaign.multiplier}`
+              : `Recibe ${campaign.bonus_points} puntos bonus`,
+            '',
+            `Válida desde ${campaign.start_date ? format(new Date(campaign.start_date), "d 'de' MMMM", { locale: es }) : 'hoy'} hasta ${campaign.end_date ? format(new Date(campaign.end_date), "d 'de' MMMM", { locale: es }) : 'nuevo aviso'}.`,
+            '',
+            '¡Aprovecha ahora!',
+            '',
+            'Equipo Puntos+',
+          ].join('\n'),
         }),
       );
 
@@ -341,8 +358,24 @@ export default function AdminCampaigns() {
         base44.integrations.Core.SendEmail({
           from_name: 'Puntos+',
           to: pref.user_email,
-          subject: `🎁 Nueva oferta disponible: ${offer.title}`,
-          body: `Hola,\n\n¡Tenemos una nueva oferta especial para ti!\n\n**${offer.title}**\n${offer.description}\n\nCosto: ${(offer.points_cost || 0).toLocaleString('es-MX')} puntos\nValor: $${(offer.value_mxn || 0).toLocaleString('es-MX')} MXN\n\n${offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!'}\n\n¡Canjea ahora en la app!\n\nEquipo Puntos+`,
+          subject: `Nueva oferta disponible: ${offer.title.replace(/[<>&"]/g, '')}`,
+          body: [
+            'Hola,',
+            '',
+            '¡Tenemos una nueva oferta especial para ti!',
+            '',
+            offer.title.replace(/[<>&"]/g, ''),
+            (offer.description || '').replace(/[<>&"]/g, ''),
+            '',
+            `Costo: ${(offer.points_cost || 0).toLocaleString('es-MX')} puntos`,
+            `Valor: $${(offer.value_mxn || 0).toLocaleString('es-MX')} MXN`,
+            '',
+            offer.stock > 0 ? `Stock limitado: ${offer.stock} disponibles` : '¡Disponibilidad ilimitada!',
+            '',
+            '¡Canjea ahora en la app!',
+            '',
+            'Equipo Puntos+',
+          ].join('\n'),
         }),
       );
 

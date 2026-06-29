@@ -148,7 +148,7 @@ REGLAS:
 - Mantén respuestas cortas (máximo 3-4 oraciones)
 
 PREGUNTA DEL USUARIO:
-${userMessage}`,
+<user_input>${userMessage.replace(/<\/user_input>/g, '')}</user_input>`,
         add_context_from_internet: false
       });
 
