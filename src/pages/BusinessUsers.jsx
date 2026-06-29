@@ -147,28 +147,35 @@ export default function BusinessUsers() {
     queryClient.invalidateQueries({ queryKey: ['biz-invites', businessId] });
   };
 
-  const storeFields = (storeId) => {
-    const s = stores.find((x) => x.id === storeId);
-    return { storeId: storeId || '', store_id: storeId || '', store_name: s?.name || '' };
-  };
-
+  // Team-member changes go through the manageTeamMember service-role function:
+  // it verifies the actor manages the target's tenant and never grants `admin`,
+  // so a tenant admin can't escalate themselves or anyone else by writing
+  // User.role directly (the User entity locks those fields to service-role writes).
   const updateRoleMutation = useMutation({
-    mutationFn: ({ id, role, storeId }) =>
-      base44.entities.User.update(id, role === 'merchant' ? { role, ...storeFields(storeId) } : { role, storeId: '', store_id: '', store_name: '' }),
+    mutationFn: async ({ id, role, storeId }) => {
+      const res = await base44.functions.invoke('manageTeamMember', { op: 'setRole', userId: id, role, storeId });
+      if (!res?.data?.ok) throw new Error(res?.data?.error || 'No se pudo actualizar el rol');
+    },
     onSuccess: () => { invalidate(); toast.success('Rol actualizado'); },
-    onError: () => toast.error('No se pudo actualizar el rol'),
+    onError: (e) => toast.error(e?.message || 'No se pudo actualizar el rol'),
   });
 
   const assignStoreMutation = useMutation({
-    mutationFn: ({ id, storeId }) => base44.entities.User.update(id, storeFields(storeId)),
+    mutationFn: async ({ id, storeId }) => {
+      const res = await base44.functions.invoke('manageTeamMember', { op: 'assignStore', userId: id, storeId });
+      if (!res?.data?.ok) throw new Error(res?.data?.error || 'No se pudo asignar la tienda');
+    },
     onSuccess: () => { invalidate(); toast.success('Tienda asignada'); },
-    onError: () => toast.error('No se pudo asignar la tienda'),
+    onError: (e) => toast.error(e?.message || 'No se pudo asignar la tienda'),
   });
 
   const removeMutation = useMutation({
-    mutationFn: (id) => base44.entities.User.update(id, { role: 'customer', business_id: '', business_name: '', storeId: '', store_id: '', store_name: '' }),
+    mutationFn: async (id) => {
+      const res = await base44.functions.invoke('manageTeamMember', { op: 'remove', userId: id });
+      if (!res?.data?.ok) throw new Error(res?.data?.error || 'No se pudo remover al miembro');
+    },
     onSuccess: () => { invalidate(); setRemoveTarget(null); toast.success('Miembro removido del equipo'); },
-    onError: () => toast.error('No se pudo remover al miembro'),
+    onError: (e) => toast.error(e?.message || 'No se pudo remover al miembro'),
   });
 
   const inviteMutation = useMutation({

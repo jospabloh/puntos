@@ -9,8 +9,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 //      user (not yet business_admin) could not create directly under tenant RLS.
 //
 // Server-enforced safe values: owner = caller, 30-day Starter trial, balances 0.
-// The client still promotes the user via auth.updateMe (a user editing their own
-// record), which is the only step that must reflect in the caller's token.
+// The caller's role/tenant promotion is also done HERE, with the service role —
+// the client must NOT set its own `role`/`business_id` (that path let any user
+// self-escalate to business_admin/admin). The client just refreshes its session
+// afterwards so the new role lands in its token.
 
 const TRIAL_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -135,6 +137,27 @@ Deno.serve(async (req) => {
         trial_start_date: nowIso,
         trial_end_date: trialEndIso,
       });
+    }
+
+    // 3b) Promote the caller to business_admin of the new tenant (service role,
+    // so it works even once User.role is locked to admin-only writes). An existing
+    // platform owner (admin) stays admin.
+    const promotedRole = user.role === 'admin' ? 'admin' : 'business_admin';
+    const promotedAppRole = user.role === 'admin' ? 'owner' : 'business_admin';
+    try {
+      await base44.asServiceRole.entities.User.update(user.id, {
+        role: promotedRole,
+        app_role: promotedAppRole,
+        business_id: business.id,
+        business_name: business.name,
+        storeId: store.id,
+        store_id: store.id,
+        store_name: store.name,
+        onboarding_completed: true,
+      });
+    } catch (e) {
+      console.error('Failed to promote business owner:', (e as Error)?.message);
+      return Response.json({ error: 'Failed to assign business role' }, { status: 500 });
     }
 
     // 4) License ledger entry.

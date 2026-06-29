@@ -37,6 +37,20 @@ function timingSafeEqual(a: string, b: string): boolean {
   return out === 0;
 }
 
+// A single, header-injection-safe email address. Rejects arrays, comma lists,
+// and any CR/LF that could smuggle extra SMTP headers / recipients.
+function isSafeEmail(v: unknown): v is string {
+  return typeof v === 'string'
+    && v.length <= 254
+    && !/[\r\n,;]/.test(v)
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+
+// A header value safe to place in an email Subject (no CR/LF, bounded length).
+function isSafeHeader(v: unknown): v is string {
+  return typeof v === 'string' && v.length <= 998 && !/[\r\n]/.test(v);
+}
+
 Deno.serve(async (req) => {
   try {
     const secret = Deno.env.get('INGEST_HMAC_SECRET');
@@ -45,7 +59,20 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action, params = {}, ts, sig } = body ?? {};
     if (!action || !ts || !sig) return Response.json({ error: 'missing action/ts/sig' }, { status: 400 });
-    if (Math.abs(Date.now() - Number(ts)) > MAX_SKEW_MS) return Response.json({ error: 'stale request' }, { status: 401 });
+    // Type-guard the signed inputs. `action` must be a string and `params` a
+    // plain object — anything else can't have been produced by Mission Control's
+    // signer and would only confuse stableStringify.
+    if (typeof action !== 'string') return Response.json({ error: 'invalid action' }, { status: 400 });
+    if (params === null || typeof params !== 'object' || Array.isArray(params)) {
+      return Response.json({ error: 'invalid params' }, { status: 400 });
+    }
+    // `ts` must be a finite number. Number(ts) on a non-numeric value yields NaN,
+    // and `NaN > MAX_SKEW_MS` is false — which would have let a malformed ts slip
+    // through the freshness window. Reject it explicitly.
+    const tsNum = Number(ts);
+    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) {
+      return Response.json({ error: 'stale request' }, { status: 401 });
+    }
 
     const expected = await hmacHex(secret, `${ts}.${action}.${stableStringify(params)}`);
     if (!timingSafeEqual(expected, String(sig))) return Response.json({ error: 'bad signature' }, { status: 401 });
@@ -123,6 +150,12 @@ Deno.serve(async (req) => {
         const subject = params.subject;
         const html = params.html;
         if (!to || !subject || !html) return Response.json({ error: 'params.to/subject/html required' }, { status: 400 });
+        // Validate the envelope even though the request is HMAC-signed: a single,
+        // CR/LF-free recipient (no header injection / fan-out) and a header-safe
+        // subject. `html` must be a string body, not an object/array.
+        if (!isSafeEmail(to)) return Response.json({ error: 'invalid recipient' }, { status: 400 });
+        if (!isSafeHeader(subject)) return Response.json({ error: 'invalid subject' }, { status: 400 });
+        if (typeof html !== 'string') return Response.json({ error: 'invalid body' }, { status: 400 });
         await sr.integrations.Core.SendEmail({ to, subject, body: html, from_name: 'ACACIA' });
         const sent_at = new Date().toISOString();
         const log = params.log;

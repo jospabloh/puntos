@@ -243,23 +243,14 @@ export default function Onboarding() {
 
   const acceptInviteMutation = useMutation({
     mutationFn: async () => {
-      const inv = invitation;
-      const isAdmin = inv.role === 'business_admin';
-      await base44.auth.updateMe({
-        role: user?.role === 'admin' ? 'admin' : (isAdmin ? 'business_admin' : 'merchant'),
-        data: {
-          app_role: user?.role === 'admin' ? 'owner' : (isAdmin ? 'business_admin' : 'staff'),
-          business_id: inv.business_id,
-          business_name: inv.business_name,
-          storeId: inv.store_id || undefined,
-          store_id: inv.store_id || undefined,
-          store_name: inv.store_name || undefined,
-          merchant_role: isAdmin ? undefined : 'merchant',
-          onboarding_completed: true,
-        },
-      });
-      try { await base44.entities.Invitation.update(inv.id, { status: 'accepted', accepted_at: new Date().toISOString() }); } catch { /* best effort */ }
-      return isAdmin;
+      // Role/tenant assignment happens server-side (acceptInvitation, service
+      // role). The client never sets its own role — it just refreshes the session
+      // so the new role lands in the token before redirecting.
+      const res = await base44.functions.invoke('acceptInvitation', { invitationId: invitation.id });
+      const result = res?.data;
+      if (!result?.success) throw new Error(result?.error || 'No se pudo aceptar la invitación');
+      try { await base44.auth.me(); } catch { /* token refreshes on redirect */ }
+      return result.is_admin;
     },
     onSuccess: (isAdmin) => {
       toast.success(`¡Te uniste a ${invitation.business_name}!`);
@@ -282,18 +273,9 @@ export default function Onboarding() {
       if (!res?.data?.success && res?.data?.error !== 'Loyalty account already exists') {
         throw new Error(res?.data?.error || 'No se pudo crear tu cuenta');
       }
-      await base44.auth.updateMe({
-        role: user?.role === 'admin' ? 'admin' : 'customer',
-        data: {
-          app_role: user?.role === 'admin' ? 'owner' : 'customer',
-          business_id: store.business_id || undefined,
-          business_name: store.business_name || undefined,
-          storeId: store.id,
-          store_id: store.id,
-          store_name: store.name,
-          onboarding_completed: true,
-        },
-      });
+      // createLoyaltyAccount sets the customer role/tenant server-side. Refresh
+      // the session so the new role is in the token before redirecting.
+      try { await base44.auth.me(); } catch { /* token refreshes on redirect */ }
       return store;
     },
     onSuccess: (store) => {
@@ -313,18 +295,9 @@ export default function Onboarding() {
       });
       if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo crear el negocio');
       const { business, store } = res.data;
-      await base44.auth.updateMe({
-        role: user?.role === 'admin' ? 'admin' : 'business_admin',
-        data: {
-          app_role: user?.role === 'admin' ? 'owner' : 'business_admin',
-          business_id: business.id,
-          business_name: business.name,
-          storeId: store.id,
-          store_id: store.id,
-          store_name: store.name,
-          onboarding_completed: true,
-        },
-      });
+      // createBusiness promotes the caller to business_admin server-side. Refresh
+      // the session so the new role is in the token before continuing.
+      try { await base44.auth.me(); } catch { /* token refreshes on redirect */ }
       return { business, store };
     },
     onSuccess: ({ business, store }) => {

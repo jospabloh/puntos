@@ -1,4 +1,18 @@
 {
+  // User — the Base44 auth user, extended with platform/tenant fields.
+  //
+  // SECURITY: the privileged fields below (role, tenant, store assignment) carry
+  // FIELD-LEVEL write RLS locking them to role `admin` — which is the tier the
+  // service role evaluates as. End users therefore CANNOT set their own role or
+  // business via auth.updateMe (that path let any user escalate to
+  // business_admin/admin). All legitimate changes flow through service-role
+  // functions: createBusiness, createLoyaltyAccount, acceptInvitation (onboarding)
+  // and manageTeamMember (tenant team management). Self-service fields below
+  // (phone, onboarding_completed, last_active_at) stay user-writable.
+  //
+  // DEPLOY ORDER: deploy those functions FIRST, then this schema. If the lock
+  // lands before the functions set roles server-side, new onboarding/team changes
+  // silently no-op (Base44 drops disallowed field writes) and users get stuck.
   "name": "User",
   "type": "object",
   "properties": {
@@ -11,7 +25,8 @@
         "customer",
         "user"
       ],
-      "description": "Rol de plataforma: admin (due\u00f1o ACACIA), business_admin (admin del negocio), merchant (equipo/cajero), customer (cliente). 'user' es heredado y se trata como customer."
+      "description": "Rol de plataforma: admin (dueño ACACIA), business_admin (admin del negocio), merchant (equipo/cajero), customer (cliente). 'user' es heredado y se trata como customer.",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "app_role": {
       "type": "string",
@@ -21,45 +36,52 @@
         "staff",
         "customer"
       ],
-      "description": "Rol de aplicaci\u00f3n (espejo legible del rol)"
+      "description": "Rol de aplicación (espejo legible del rol)",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "business_id": {
       "type": "string",
-      "description": "ID del negocio (tenant) al que pertenece el usuario"
+      "description": "ID del negocio (tenant) al que pertenece el usuario",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "business_name": {
       "type": "string",
-      "description": "Nombre del negocio (denormalizado)"
+      "description": "Nombre del negocio (denormalizado)",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "storeId": {
       "type": "string",
-      "description": "ID de la tienda asignada al cajero (usado por RLS)"
+      "description": "ID de la tienda asignada al cajero (usado por RLS)",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "store_id": {
       "type": "string",
-      "description": "ID de la tienda asignada (alias)"
+      "description": "ID de la tienda asignada (alias)",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "store_name": {
       "type": "string",
-      "description": "Nombre de la tienda asignada"
+      "description": "Nombre de la tienda asignada",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "merchant_role": {
       "type": "string",
-      "description": "Marca heredada de cajero ('merchant')"
+      "description": "Marca heredada de cajero ('merchant')",
+      "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "phone": {
       "type": "string",
-      "description": "Tel\u00e9fono de contacto"
+      "description": "Teléfono de contacto"
     },
     "onboarding_completed": {
       "type": "boolean",
       "default": false,
-      "description": "Si el usuario complet\u00f3 el onboarding"
+      "description": "Si el usuario completó el onboarding"
     },
     "last_active_at": {
       "type": "string",
       "format": "date-time",
-      "description": "\u00daltima actividad significativa"
+      "description": "Última actividad significativa"
     }
   },
   "required": []

@@ -1,6 +1,6 @@
 # Puntos+ — Roles & Permissions Matrix
 
-Version: 2.0.6 | Updated: 2026-06-29
+Version: 2.0.7 | Updated: 2026-06-29
 
 Puntos+ is a **multi-tenant SaaS**. The capability matrix below is the canonical
 contract; it is mirrored in code at `src/lib/rbac.js` (`PERMISSIONS`) and rendered
@@ -130,6 +130,13 @@ all balance writes happen only server-side — customer redemption via
 `earnPoints` / `burnPoints`. The merchant POS no longer writes balances from the
 browser.
 
+**Field-level RLS** on `User` restricts the privilege fields (`role`, `app_role`,
+`business_id`, `business_name`, `storeId`, `store_id`, `store_name`,
+`merchant_role`) to service-role (`admin`) writes. Users cannot self-assign a role
+or tenant via `auth.updateMe`; all role/tenant changes flow through
+`createBusiness`, `createLoyaltyAccount`, `acceptInvitation`, and
+`manageTeamMember`. (Self-service fields like `phone` stay user-writable.)
+
 ---
 
 ## License plans (feature gating)
@@ -159,9 +166,11 @@ suspended → archived`, derived to UI banners by `deriveLicense()` in
 
 | Function | Caller | Auth | Purpose |
 |----------|--------|------|---------|
-| `createBusiness` | any authed | `auth.me()` → 401 | Provision a tenant (Business + first Store + owner account + LicenseEvent) with server-enforced safe values. Required because `Business.create` is admin-only. |
+| `createBusiness` | any authed | `auth.me()` → 401 | Provision a tenant (Business + first Store + owner account + LicenseEvent) with server-enforced safe values, and promote the caller to `business_admin` (service role). Required because `Business.create` is admin-only. |
 | `createStore` | any authed | `auth.me()` → 401 | Add a store to the caller's tenant with a server-generated globally-unique code. Platform owner may specify a target `business_id`. |
-| `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Stamps `business_id` from the store/owner context (service role). |
+| `createLoyaltyAccount` | any authed | `auth.me()` → 401 | Create caller's account (balance 0). Stamps `business_id` from the store/owner context, and sets the caller's `customer` role server-side (service role). |
+| `acceptInvitation` | any authed | `auth.me()` → 401 | Accept a pending team invitation addressed to the caller's email. Assigns `business_admin`/`merchant` + tenant/store from the invitation (service role). Never grants `admin`. Replaces client `auth.updateMe` role-setting. |
+| `manageTeamMember` | owner / `business_admin` | `auth.me()` → 401, tenant gate → 403 | Set a team member's role/store or remove them, within the actor's tenant. Roles limited to `business_admin`/`merchant`/`customer` — never `admin`. Replaces client `User.update`. |
 | `redeemOffer` | any authed | `auth.me()` → 401 | Server-side offer redemption (atomic balance). |
 | `earnPoints` | operator (`admin` / `business_admin` / `merchant`) | `auth.me()` → 401, role gate → 403 | POS accumulate. Computes points & new balance server-side from the store's rate (client never supplies the balance). Staff are pinned to their assigned store. |
 | `burnPoints` | operator (`admin` / `business_admin` / `merchant`) | `auth.me()` → 401, role gate → 403 | POS redeem. Server-side balance check & deduction. Staff are pinned to their assigned store. |
