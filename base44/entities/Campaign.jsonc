@@ -129,10 +129,14 @@
           }
         },
         {
-          "data.status": "active"
-        },
-        {
-          "data.business_id": "{{user.data.business_id}}"
+          "$and": [
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            },
+            {
+              "data.status": "active"
+            }
+          ]
         }
       ]
     },
