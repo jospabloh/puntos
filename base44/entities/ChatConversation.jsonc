@@ -18,7 +18,7 @@
   },
   "required": ["user_id"],
   "rls": {
-    "create": { "data.user_id": "{{user.id}}" },
+    "create": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" } ] },
     "read": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" }, { "$and": [ { "user_condition": { "role": "business_admin" } }, { "data.business_id": "{{user.data.business_id}}" } ] } ] },
     "update": { "$or": [ { "user_condition": { "role": "admin" } }, { "data.user_id": "{{user.id}}" } ] },
     "delete": { "user_condition": { "role": "admin" } }

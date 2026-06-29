@@ -5,6 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.5] — 2026-06-29 — Security audit & documentation catch-up
+
+### Fixed
+- **MEDIUM — `createStore` function crash for platform owner.** The `body` variable
+  was referenced before its `const body = await req.json()` declaration, placing it
+  in the Temporal Dead Zone and causing a `ReferenceError` whenever an admin
+  attempted to create a store for a specific tenant. Body is now parsed before the
+  business-ID resolution logic.
+- **LOW — `ChatConversation.create` RLS missing admin branch.** The `create` rule
+  was `{ "data.user_id": "{{user.id}}" }` with no `admin` branch, preventing
+  service-role functions from creating chat conversations on behalf of users. Added
+  `$or` with `{"user_condition":{"role":"admin"}}` (additive — does not narrow
+  any existing customer access).
+
+### Documentation
+- **User Manual updated to v2.0.5.** Complete rewrite covering the v2.0.x
+  multi-tenant architecture: onboarding paths (register / join / invitation),
+  persistent session / "Continue As" screen, business admin back-office
+  (Settings, Users, Billing, Support), platform owner console, Apple Wallet
+  auto-update behavior, license plans, team management, and updated permissions table.
+- **Permissions matrix updated to v2.0.5.** Added missing serverless function
+  entries: `createStore`, `getAppContext`, and `acaciaControl` with auth model
+  and purpose for each.
+
+### Known open items (carried)
+| ID | Severity | Description | Status |
+|----|----------|-------------|--------|
+| G-1 | Medium | Staff can transact for any store in their tenant (not pinned to one store) | Open — by design |
+| G-2 | Medium | Merchant POS earn/burn balance still calculated client-side | Partially resolved (customer redemption atomic server-side) |
+
+---
+
 ## [2.0.4] — 2026-06-24 — Hardening & polish pass
 
 A systematic quality audit across every page (4 parallel reviewers + shared shell),

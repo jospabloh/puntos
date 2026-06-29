@@ -35,6 +35,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const body = await req.json().catch(() => ({}));
     const ownBusinessId = user.business_id || user.data?.business_id;
     const ownBusinessName = user.business_name || user.data?.business_name;
     // The platform owner (role admin) may create a store inside ANY tenant they
@@ -45,7 +46,6 @@ Deno.serve(async (req) => {
     const businessName = (isAdmin && body?.business_id) ? (body?.business_name || '') : ownBusinessName;
     if (!businessId) return Response.json({ error: 'No tienes un negocio asignado' }, { status: 403 });
 
-    const body = await req.json().catch(() => ({}));
     const name = (body?.name || '').trim();
     if (!name) return Response.json({ error: 'El nombre de la tienda es obligatorio' }, { status: 400 });
 
