@@ -5,6 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.6] — 2026-06-29 — Loyalty-integrity hardening (POS earn/burn server-side)
+
+### Security
+- **MEDIUM (G-2) — Merchant POS balance moved server-side.** `MerchantPOS` used to
+  read the customer's `current_balance`, compute the new balance in the browser,
+  and write both the `PointsLedger` entry and `LoyaltyAccount.current_balance`
+  directly — a tampered client could post any balance. Two new service-role
+  functions, `earnPoints` and `burnPoints`, now own the points formula, the
+  balance read, and the balance write; the client only sends store, account, and
+  amount/points. Mirrors the existing `redeemOffer` pattern.
+- **MEDIUM (G-1) — Staff pinned to their assigned store.** `earnPoints` /
+  `burnPoints` reject any operation a `merchant` attempts on a store other than
+  the one assigned to them (`store_id` / `storeId`); `admin` and `business_admin`
+  may operate any store in the business. The POS store selector also hides
+  unassigned stores for staff.
+
+### Notes
+- The new functions must be **deployed** to the Base44 backend before the POS
+  earn/burn actions work; there is intentionally **no client-side fallback** (a
+  fallback would re-open the forgeable-balance hole). Until deployed, the POS
+  shows a clear error instead of writing a balance.
+
+### Documentation
+- Permissions matrix updated to v2.0.6: added `earnPoints` / `burnPoints` to the
+  serverless functions table, documented staff store pinning under Point of sale,
+  and updated the balance-writes note to cover all four server functions.
+
+---
+
 ## [2.0.5] — 2026-06-29 — Security audit & documentation catch-up
 
 ### Fixed
