@@ -95,11 +95,7 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Authenticate as admin (required for scheduled tasks).
-    const user = await base44.auth.me();
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
+    // Scheduled automation — no user session; use service role directly.
 
     const serviceAccountJson = Deno.env.get('GOOGLE_WALLET_SERVICE_ACCOUNT');
     const issuerId = Deno.env.get('GOOGLE_WALLET_ISSUER_ID');
