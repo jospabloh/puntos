@@ -5,6 +5,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.7] — 2026-06-29 — Privilege-escalation & admin-bridge hardening
+
+### Security
+- **CRITICAL — User self-promotion (privilege escalation).** Onboarding assigned
+  the caller's `role`/`business_id` from the browser via `auth.updateMe`, and the
+  `User` entity had **no write protection** — so any authenticated user could call
+  `auth.updateMe({ role: 'admin' })` and become the cross-tenant platform owner.
+  Fixed in two layers:
+  - Role/tenant assignment now happens **server-side with the service role** in
+    `createBusiness`, `createLoyaltyAccount`, the new `acceptInvitation`, and the
+    new `manageTeamMember`. The clients (`Onboarding.jsx`, `BusinessUsers.jsx`)
+    no longer set `role`/`business_id`/`store_*` themselves; they call these
+    functions and refresh the session. An invitation can grant `business_admin`
+    or `merchant` only — never `admin`.
+  - `User.jsonc` now carries **field-level write RLS** locking `role`, `app_role`,
+    `business_id`, `business_name`, `storeId`, `store_id`, `store_name`, and
+    `merchant_role` to service-role (`admin`) writes.
+- **HIGH/MEDIUM — `acaciaControl` input hardening.** Added a finite-`ts` check
+  (a non-numeric `ts` previously slipped past the freshness window), `action`/
+  `params` type guards, and email-envelope validation in `emails.sendFollowup`
+  (single, CR/LF-free recipient + header-safe subject + string body) to prevent
+  header injection / recipient fan-out. The HMAC signing format is unchanged, so
+  the Mission Control contract is preserved.
+
+### ⚠️ Deployment order (required)
+Deploy the **functions first** (`createBusiness`, `createLoyaltyAccount`,
+`acceptInvitation`, `manageTeamMember`, `acaciaControl`), then deploy the
+**`User` schema** field-RLS. If the lock lands before the functions set roles
+server-side, Base44 silently drops the disallowed writes and new onboarding /
+team changes no-op. The `User` field-RLS is **not** deployed by this change — it
+must be applied via `update_entity_schema` after the functions are live.
+
+### Note
+- Fully closing the `acaciaControl` non-canonical-signing concern requires a
+  matching change in the Mission Control repo (`api/_lib/ingestSign.js`), which is
+  outside this repository; only backward-compatible hardening was applied here.
+
+---
+
 ## [2.0.6] — 2026-06-29 — Loyalty-integrity hardening (POS earn/burn server-side)
 
 ### Security

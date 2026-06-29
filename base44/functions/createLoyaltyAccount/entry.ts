@@ -93,6 +93,31 @@ Deno.serve(async (req) => {
 
     const account = await base44.asServiceRole.entities.LoyaltyAccount.create(payload);
 
+    // Set the caller's role/tenant server-side (service role), so the client no
+    // longer needs to self-assign role/business_id via auth.updateMe — that path
+    // let any user escalate. A customer joining a store becomes role `customer`
+    // scoped to that store's tenant. An existing platform owner stays admin.
+    if (type === 'customer') {
+      const store = body?.store;
+      const role = user.role === 'admin' ? 'admin' : 'customer';
+      const appRole = user.role === 'admin' ? 'owner' : 'customer';
+      try {
+        await base44.asServiceRole.entities.User.update(user.id, {
+          role,
+          app_role: appRole,
+          business_id: store?.business_id || businessParam?.id || undefined,
+          business_name: store?.business_name || businessParam?.name || undefined,
+          storeId: store?.id || undefined,
+          store_id: store?.id || undefined,
+          store_name: store?.name || undefined,
+          onboarding_completed: true,
+        });
+      } catch (e) {
+        console.error('Failed to set customer role:', (e as Error)?.message);
+        return Response.json({ error: 'Failed to assign customer role' }, { status: 500 });
+      }
+    }
+
     return Response.json({ success: true, account });
   } catch (error) {
     console.error('Error creating loyalty account:', error);
