@@ -147,6 +147,9 @@ export default function BusinessSupport() {
         body: form.description.trim(),
         is_internal_note: false,
       });
+      // Push en tiempo real a ACACIA Mission Control (no bloquea la UI): notifica
+      // al equipo de soporte y refleja el ticket sin sincronización manual.
+      base44.functions.invoke('notifyTicketCreated', { ticketId: ticket.id }).catch(() => {});
       return ticket;
     },
     onSuccess: (ticket) => {
