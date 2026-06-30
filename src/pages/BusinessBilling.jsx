@@ -112,7 +112,7 @@ export default function BusinessBilling() {
   const requestMutation = useMutation({
     mutationFn: async (plan) => {
       const now = new Date().toISOString();
-      await base44.entities.SupportTicket.create({
+      const ticket = await base44.entities.SupportTicket.create({
         business_id: businessId,
         business_name: user?.business_name || business?.name || '',
         subject: `Solicitud de cambio a plan ${plan.name}`,
@@ -124,6 +124,8 @@ export default function BusinessBilling() {
         unread_for_owner: true,
         last_message_at: now,
       });
+      // Push en tiempo real a ACACIA Mission Control (no bloquea la UI).
+      base44.functions.invoke('notifyTicketCreated', { ticketId: ticket.id }).catch(() => {});
       await base44.entities.Business.update(business.id, { support_contacted_at: now });
     },
     onSuccess: async () => {
