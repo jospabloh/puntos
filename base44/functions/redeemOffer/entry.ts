@@ -43,6 +43,14 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Offer is sold out' }, { status: 400 });
     }
 
+    // Tenant isolation guard: the offer must belong to the same tenant as the
+    // customer's loyalty account. This prevents a customer from redeeming an
+    // offer from a different business (which would deduct their own balance and
+    // generate a confirmation code for another tenant's reward).
+    if (account.business_id && offer.business_id && account.business_id !== offer.business_id) {
+      return Response.json({ error: 'Offer does not belong to your program' }, { status: 403 });
+    }
+
     const cost = offer.points_cost || 0;
     const currentBalance = account.current_balance || 0;
     if (currentBalance < cost) {

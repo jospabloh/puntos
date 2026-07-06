@@ -1,6 +1,6 @@
 # Puntos+ — User Manual
 
-Version: 2.0.7 | Updated: 2026-06-29
+Version: 2.0.8 | Updated: 2026-07-06
 
 ---
 
@@ -99,7 +99,8 @@ There are three onboarding paths:
 ### Offers (`/Offers`)
 - Browse all active rewards for your enrolled business.
 - AI-powered recommendations appear based on your balance and activity.
-- An offer can only be redeemed if you have sufficient points and the offer is active.
+- An offer can only be redeemed if you have sufficient points, the offer is active,
+  and the offer belongs to the same business you are enrolled in.
 
 ### Chat (`/Chat`)
 - AI assistant to answer questions about your account, points, and offers.

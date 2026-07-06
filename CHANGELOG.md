@@ -5,6 +5,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.8] — 2026-07-06 — Cross-tenant offer-redemption isolation guard
+
+### Security
+- **MEDIUM — Cross-tenant offer redemption.** `redeemOffer` loaded the customer's
+  loyalty account and the requested offer both via the service role, but did not
+  verify that both records belonged to the same tenant. An authenticated customer
+  who knew an offer ID from another business could call `redeemOffer` with that
+  foreign offer ID — the cost would be deducted from their own account and a
+  confirmation code generated for the other tenant's reward. Fixed: `redeemOffer`
+  now rejects with HTTP 403 (`"Offer does not belong to your program"`) when
+  `account.business_id` and `offer.business_id` are both populated and differ.
+
+### Notes
+- No entity schema changes. No RLS changes.
+- **Deploy action required:** redeploy the `redeemOffer` serverless function to
+  Base44 for the fix to take effect in production. The repo change alone is not
+  sufficient — the running function must be updated.
+
+---
+
 ## [2.0.7] — 2026-06-29 — Privilege-escalation & admin-bridge hardening
 
 ### Security
