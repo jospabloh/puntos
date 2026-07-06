@@ -44,10 +44,9 @@ Deno.serve(async (req) => {
     }
 
     // Tenant isolation guard: the offer must belong to the same tenant as the
-    // customer's loyalty account. This prevents a customer from redeeming an
-    // offer from a different business (which would deduct their own balance and
-    // generate a confirmation code for another tenant's reward).
-    if (account.business_id && offer.business_id && account.business_id !== offer.business_id) {
+    // customer's loyalty account. Fail-closed: if either side lacks a business_id
+    // (legacy/unscoped record), reject rather than allow cross-tenant redemption.
+    if (!account.business_id || !offer.business_id || account.business_id !== offer.business_id) {
       return Response.json({ error: 'Offer does not belong to your program' }, { status: 403 });
     }
 
