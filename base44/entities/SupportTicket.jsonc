@@ -98,6 +98,10 @@
     },
     "metadata": {
       "type": "object"
+    },
+    "ai_brief": {
+      "type": "object",
+      "description": "Especificación estructurada que arma el asistente BA/PO al levantar un feature (feature_request) o una incidencia técnica (historia de usuario, criterios de aceptación, pasos de reproducción, severidad, impacto, etc.). El mismo brief se incrusta en 'description' en Markdown, así que este campo es aditivo para el render enriquecido en la consola del owner."
     }
   },
   "required": [

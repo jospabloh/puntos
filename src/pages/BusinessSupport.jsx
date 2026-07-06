@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   MessageSquare,
   Headset,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,13 @@ import {
   PageLoader,
 } from '@/components/backoffice/Kit';
 import { useRequirePage } from '@/lib/useCurrentUser';
+import AiIntakeChat from '@/components/support/AiIntakeChat';
+import { composeTicketBody } from '@/lib/aiIntake';
+
+// Categorías donde entra el asistente BA/PO experto: solicitud de función
+// (feature) e incidencias técnicas (bug). El resto de categorías conserva el
+// alta directa del ticket — no necesita levantar requisitos.
+const AI_KIND = { feature_request: 'feature', technical: 'bug' };
 
 const CATEGORIES = [
   { value: 'billing', label: 'Facturación' },
@@ -86,9 +94,14 @@ export default function BusinessSupport() {
 
   const [activeId, setActiveId] = useState(null);
   const [newOpen, setNewOpen] = useState(false);
+  // Paso dentro del diálogo de alta: 'form' (captura) o 'ai' (entrevista BA/PO).
+  const [newStep, setNewStep] = useState('form');
   const [form, setForm] = useState({ subject: '', category: 'technical', priority: 'normal', description: '' });
   const [reply, setReply] = useState('');
   const threadEndRef = useRef(null);
+
+  // ¿La categoría elegida usa el asistente experto? (feature / incidencia)
+  const intakeKind = AI_KIND[form.category];
 
   const ticketsQuery = useQuery({
     queryKey: ['support-tickets', businessId],
@@ -119,13 +132,24 @@ export default function BusinessSupport() {
   }, [messages.length]);
 
   const createMutation = useMutation({
-    mutationFn: async () => {
+    /**
+     * Crea el ticket. Si viene un `brief` del asistente (feature/incidencia), la
+     * descripción se enriquece con la especificación en Markdown (así llega al
+     * owner y al correo sin depender del deploy del esquema) y el brief
+     * estructurado se adjunta en `ai_brief` para render enriquecido.
+     * @param {import('@/lib/aiIntake').IntakeBrief|null} [brief]
+     */
+    mutationFn: async (brief) => {
       const now = new Date().toISOString();
-      const ticket = await base44.entities.SupportTicket.create({
+      const description = brief
+        ? composeTicketBody(form.description.trim(), brief)
+        : form.description.trim();
+      /** @type {Record<string, any>} */
+      const payload = {
         business_id: businessId,
         business_name: user?.business_name || '',
         subject: form.subject.trim(),
-        description: form.description.trim(),
+        description,
         category: form.category,
         priority: form.priority,
         status: 'open',
@@ -136,7 +160,9 @@ export default function BusinessSupport() {
         last_message_at: now,
         last_message_by_role: 'tenant',
         messages_count: 1,
-      });
+      };
+      if (brief) payload.ai_brief = brief;
+      const ticket = await base44.entities.SupportTicket.create(payload);
       await base44.entities.SupportTicketMessage.create({
         ticket_id: ticket.id,
         business_id: businessId,
@@ -144,7 +170,7 @@ export default function BusinessSupport() {
         author_email: user?.email,
         author_name: user?.full_name,
         author_role: 'tenant',
-        body: form.description.trim(),
+        body: description,
         is_internal_note: false,
       });
       // Push en tiempo real a ACACIA Mission Control (no bloquea la UI): notifica
@@ -155,6 +181,7 @@ export default function BusinessSupport() {
     onSuccess: (ticket) => {
       queryClient.invalidateQueries({ queryKey: ['support-tickets', businessId] });
       setNewOpen(false);
+      setNewStep('form');
       setForm({ subject: '', category: 'technical', priority: 'normal', description: '' });
       setActiveId(ticket.id);
       toast.success('Ticket creado');
@@ -202,12 +229,23 @@ export default function BusinessSupport() {
 
   if (!ready) return <PageLoader />;
 
-  const handleCreate = () => {
+  // Alta directa (categorías sin asistente) o paso previo a la entrevista.
+  const handleContinue = () => {
     if (!form.subject.trim() || !form.description.trim()) {
       toast.error('Completa el asunto y la descripción');
       return;
     }
-    createMutation.mutate();
+    if (intakeKind) {
+      setNewStep('ai');
+      return;
+    }
+    createMutation.mutate(null);
+  };
+
+  // Cierra el diálogo de alta y regresa al primer paso.
+  const closeNew = () => {
+    setNewOpen(false);
+    setNewStep('form');
   };
 
   const handleReply = () => {
@@ -367,52 +405,82 @@ export default function BusinessSupport() {
       </SectionCard>
 
       {/* New ticket dialog */}
-      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+      <Dialog open={newOpen} onOpenChange={(open) => { setNewOpen(open); if (!open) setNewStep('form'); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuevo ticket</DialogTitle>
-            <DialogDescription>Describe tu solicitud y el equipo de soporte te responderá.</DialogDescription>
+            <DialogTitle>
+              {newStep === 'ai'
+                ? (intakeKind === 'bug' ? 'Reporte de incidencia' : 'Nueva funcionalidad')
+                : 'Nuevo ticket'}
+            </DialogTitle>
+            <DialogDescription>
+              {newStep === 'ai'
+                ? 'Un asistente experto te hará unas preguntas para dejar tu solicitud lista para el equipo.'
+                : 'Describe tu solicitud y el equipo de soporte te responderá.'}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="t-subject">Asunto</Label>
-              <Input id="t-subject" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} placeholder="Resumen breve del problema" />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>Categoría</Label>
-                <Select value={form.category} onValueChange={(category) => setForm((f) => ({ ...f, category }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+          {newStep === 'ai' ? (
+            <AiIntakeChat
+              kind={intakeKind === 'bug' ? 'bug' : 'feature'}
+              subject={form.subject.trim()}
+              description={form.description.trim()}
+              saving={createMutation.isPending}
+              onBack={() => setNewStep('form')}
+              onComplete={(brief) => createMutation.mutate(brief)}
+            />
+          ) : (
+            <>
+              <div className="space-y-4 py-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="t-subject">Asunto</Label>
+                  <Input id="t-subject" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} placeholder="Resumen breve del problema" />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>Categoría</Label>
+                    <Select value={form.category} onValueChange={(category) => setForm((f) => ({ ...f, category }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Prioridad</Label>
+                    <Select value={form.priority} onValueChange={(priority) => setForm((f) => ({ ...f, priority }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {PRIORITIES.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="t-desc">Descripción</Label>
+                  <Textarea id="t-desc" rows={5} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Cuéntanos con detalle qué necesitas…" />
+                </div>
+                {intakeKind && (
+                  <p className="flex items-start gap-1.5 text-xs text-slate-500">
+                    <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" />
+                    Un asistente experto te hará unas preguntas para dejar tu solicitud lista para el equipo.
+                  </p>
+                )}
               </div>
-              <div className="space-y-1.5">
-                <Label>Prioridad</Label>
-                <Select value={form.priority} onValueChange={(priority) => setForm((f) => ({ ...f, priority }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PRIORITIES.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="t-desc">Descripción</Label>
-              <Textarea id="t-desc" rows={5} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Cuéntanos con detalle qué necesitas…" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending} className="bg-violet-600 hover:bg-violet-700">
-              {createMutation.isPending ? 'Creando…' : 'Crear ticket'}
-            </Button>
-          </DialogFooter>
+              <DialogFooter>
+                <Button variant="outline" onClick={closeNew}>Cancelar</Button>
+                <Button onClick={handleContinue} disabled={createMutation.isPending} className="gap-2 bg-violet-600 hover:bg-violet-700">
+                  {intakeKind
+                    ? <><Sparkles className="h-4 w-4" /> Continuar con el asistente</>
+                    : (createMutation.isPending ? 'Creando…' : 'Crear ticket')}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </PageShell>
