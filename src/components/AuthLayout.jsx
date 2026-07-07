@@ -3,23 +3,32 @@ import { Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Layout de marca para las pantallas de autenticación. Dos columnas en
+// desktop (formulario a la izquierda, panel de marca Puntos+ a la derecha,
+// oculto en móvil). Sigue el mismo esqueleto que el resto del portafolio
+// ACACIA (badge de ícono + título + subtítulo + children + footer, con un
+// panel derecho de badge-pill + headline + copy), pero conserva la
+// identidad visual propia de Puntos+ (logo, degradado violeta→fucsia, acento
+// ámbar y copy de lealtad/recompensas).
 export default function AuthLayout({
+  icon: Icon,
   title,
-  subtitle,
-  footer,
+  subtitle = null,
+  footer = null,
   children,
   showSplitPanel = true,
 }) {
   return (
-    <div className="min-h-screen flex">
-      {/* LEFT PANEL — form */}
-      <div className={cn(
-        'flex flex-col w-full px-6 py-10 bg-white overflow-y-auto',
-        showSplitPanel && 'lg:w-[60%]'
-      )}>
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 mb-10">
-          <div className="relative h-9 w-9 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+    <div
+      className={cn(
+        'min-h-screen bg-white text-slate-900',
+        showSplitPanel && 'lg:grid lg:grid-cols-2'
+      )}
+    >
+      {/* Columna del formulario */}
+      <div className="flex min-h-screen flex-col overflow-y-auto px-6 py-8 lg:min-h-0 lg:px-12">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/30">
             <Sparkles className="h-5 w-5 text-white" />
             <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-amber-400 ring-2 ring-white" />
           </div>
@@ -28,45 +37,43 @@ export default function AuthLayout({
           </span>
         </Link>
 
-        {/* Heading */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 leading-tight">{title}</h1>
-          {subtitle && <p className="mt-2 text-slate-500 text-sm">{subtitle}</p>}
-        </div>
+        <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
+          <div className="mb-7 text-center">
+            {Icon && (
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100">
+                <Icon className="h-6 w-6 text-violet-600" aria-hidden="true" />
+              </div>
+            )}
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">{title}</h1>
+            {subtitle && <p className="mt-1.5 text-sm text-slate-500">{subtitle}</p>}
+          </div>
 
-        {/* Form content */}
-        <div className="flex-1 max-w-sm w-full mx-auto lg:mx-0">
           {children}
+
+          {footer && <p className="mt-6 text-center text-sm text-slate-500">{footer}</p>}
         </div>
 
-        {/* Footer */}
-        {footer && (
-          <p className="mt-10 text-center text-sm text-slate-500 max-w-sm w-full mx-auto lg:mx-0">
-            {footer}
-          </p>
-        )}
+        <p className="text-center text-xs text-slate-400">Puntos+ · Lealtad y recompensas</p>
       </div>
 
-      {/* RIGHT PANEL — visual (hidden on mobile) */}
+      {/* Panel de marca (desktop) */}
       {showSplitPanel && (
-        <div className="hidden lg:flex lg:w-[40%] relative overflow-hidden bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 items-center justify-center">
-          {/* Blurred depth circles */}
-          <div className="absolute top-1/4 -left-16 h-72 w-72 rounded-full bg-blue-200/50 blur-3xl" />
-          <div className="absolute bottom-1/4 -right-16 h-64 w-64 rounded-full bg-indigo-200/40 blur-3xl" />
+        <div className="relative hidden overflow-hidden bg-gradient-to-br from-violet-100 via-fuchsia-50 to-white lg:block">
+          <div className="absolute top-1/4 -left-16 h-72 w-72 rounded-full bg-violet-200/40 blur-3xl" />
+          <div className="absolute bottom-1/4 -right-16 h-64 w-64 rounded-full bg-fuchsia-200/40 blur-3xl" />
 
-          {/* Center card */}
-          <div className="relative z-10 flex flex-col items-center text-center px-10 max-w-sm">
-            <div className="h-24 w-24 rounded-3xl bg-white/80 backdrop-blur-sm shadow-xl shadow-indigo-200/40 flex items-center justify-center mb-6">
-              <div className="relative h-14 w-14 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-violet-500/40">
-                <Sparkles className="h-7 w-7 text-white" />
-                <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-amber-400 ring-2 ring-white" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-slate-800 leading-tight mb-3">
-              Tu programa de lealtad,<br />en un solo lugar
+          <div className="absolute inset-0 flex flex-col justify-center px-12">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
+              Programa de lealtad · SaaS
+            </span>
+            <h2 className="mt-5 text-4xl font-bold leading-tight text-slate-900">
+              Tu programa de lealtad,
+              <br />
+              <span className="text-violet-600">en un solo lugar</span>.
             </h2>
-            <p className="text-slate-500 text-sm leading-relaxed">
-              Acumula puntos en cada compra, canjea recompensas exclusivas y disfruta beneficios únicos con Puntos+.
+            <p className="mt-4 max-w-sm text-sm text-slate-500">
+              Acumula puntos en cada compra, canjea recompensas exclusivas y disfruta
+              beneficios únicos con Puntos+.
             </p>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,7 @@ export default function Login() {
 
   return (
     <AuthLayout
+      icon={LogIn}
       title="Bienvenido a Puntos+"
       subtitle="Inicia sesión para acceder a tu cuenta de lealtad."
       footer={
