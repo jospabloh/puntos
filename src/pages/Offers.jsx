@@ -43,7 +43,11 @@ export default function Offers() {
 
   const loadUser = async () => {
     try {
-      const userData = await base44.auth.me();
+      const raw = await base44.auth.me();
+      // Base44 stores custom fields (business_id, etc.) under `data`; flatten so
+      // the tenant scope below can read user.business_id (see Onboarding.jsx /
+      // MerchantPOS.jsx for the same pattern).
+      const userData = raw?.data ? { ...raw.data, ...raw } : raw;
       setUser(userData);
     } catch (e) {
       base44.auth.redirectToLogin();
@@ -60,9 +64,15 @@ export default function Offers() {
   const account = accounts?.[0];
 
   // Fetch all offers
+  // Client-side tenant scope (defense in depth): the RLS `read` rule's
+  // unscoped `{status:'active'}` branch means an omitted business_id here
+  // would return every tenant's active offers, not just this user's. Legacy
+  // customer accounts without a business_id fall back to the pre-fix
+  // (unscoped) behavior rather than seeing zero offers.
   const { data: offers, isLoading } = useQuery({
-    queryKey: ['allOffers'],
-    queryFn: () => base44.entities.Offer.filter({ status: 'active' }, '-created_date', 50),
+    queryKey: ['allOffers', user?.business_id],
+    queryFn: () => base44.entities.Offer.filter({ status: 'active', business_id: user?.business_id }, '-created_date', 50),
+    enabled: !!user,
   });
 
   // AI Recommendations
