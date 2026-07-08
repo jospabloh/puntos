@@ -113,7 +113,14 @@
           }
         },
         {
-          "data.status": "active"
+          "$and": [
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            },
+            {
+              "data.status": "active"
+            }
+          ]
         },
         {
           "data.merchant_id": "{{user.id}}"
