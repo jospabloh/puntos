@@ -5,6 +5,47 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.9] — 2026-07-20 — Release-hygiene audit: sync release metadata, verify prior fix is live
+
+### Process
+- **LOW — Release metadata desync.** The 2026-07-08 fix (cross-tenant catalog
+  leak on `Offer`/`Store`/`Campaign`, tenant-stamping on `redeemOffer` writes,
+  and a role gate on `LicenseEvent` reads) merged to `main` without a matching
+  `CHANGELOG.md` entry, `docs/PERMISSIONS.md`/`docs/USER_MANUAL.md` version
+  bump, or `package.json` version bump, leaving release metadata out of sync
+  with `main` for two weeks. This entry backfills the record.
+
+### Verified (no code change required)
+- Re-inspected the **deployed** Base44 entity schemas for `Offer`, `Store`,
+  `Campaign`, and `LicenseEvent` directly against the live backend: the
+  tenant-scoped `read` RLS from the 2026-07-08 fix is deployed and active in
+  production (the original commit had flagged the deploy as not yet done —
+  it has since been completed).
+- Re-inspected the deployed `redeemOffer` function source: the
+  `business_id`/`business_name` tenant-stamping on `Redemption`/`PointsLedger`
+  writes from the same fix is live in production.
+- `npm run build`, `npm run lint`, `npm run validate:rls`, and
+  `npm run check:secrets` all pass on `main` with no findings.
+- Reviewed `earnPoints`/`burnPoints`/`redeemOffer` for points-integrity: balance
+  is always read and written server-side under the service role, never trusted
+  from the client; `earnPoints` is idempotent on (store, account, ticket);
+  `burnPoints` relies on the POS mutation's in-flight guard (no client-side
+  auto-retry configured) rather than a server-side idempotency key — tracked
+  as a hardening opportunity, not a reproducible bug under the current client.
+- Reviewed Apple/Google Wallet pass generation: fails closed (HTTP 501) when
+  wallet certificates/keys are not configured, keeps pass payloads minimal,
+  and signs device registration tokens with HMAC — no secrets committed to
+  the repo (`npm run check:secrets` confirms).
+- No Stripe/payment code paths exist in `base44/functions` or `src`; the
+  `@stripe/*` packages in `package.json` are unused dependencies, not an
+  active payment flow — payment/subscription audit section is not applicable.
+- `docs/PERMISSIONS.md` capability matrix cross-checked against
+  `src/lib/rbac.js` (`PERMISSIONS`, `PAGE_ACCESS`): owner is the only implicit
+  all-`true` tier, all other roles require an explicit allow-list entry per
+  capability (safe-by-default), and matrix contents match code.
+
+---
+
 ## [2.0.8] — 2026-07-06 — Cross-tenant offer-redemption isolation guard
 
 ### Security
