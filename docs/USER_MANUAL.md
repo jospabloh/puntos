@@ -1,6 +1,6 @@
 # Puntos+ — User Manual
 
-Version: 2.0.9 | Updated: 2026-07-20
+Version: 2.0.10 | Updated: 2026-07-27
 
 ---
 
@@ -90,6 +90,8 @@ There are three onboarding paths:
 - Select an offer and tap **Canjear**.
 - Confirm the redemption; your balance is deducted immediately (server-side, atomic).
 - A confirmation code is displayed — show it when using your benefit.
+- If a redemption is accidentally submitted twice (e.g. due to a network hiccup),
+  only one deduction is applied.
 
 ### Transaction History (`/History`)
 - View all point movements: earned, redeemed, bonuses, and adjustments.
@@ -134,6 +136,7 @@ Staff members have access to the Point of Sale screen only.
 2. Search for and select the customer.
 3. Enter the number of points to redeem (maximum is the customer's available balance).
 4. Click **Confirmar canje**.
+5. If the confirmation is accidentally submitted twice, only one deduction is applied.
 
 ### Transaction History (POS)
 - The **Historial** tab shows the 20 most recent transactions for the selected store.
