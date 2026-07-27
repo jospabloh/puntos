@@ -17,6 +17,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const offerId = body?.offer_id;
+    const requestId = (body?.request_id || '').toString().trim();
     if (!offerId) {
       return Response.json({ error: 'offer_id is required' }, { status: 400 });
     }
@@ -48,6 +49,28 @@ Deno.serve(async (req) => {
     // (legacy/unscoped record), reject rather than allow cross-tenant redemption.
     if (!account.business_id || !offer.business_id || account.business_id !== offer.business_id) {
       return Response.json({ error: 'Offer does not belong to your program' }, { status: 403 });
+    }
+
+    // Idempotency: a client-supplied request_id (generated once per redeem
+    // attempt) lets a duplicate/retried request return the original result
+    // instead of creating a second Redemption + burning points twice. Without
+    // one, no dedup check is done (old behavior).
+    const idempotencyKey = requestId ? `redeem_${account.id}_${offer.id}_${requestId}` : null;
+    if (idempotencyKey) {
+      const existingLedger = await base44.asServiceRole.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
+      if (existingLedger && existingLedger.length > 0) {
+        const prev = existingLedger[0];
+        const prevRedemption = prev.reference_id
+          ? await base44.asServiceRole.entities.Redemption.get(prev.reference_id)
+          : null;
+        return Response.json({
+          success: true,
+          duplicate: true,
+          redemption: prevRedemption,
+          confirmation_code: prevRedemption?.confirmation_code,
+          new_balance: prev.balance_after,
+        });
+      }
     }
 
     const cost = offer.points_cost || 0;
@@ -97,7 +120,7 @@ Deno.serve(async (req) => {
       balance_after: newBalance,
       reference_type: 'redemption',
       reference_id: redemption.id,
-      idempotency_key: `burn_${redemption.id}`,
+      idempotency_key: idempotencyKey || `burn_${redemption.id}`,
       description: `Canje: ${offer.title}`,
       status: 'completed'
     });

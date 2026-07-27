@@ -63,19 +63,33 @@ Deno.serve(async (req) => {
     // passed explicitly. Falls back gracefully when absent (legacy single-program).
     const businessParam = body?.business;
 
-    let payload;
+    // Server-verified store — never trust business_id/business_name from the
+    // client. A forged `store` object (e.g. {id: <real store>, business_id:
+    // <other tenant>}) would otherwise let a caller assign their own account
+    // and User record to an arbitrary tenant, since both are written below via
+    // the service role (bypasses RLS). Mirrors the Store.get() lookup already
+    // used by earnPoints/burnPoints.
+    let verifiedStore = null;
     if (type === 'customer') {
-      const store = body?.store;
-      if (!store?.id) {
+      const storeId = body?.store?.id;
+      if (!storeId) {
         return Response.json({ error: 'store is required for customer accounts' }, { status: 400 });
       }
+      verifiedStore = await base44.asServiceRole.entities.Store.get(storeId);
+      if (!verifiedStore) {
+        return Response.json({ error: 'Store not found' }, { status: 404 });
+      }
+    }
+
+    let payload;
+    if (type === 'customer') {
       payload = {
         ...base,
-        store_id: store.id,
-        store_code: store.code,
-        store_name: store.name,
-        business_id: store.business_id || businessParam?.id,
-        business_name: store.business_name || businessParam?.name,
+        store_id: verifiedStore.id,
+        store_code: verifiedStore.code,
+        store_name: verifiedStore.name,
+        business_id: verifiedStore.business_id || businessParam?.id,
+        business_name: verifiedStore.business_name || businessParam?.name,
         subscription_status: 'active'
       };
     } else {
@@ -98,18 +112,17 @@ Deno.serve(async (req) => {
     // let any user escalate. A customer joining a store becomes role `customer`
     // scoped to that store's tenant. An existing platform owner stays admin.
     if (type === 'customer') {
-      const store = body?.store;
       const role = user.role === 'admin' ? 'admin' : 'customer';
       const appRole = user.role === 'admin' ? 'owner' : 'customer';
       try {
         await base44.asServiceRole.entities.User.update(user.id, {
           role,
           app_role: appRole,
-          business_id: store?.business_id || businessParam?.id || undefined,
-          business_name: store?.business_name || businessParam?.name || undefined,
-          storeId: store?.id || undefined,
-          store_id: store?.id || undefined,
-          store_name: store?.name || undefined,
+          business_id: verifiedStore.business_id || businessParam?.id || undefined,
+          business_name: verifiedStore.business_name || businessParam?.name || undefined,
+          storeId: verifiedStore.id || undefined,
+          store_id: verifiedStore.id || undefined,
+          store_name: verifiedStore.name || undefined,
           onboarding_completed: true,
         });
       } catch (e) {

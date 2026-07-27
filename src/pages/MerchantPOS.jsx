@@ -203,6 +203,7 @@ export default function MerchantPOS() {
         store_id: selectedStore.id,
         account_id: selectedCustomer.id,
         points,
+        request_id: crypto.randomUUID(),
       });
       const result = response?.data;
       if (!result?.success) {

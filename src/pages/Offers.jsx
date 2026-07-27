@@ -126,7 +126,10 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
   // deducted by a service-role function (the client cannot write the balance).
   const redeemMutation = useMutation({
     mutationFn: async (offer) => {
-      const response = await base44.functions.invoke('redeemOffer', { offer_id: offer.id });
+      const response = await base44.functions.invoke('redeemOffer', {
+        offer_id: offer.id,
+        request_id: crypto.randomUUID(),
+      });
       const result = response?.data;
       if (!result?.success) {
         throw new Error(result?.error || 'No se pudo canjear la oferta');
