@@ -5,6 +5,62 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.10] — 2026-07-27 — Tenant-isolation and points-integrity hardening
+
+### Security
+- **HIGH — Tenant self-reassignment via forged store payload in `createLoyaltyAccount`.**
+  The customer-onboarding function trusted `business_id`/`store_id` from the
+  client-supplied `store` object when stamping both the new `LoyaltyAccount` and
+  the caller's own `User` record (service-role writes, which bypass RLS). An
+  authenticated user could call the function directly with a forged store object
+  — a real store id paired with a spoofed `business_id` — landing their own
+  `User.business_id`/`storeId` in an arbitrary tenant and gaining that tenant's
+  RLS-matched read access. Fixed: the store is now always re-fetched server-side
+  before use, and tenant fields are derived only from the verified record —
+  mirroring the pattern already used by `earnPoints`/`burnPoints`.
+
+### Points integrity
+- **HIGH — No duplicate-request protection on `burnPoints` / `redeemOffer`.**
+  Unlike `earnPoints` (which dedupes on a client-supplied ticket id), `burnPoints`
+  generated a fresh random idempotency key on every call, and `redeemOffer` keyed
+  its ledger entry off a freshly-created record id — neither could recognize a
+  retried or replayed request, so a network retry or a replayed capture could
+  deduct points twice for a single physical redemption. Fixed: both functions now
+  accept an optional client-generated request id; when present, the server checks
+  for a prior ledger entry with the same derived key before deducting and returns
+  the original result instead of double-charging. The point-of-sale screen and the
+  customer offer-redemption screen now send a fresh id per action.
+
+### Deferred — owner input needed
+- **MEDIUM — Scheduled wallet-pass sync has no role check, unlike three of its
+  sibling scheduled functions assume, and unlike this project's own permissions
+  matrix documents.** Fixing it is only safe if scheduled invocations carry an
+  authenticated admin session; if they don't, adding the check would silently
+  break the wallet balance sync for every tenant. Not verifiable from the
+  repository alone this cycle (no platform console access) — left unchanged
+  pending the owner's confirmation of how scheduled invocations authenticate. See
+  the pull request description for the exact question and both possible fixes.
+
+### Dependencies
+- Applied non-breaking `npm audit fix` (transitive bumps within existing semver
+  ranges). One remaining advisory needs a major-version route migration to fully
+  resolve; confirmed not currently exploitable in this app (no user-controlled
+  value ever reaches a navigation target) and tracked as a deferred hardening
+  item. A second remaining advisory is inside the lint toolchain only (a
+  development dependency, never shipped to the client bundle).
+
+### Verified (no code change required)
+- `npm run lint`, `npm run build`, `npm run validate:rls`, and `npm run
+  check:secrets` all pass.
+- Re-read `earnPoints`, `createBusiness`, `createStore`, `acceptInvitation`,
+  `manageTeamMember`: all correctly re-derive tenant/store context from
+  server-side lookups; none trust a client-supplied role or tenant id.
+- Re-verified the admin-bridge HMAC request verification (constant-time compare,
+  signature covers the full request payload, replay window enforced).
+- No hardcoded secrets found beyond what `npm run check:secrets` already covers.
+
+---
+
 ## [2.0.9] — 2026-07-20 — Release-hygiene audit: sync release metadata, verify prior fix is live
 
 ### Process

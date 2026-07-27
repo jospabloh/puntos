@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
     const storeId = body?.store_id;
     const accountId = body?.account_id;
     const points = Number(body?.points);
+    const requestId = (body?.request_id || '').toString().trim();
 
     if (!storeId) return Response.json({ error: 'store_id es obligatorio' }, { status: 400 });
     if (!accountId) return Response.json({ error: 'account_id es obligatorio' }, { status: 400 });
@@ -72,13 +73,33 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'La cuenta no pertenece a esta tienda' }, { status: 403 });
     }
 
+    // Idempotency: a client-supplied request_id (generated once per redeem
+    // attempt) lets a duplicate/retried request be detected and answered with
+    // the original result instead of deducting twice. Without one, fall back
+    // to a random key (old behavior — no dedup, caller is responsible), same
+    // convention as earnPoints' ticket-less path.
+    const idempotencyKey = requestId
+      ? `burn_${store.id}_${account.id}_${requestId}`
+      : `burn_${store.id}_${account.id}_${randomKey(6)}`;
+    if (requestId) {
+      const existing = await sr.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
+      if (existing && existing.length > 0) {
+        const prev = existing[0];
+        return Response.json({
+          success: true,
+          duplicate: true,
+          points_burned: points,
+          new_balance: prev.balance_after,
+        });
+      }
+    }
+
     const currentBalance = account.current_balance || 0;
     if (points > currentBalance) {
       return Response.json({ error: 'Saldo insuficiente' }, { status: 400 });
     }
 
     const newBalance = currentBalance - points;
-    const idempotencyKey = `burn_${store.id}_${account.id}_${randomKey(6)}`;
 
     await sr.entities.PointsLedger.create({
       account_id: account.id,
