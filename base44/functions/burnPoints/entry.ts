@@ -12,12 +12,6 @@ function pick(user: any, key: string) {
   return user?.[key] ?? user?.data?.[key];
 }
 
-function randomKey(n: number) {
-  const bytes = new Uint8Array(n);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -43,6 +37,7 @@ Deno.serve(async (req) => {
     if (!Number.isInteger(points) || points < 1) {
       return Response.json({ error: 'Cantidad de puntos inválida' }, { status: 400 });
     }
+    if (!requestId) return Response.json({ error: 'request_id es obligatorio' }, { status: 400 });
 
     const sr = base44.asServiceRole;
 
@@ -73,25 +68,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'La cuenta no pertenece a esta tienda' }, { status: 403 });
     }
 
-    // Idempotency: a client-supplied request_id (generated once per redeem
-    // attempt) lets a duplicate/retried request be detected and answered with
-    // the original result instead of deducting twice. Without one, fall back
-    // to a random key (old behavior — no dedup, caller is responsible), same
-    // convention as earnPoints' ticket-less path.
-    const idempotencyKey = requestId
-      ? `burn_${store.id}_${account.id}_${requestId}`
-      : `burn_${store.id}_${account.id}_${randomKey(6)}`;
-    if (requestId) {
-      const existing = await sr.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
-      if (existing && existing.length > 0) {
-        const prev = existing[0];
-        return Response.json({
-          success: true,
-          duplicate: true,
-          points_burned: points,
-          new_balance: prev.balance_after,
-        });
-      }
+    // Idempotency: the client-supplied request_id (generated once per redeem
+    // attempt, mandatory as of v2.0.11) lets a duplicate/retried request be
+    // detected and answered with the original result instead of deducting twice.
+    const idempotencyKey = `burn_${store.id}_${account.id}_${requestId}`;
+    const existing = await sr.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
+    if (existing && existing.length > 0) {
+      const prev = existing[0];
+      return Response.json({
+        success: true,
+        duplicate: true,
+        points_burned: points,
+        new_balance: prev.balance_after,
+      });
     }
 
     const currentBalance = account.current_balance || 0;

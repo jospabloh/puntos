@@ -21,6 +21,9 @@ Deno.serve(async (req) => {
     if (!offerId) {
       return Response.json({ error: 'offer_id is required' }, { status: 400 });
     }
+    if (!requestId) {
+      return Response.json({ error: 'request_id is required' }, { status: 400 });
+    }
 
     // Load the caller's own loyalty account server-side (source of truth).
     const accounts = await base44.asServiceRole.entities.LoyaltyAccount.filter({ user_id: user.id });
@@ -51,26 +54,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Offer does not belong to your program' }, { status: 403 });
     }
 
-    // Idempotency: a client-supplied request_id (generated once per redeem
-    // attempt) lets a duplicate/retried request return the original result
-    // instead of creating a second Redemption + burning points twice. Without
-    // one, no dedup check is done (old behavior).
-    const idempotencyKey = requestId ? `redeem_${account.id}_${offer.id}_${requestId}` : null;
-    if (idempotencyKey) {
-      const existingLedger = await base44.asServiceRole.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
-      if (existingLedger && existingLedger.length > 0) {
-        const prev = existingLedger[0];
-        const prevRedemption = prev.reference_id
-          ? await base44.asServiceRole.entities.Redemption.get(prev.reference_id)
-          : null;
-        return Response.json({
-          success: true,
-          duplicate: true,
-          redemption: prevRedemption,
-          confirmation_code: prevRedemption?.confirmation_code,
-          new_balance: prev.balance_after,
-        });
-      }
+    // Idempotency: the client-supplied request_id (generated once per redeem
+    // attempt, mandatory as of v2.0.11) lets a duplicate/retried request return
+    // the original result instead of creating a second Redemption + burning
+    // points twice.
+    const idempotencyKey = `redeem_${account.id}_${offer.id}_${requestId}`;
+    const existingLedger = await base44.asServiceRole.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
+    if (existingLedger && existingLedger.length > 0) {
+      const prev = existingLedger[0];
+      const prevRedemption = prev.reference_id
+        ? await base44.asServiceRole.entities.Redemption.get(prev.reference_id)
+        : null;
+      return Response.json({
+        success: true,
+        duplicate: true,
+        redemption: prevRedemption,
+        confirmation_code: prevRedemption?.confirmation_code,
+        new_balance: prev.balance_after,
+      });
     }
 
     const cost = offer.points_cost || 0;
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
       balance_after: newBalance,
       reference_type: 'redemption',
       reference_id: redemption.id,
-      idempotency_key: idempotencyKey || `burn_${redemption.id}`,
+      idempotency_key: idempotencyKey,
       description: `Canje: ${offer.title}`,
       status: 'completed'
     });
