@@ -42,14 +42,32 @@ Deno.serve(async (req) => {
     const role = user.role === 'admin' ? 'admin' : (grantsAdmin ? 'business_admin' : 'merchant');
     const appRole = user.role === 'admin' ? 'owner' : (grantsAdmin ? 'business_admin' : 'staff');
 
+    // A store assignment is only trusted after re-fetching the Store server-side
+    // and confirming it actually belongs to the invitation's business. Invitation
+    // RLS only checks business_id on create, never that store_id belongs to it —
+    // a forged Invitation (business_id: own tenant, store_id: another tenant's
+    // store) would otherwise land a mismatched store_id on this user, and several
+    // entities' merchant RLS branches key on store_id alone with no business_id
+    // check, granting cross-tenant access. Fail closed: drop the store instead of
+    // trusting it.
+    let storeId: string | undefined;
+    let storeName: string | undefined;
+    if (inv.store_id) {
+      const store = await sr.entities.Store.get(inv.store_id).catch(() => null);
+      if (store && store.business_id === inv.business_id) {
+        storeId = store.id;
+        storeName = store.name;
+      }
+    }
+
     await sr.entities.User.update(user.id, {
       role,
       app_role: appRole,
       business_id: inv.business_id,
       business_name: inv.business_name,
-      storeId: inv.store_id || undefined,
-      store_id: inv.store_id || undefined,
-      store_name: inv.store_name || undefined,
+      storeId: storeId,
+      store_id: storeId,
+      store_name: storeName,
       merchant_role: grantsAdmin ? undefined : 'merchant',
       onboarding_completed: true,
     });

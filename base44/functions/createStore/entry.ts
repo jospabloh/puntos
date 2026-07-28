@@ -43,8 +43,16 @@ Deno.serve(async (req) => {
     // is pinned to their own business.
     const isAdmin = user.role === 'admin';
     const businessId = (isAdmin && body?.business_id) ? body.business_id : ownBusinessId;
-    const businessName = (isAdmin && body?.business_id) ? (body?.business_name || '') : ownBusinessName;
     if (!businessId) return Response.json({ error: 'No tienes un negocio asignado' }, { status: 403 });
+
+    // business_name is a display field only (business_id is the real scoping
+    // value), but resolve it server-side rather than trust body.business_name
+    // verbatim so it can't drift from the actual Business record.
+    let businessName = ownBusinessName;
+    if (isAdmin && body?.business_id) {
+      const business = await base44.asServiceRole.entities.Business.get(businessId).catch(() => null);
+      businessName = business?.name || '';
+    }
 
     const name = (body?.name || '').trim();
     if (!name) return Response.json({ error: 'El nombre de la tienda es obligatorio' }, { status: 400 });

@@ -122,6 +122,9 @@
             },
             {
               "data.store_id": "{{user.data.storeId}}"
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
             }
           ]
         },
@@ -184,6 +187,9 @@
             },
             {
               "data.store_id": "{{user.data.storeId}}"
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
             }
           ]
         },
