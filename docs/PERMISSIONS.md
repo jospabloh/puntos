@@ -1,6 +1,6 @@
 # Puntos+ — Roles & Permissions Matrix
 
-Version: 2.0.10 | Updated: 2026-07-27
+Version: 2.0.11 | Updated: 2026-07-28
 
 Puntos+ is a **multi-tenant SaaS**. The capability matrix below is the canonical
 contract; it is mirrored in code at `src/lib/rbac.js` (`PERMISSIONS`) and rendered

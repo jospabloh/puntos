@@ -1,6 +1,6 @@
 # Puntos+ — User Manual
 
-Version: 2.0.10 | Updated: 2026-07-27
+Version: 2.0.11 | Updated: 2026-07-28
 
 ---
 
@@ -361,7 +361,9 @@ From **Profile**, you can enable or disable:
 - **Points Activity**: updates on earned/redeemed points.
 
 The weekly summary email is sent automatically to active customers who had
-transactions in the previous 7 days.
+transactions in the previous 7 days. Customers inactive for 30+ days now also
+receive a win-back reminder (fixed in v2.0.11 — a stale permission check had
+silently kept this email from ever sending).
 
 ---
 

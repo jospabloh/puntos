@@ -5,6 +5,121 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.11] — 2026-07-28 — Cross-tenant invitation leak, scheduled-function auth, points dedup hardening
+
+### Security
+- **CRITICAL — Cross-tenant read/write via unvalidated `Invitation.store_id`.**
+  `Invitation.create` RLS only checks `business_id`, never that `store_id`
+  belongs to it, and `acceptInvitation` stamped `inv.store_id` onto the
+  accepting `User` record without verifying that either. Any authenticated
+  user could self-service a `business_admin` role (`createBusiness` is
+  open), then invite an alt account with `business_id: <own tenant>,
+  store_id: <victim tenant's store>`. `AuditLog`, `LoyaltyAccount`,
+  `PointsLedger`, and `Redemption` each grant a merchant-role RLS branch on
+  `data.store_id` alone, with no `business_id` check in that branch — the
+  resulting account, despite carrying the attacker's own `business_id`,
+  satisfied those branches for the victim's store: read customer PII,
+  balances, and redemption history; forge `current_balance`/`tier` directly
+  via the client SDK (redeemable at the real merchant's POS — real
+  financial loss); inject `PointsLedger` entries; mutate `Redemption`
+  records. Full breach of tenant isolation, no server function required.
+  Fixed at both layers: `acceptInvitation` now re-fetches the `Store`
+  server-side and only trusts `inv.store_id` when its `business_id`
+  actually matches `inv.business_id` (mirrors `manageTeamMember`'s existing
+  pattern for the same assignment; fails closed — a mismatched pairing
+  drops the store instead of applying it). Defense in depth: the four
+  store-scoped merchant RLS branches now also require `data.business_id`
+  to match, per the canonical business-scoped rule in `CLAUDE.md`.
+  Additive-safe — the Invitation UI only ever offers stores already scoped
+  to the inviting `business_admin`'s own tenant, so no legitimate existing
+  pairing is narrowed, only the forged-invitation path is closed.
+- **MEDIUM — `createLoyaltyAccount`'s unused `merchant` account-type branch
+  trusted `business_id`/`business_name` from the client with no
+  verification** (`Onboarding.jsx`, the only real caller, never sends it —
+  confirmed dead code). Removed rather than patched: nothing calls it, and
+  merchant/staff role assignment already has a sanctioned, verified path
+  (`acceptInvitation` / `manageTeamMember`). The `customer` path's
+  legacy-store fallback (for stores predating the multi-tenant migration)
+  no longer falls back to a client-supplied business id/name either — a
+  store without one just creates an account without one.
+- **LOW — `createStore` resolves `business_name` for the admin
+  cross-tenant-override path from the `Business` record server-side**
+  instead of trusting `body.business_name` verbatim. Display-field
+  integrity only — `business_id`, the real scoping field, was already
+  admin-chosen.
+- **Resolved #41 — scheduled-function auth model confirmed, dead admin gate
+  removed from `cleanupInactiveUsers`.** Base44 invokes scheduled
+  automations without an end-user session — confirmed directly in this
+  repo's history: on 2026-06-29 `base44-builder[bot]` removed the identical
+  `role !== 'admin'` check from `checkTrialExpiration`, `regenerateExpiredQR`,
+  `sendWeeklySummary`, and `updateWalletPasses` after it 403'd in
+  production, replacing it with "no user session; use service role
+  directly." `cleanupInactiveUsers` was missed in that cleanup: its
+  `auth.me()` call has returned `null` on every real scheduled run since
+  v1.4.7, so the check 403'd immediately and the inactive-user win-back
+  email has never sent. Fixed by removing the gate to match its four
+  siblings. `docs/PERMISSIONS.md`'s "role gate" claim corrected for all
+  five scheduled functions.
+
+### Points integrity
+- **MEDIUM — `request_id` made mandatory on `burnPoints` / `redeemOffer`.**
+  The v2.0.10 dedup fix made it optional, so any caller that omitted it (a
+  raw HTTP request, a future client bug) silently reverted to the
+  unprotected pre-fix path. Both frontend callers already always send one;
+  requiring it server-side closes the opt-in gap with no client change.
+- **Residual, tracked — the dedup check itself is a non-atomic
+  read-then-write** (`PointsLedger.filter` then `.create`), so two requests
+  with the *same* `request_id` fired truly concurrently can still both pass
+  the existence check before either commits. Base44's schema-as-code has no
+  unique-index primitive to close this atomically. Same root cause as the
+  already-tracked M-2 "client-side balance race" platform limitation
+  (open since v1.4.5): every safety check here is necessarily non-atomic.
+  Not fixed this cycle — a lock-emulation workaround would be genuinely
+  novel, financial-transaction code, and unverifiable without integration
+  access to the live Base44 backend (none available this session); shipping
+  an unverified concurrency fix risks doing more harm than the narrow
+  window it would close. Logged as **M-7** below alongside M-2.
+
+### Dependencies
+- Removed unused `@stripe/react-stripe-js` and `@stripe/stripe-js` — zero
+  imports anywhere in the codebase (this app uses Mercado Pago exclusively;
+  see `CLAUDE.md`). Pure dead weight and a stale audit surface.
+- **New since v2.0.10 — react-router advisory `GHSA-337j-9hxr-rhxg`**
+  (arbitrary constructor injection via `deserializeErrors()` in SSR
+  hydration). Confirmed not reachable: this app only uses `<BrowserRouter>`/
+  `<Routes>`, never `createBrowserRouter`/`RouterProvider` or any data-router/
+  SSR API. Tracked alongside the existing deferred react-router open-redirect
+  advisory (`GHSA-wrjc-x8rr-h8h6`) — both require the same v6→v7 major-version
+  migration to fully resolve.
+- The brace-expansion advisory remains confined to the lint/build toolchain
+  (dev dependency, never shipped to the client bundle) — unchanged in shape.
+
+### Known Open Items (carried + new)
+| ID  | Severity | Description | Status |
+|-----|----------|-------------|--------|
+| M-2 | Medium   | Atomic server-side balance update — client-side balance calculation race window | Open — Base44 platform limitation |
+| M-4 | Medium   | Merchants can transact for any active store | Open — by design (single-program model) |
+| M-5 | Medium   | `updateWalletPasses/entry.ts` — Apple push requires PassKit device registry (not yet built) | Open — requires Wallet API work |
+| M-6 | Low      | External QR image service receives user token; consider self-hosted generation | Open |
+| M-7 | Medium   | `burnPoints`/`redeemOffer` dedup check is a non-atomic read-then-write; identical concurrent `request_id`s can still double-process | Open — Base44 platform limitation (same root cause as M-2) |
+
+### Verified (no code change required)
+- `npm run lint`, `npm run build`, `npm run validate:rls`, and `npm run
+  check:secrets` all pass.
+- Re-verified `earnPoints`/`burnPoints`/`redeemOffer` balance handling:
+  balances are always read server-side and written as a server-computed
+  delta; the client never supplies a balance, rate, or point cost.
+  Single-request over-redemption is correctly blocked.
+- Wallet-pass code (`updateWalletPasses`, `createGoogleWalletPass`,
+  `createAppleWalletPass`, `passkitWebService`): secrets never logged or
+  returned in a response; all four fail closed (or honestly report
+  unconfigured) when certs/keys are absent; `passkitWebService`'s HMAC
+  compare is constant-time.
+- `.github/workflows/ci.yml` still runs lint → validate:rls → check:secrets
+  → build as required steps on every PR.
+
+---
+
 ## [2.0.10] — 2026-07-27 — Tenant-isolation and points-integrity hardening
 
 ### Security
