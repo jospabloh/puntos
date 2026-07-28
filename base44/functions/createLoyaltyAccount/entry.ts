@@ -18,7 +18,14 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const type = body?.type;
-    if (type !== 'customer' && type !== 'merchant') {
+    // Only 'customer' is a real, wired-up flow (Onboarding.jsx is the sole
+    // caller and always sends 'customer'). The former 'merchant' branch trusted
+    // business_id/business_name straight from the client with no server-side
+    // verification — any authenticated user could inject a phantom LoyaltyAccount
+    // into an arbitrary tenant by guessing its business_id. Removed rather than
+    // patched: nothing calls it, and merchant/staff role assignment already has
+    // a sanctioned, verified path (acceptInvitation / manageTeamMember).
+    if (type !== 'customer') {
       return Response.json({ error: 'Invalid account type' }, { status: 400 });
     }
 
@@ -57,53 +64,33 @@ Deno.serve(async (req) => {
       onboarding_completed: true
     };
 
-    // Tenant context. Runs as service role, so it can set the field-level
-    // RLS-restricted `business_id` that a normal customer cannot write itself.
-    // For customers it is derived from the store; for merchants/owners it is
-    // passed explicitly. Falls back gracefully when absent (legacy single-program).
-    const businessParam = body?.business;
-
     // Server-verified store — never trust business_id/business_name from the
     // client. A forged `store` object (e.g. {id: <real store>, business_id:
     // <other tenant>}) would otherwise let a caller assign their own account
     // and User record to an arbitrary tenant, since both are written below via
     // the service role (bypasses RLS). Mirrors the Store.get() lookup already
-    // used by earnPoints/burnPoints.
-    let verifiedStore = null;
-    if (type === 'customer') {
-      const storeId = body?.store?.id;
-      if (!storeId) {
-        return Response.json({ error: 'store is required for customer accounts' }, { status: 400 });
-      }
-      verifiedStore = await base44.asServiceRole.entities.Store.get(storeId);
-      if (!verifiedStore) {
-        return Response.json({ error: 'Store not found' }, { status: 404 });
-      }
+    // used by earnPoints/burnPoints. If the store itself predates the
+    // multi-tenant migration and has no business_id, the account is created
+    // without one too (legacy single-program mode) — never fall back to a
+    // client-supplied business id/name.
+    const storeId = body?.store?.id;
+    if (!storeId) {
+      return Response.json({ error: 'store is required for customer accounts' }, { status: 400 });
+    }
+    const verifiedStore = await base44.asServiceRole.entities.Store.get(storeId);
+    if (!verifiedStore) {
+      return Response.json({ error: 'Store not found' }, { status: 404 });
     }
 
-    let payload;
-    if (type === 'customer') {
-      payload = {
-        ...base,
-        store_id: verifiedStore.id,
-        store_code: verifiedStore.code,
-        store_name: verifiedStore.name,
-        business_id: verifiedStore.business_id || businessParam?.id,
-        business_name: verifiedStore.business_name || businessParam?.name,
-        subscription_status: 'active'
-      };
-    } else {
-      const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      payload = {
-        ...base,
-        business_id: businessParam?.id,
-        business_name: businessParam?.name,
-        subscription_status: 'trial',
-        subscription_plan: 'trial',
-        trial_start_date: nowIso,
-        trial_end_date: trialEnd
-      };
-    }
+    const payload = {
+      ...base,
+      store_id: verifiedStore.id,
+      store_code: verifiedStore.code,
+      store_name: verifiedStore.name,
+      business_id: verifiedStore.business_id || undefined,
+      business_name: verifiedStore.business_name || undefined,
+      subscription_status: 'active'
+    };
 
     const account = await base44.asServiceRole.entities.LoyaltyAccount.create(payload);
 
@@ -111,24 +98,22 @@ Deno.serve(async (req) => {
     // longer needs to self-assign role/business_id via auth.updateMe — that path
     // let any user escalate. A customer joining a store becomes role `customer`
     // scoped to that store's tenant. An existing platform owner stays admin.
-    if (type === 'customer') {
-      const role = user.role === 'admin' ? 'admin' : 'customer';
-      const appRole = user.role === 'admin' ? 'owner' : 'customer';
-      try {
-        await base44.asServiceRole.entities.User.update(user.id, {
-          role,
-          app_role: appRole,
-          business_id: verifiedStore.business_id || businessParam?.id || undefined,
-          business_name: verifiedStore.business_name || businessParam?.name || undefined,
-          storeId: verifiedStore.id || undefined,
-          store_id: verifiedStore.id || undefined,
-          store_name: verifiedStore.name || undefined,
-          onboarding_completed: true,
-        });
-      } catch (e) {
-        console.error('Failed to set customer role:', (e as Error)?.message);
-        return Response.json({ error: 'Failed to assign customer role' }, { status: 500 });
-      }
+    const role = user.role === 'admin' ? 'admin' : 'customer';
+    const appRole = user.role === 'admin' ? 'owner' : 'customer';
+    try {
+      await base44.asServiceRole.entities.User.update(user.id, {
+        role,
+        app_role: appRole,
+        business_id: verifiedStore.business_id || undefined,
+        business_name: verifiedStore.business_name || undefined,
+        storeId: verifiedStore.id || undefined,
+        store_id: verifiedStore.id || undefined,
+        store_name: verifiedStore.name || undefined,
+        onboarding_completed: true,
+      });
+    } catch (e) {
+      console.error('Failed to set customer role:', (e as Error)?.message);
+      return Response.json({ error: 'Failed to assign customer role' }, { status: 500 });
     }
 
     return Response.json({ success: true, account });
