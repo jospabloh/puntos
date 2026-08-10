@@ -5,12 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.0.12] — 2026-08-10 — Routine audit: dependency patches, no code-path changes
+## [2.0.12] — 2026-08-10 — Points-dedup gap on earnPoints, dependency patches
 
-Scheduled security/quality/tenant-isolation/loyalty-integrity audit. No app
-code, RLS, or permission changes were required — see findings below.
+Scheduled security/quality/tenant-isolation/loyalty-integrity audit.
 
 ### Security
+- **MEDIUM — `earnPoints` had no reliable duplicate-request protection.**
+  Unlike `burnPoints`/`redeemOffer` (which have required a client-generated
+  `request_id` since v2.0.11), `earnPoints` only deduplicated on the
+  operator-entered `ticket_id` — an optional POS field. When the cashier
+  left it blank (a normal, supported flow), the entire idempotency check
+  was skipped, so a double-tap or a client-side network retry on the same
+  purchase created two separate `PointsLedger` `EARN` entries and credited
+  the customer twice. Caught by an automated PR review (`chatgpt-codex-connector`)
+  flagging that this release's audit notes overstated the existing
+  guarantee. Fixed by mirroring the `burnPoints` pattern exactly: the POS
+  now sends a `crypto.randomUUID()` `request_id` per earn attempt
+  (`MerchantPOS.jsx`), `earnPoints` requires it and keys the idempotency
+  check on it unconditionally; `ticket_id` remains a separate, optional
+  business/display field on the ledger entry, no longer tied to dedup.
 - **Dependency patches (transitive, no direct version pins changed).**
   `npm audit` reported 6 advisories (3 high, 3 moderate) in transitive
   dependencies; `npm audit fix` resolved 4 within existing semver ranges,
@@ -45,9 +58,13 @@ code, RLS, or permission changes were required — see findings below.
   `data.business_id` / `{{user.data.business_id}}` pattern and the
   service-role `admin` branch.
 - **Loyalty/points integrity:** re-verified `earnPoints`, `burnPoints`,
-  `redeemOffer`, `createLoyaltyAccount` compute balances server-side only,
-  require `request_id` (mandatory since v2.0.11), and stay tenant/store
-  scoped for staff.
+  `redeemOffer` compute balances server-side only and stay tenant/store
+  scoped for staff. All three now require a mandatory `request_id` for
+  duplicate-request protection (`earnPoints` closed this release, see
+  above). `createLoyaltyAccount` uses a different, equally-effective
+  guard — one `LoyaltyAccount` per `user_id`, enforced server-side before
+  create — so a retried onboarding call 409s with the existing account
+  instead of creating a duplicate; it does not use `request_id`.
 - **Wallet/pass:** `passkitWebService` HMAC-signs/verifies with
   `crypto.subtle` + timing-safe compare, all Apple certs/secrets read
   from env (`Deno.env.get`), never hardcoded; Google/Apple pass creation
