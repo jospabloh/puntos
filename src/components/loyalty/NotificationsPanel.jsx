@@ -50,6 +50,7 @@ export default function NotificationsPanel({ isOpen, onClose, notifications }) {
               size="icon"
               onClick={onClose}
               className="rounded-full"
+              aria-label="Cerrar"
             >
               <X className="h-5 w-5" />
             </Button>

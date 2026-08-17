@@ -4,6 +4,7 @@ import { Mail, Lock, User } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AuthLayout from '@/components/AuthLayout';
 import GoogleIcon from '@/components/GoogleIcon';
 
@@ -72,8 +73,10 @@ export default function Register() {
         )}
 
         <div className="relative">
+          <Label htmlFor="register-name" className="sr-only">Nombre completo</Label>
           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
+            id="register-name"
             type="text"
             placeholder="Tu nombre completo"
             value={name}
@@ -83,8 +86,10 @@ export default function Register() {
         </div>
 
         <div className="relative">
+          <Label htmlFor="register-email" className="sr-only">Correo electrónico</Label>
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
+            id="register-email"
             type="email"
             placeholder="tu@correo.com"
             value={email}
@@ -95,8 +100,10 @@ export default function Register() {
         </div>
 
         <div className="relative">
+          <Label htmlFor="register-password" className="sr-only">Contraseña</Label>
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
+            id="register-password"
             type="password"
             placeholder="Crea una contraseña"
             value={password}

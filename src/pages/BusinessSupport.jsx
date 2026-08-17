@@ -307,15 +307,16 @@ export default function BusinessSupport() {
                   <button
                     key={n}
                     type="button"
+                    disabled={ratingMutation.isPending}
                     onClick={() => ratingMutation.mutate({ rating: n, close: false })}
-                    className="p-0.5"
+                    className="p-0.5 disabled:opacity-50"
                     aria-label={`${n} estrellas`}
                   >
                     <Star className={`h-6 w-6 transition ${n <= (activeTicket.satisfaction_rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-300 hover:text-amber-300'}`} />
                   </button>
                 ))}
                 {activeTicket.satisfaction_rating ? (
-                  <Button variant="outline" size="sm" className="ml-3" onClick={() => ratingMutation.mutate({ rating: activeTicket.satisfaction_rating, close: true })}>
+                  <Button variant="outline" size="sm" className="ml-3" disabled={ratingMutation.isPending} onClick={() => ratingMutation.mutate({ rating: activeTicket.satisfaction_rating, close: true })}>
                     Cerrar ticket
                   </Button>
                 ) : null}

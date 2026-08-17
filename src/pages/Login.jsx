@@ -4,6 +4,7 @@ import { Mail, Lock, LogIn } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AuthLayout from '@/components/AuthLayout';
 import GoogleIcon from '@/components/GoogleIcon';
 import { getRememberedIdentity, clearRememberedIdentity } from '@/lib/lastIdentity';
@@ -126,8 +127,10 @@ export default function Login() {
         )}
 
         <div className="relative">
+          <Label htmlFor="login-email" className="sr-only">Correo electrónico</Label>
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
           <Input
+            id="login-email"
             type="email"
             placeholder="tu@correo.com"
             value={email}
@@ -139,7 +142,7 @@ export default function Login() {
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-sm text-slate-600 font-medium">Contraseña</span>
+            <Label htmlFor="login-password" className="text-sm text-slate-600 font-medium">Contraseña</Label>
             <Link to="/ForgotPassword" className="text-xs text-violet-600 hover:text-violet-700 font-medium">
               ¿Olvidaste tu contraseña?
             </Link>
@@ -147,6 +150,7 @@ export default function Login() {
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
             <Input
+              id="login-password"
               type="password"
               placeholder="••••••••"
               value={password}
