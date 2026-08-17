@@ -27,7 +27,17 @@ Deno.serve(async (req) => {
       
       // Skip if no activity
       if (recentTx.length === 0) continue;
-      
+
+      // Respect the user's own notification preferences (mirrors
+      // cleanupInactiveUsers) — this digest is promotional, not transactional,
+      // so a global or per-category opt-out must be honored before sending.
+      const preferences = await base44.asServiceRole.entities.NotificationPreference.filter({
+        user_id: account.user_id
+      });
+      if (preferences.length > 0 && (preferences[0].email_enabled === false || preferences[0].points_activity_enabled === false)) {
+        continue;
+      }
+
       // Calculate stats
       const earned = recentTx
         .filter(tx => tx.type === 'EARN' || tx.type === 'BONUS')
@@ -54,10 +64,10 @@ Aquí está tu resumen de actividad de la última semana:
 • Transacciones realizadas: ${recentTx.length}
 
 💰 **Tu balance actual:**
-• Puntos disponibles: ${account.current_balance.toLocaleString()}
-• Nivel: ${account.tier} 
+• Puntos disponibles: ${(account.current_balance || 0).toLocaleString()}
+• Nivel: ${account.tier || 'bronze'}
 
-${account.current_balance > 500 ? '\n🎁 ¡Tienes suficientes puntos para canjear ofertas! Revisa la app para ver las recompensas disponibles.\n' : ''}
+${(account.current_balance || 0) > 500 ? '\n🎁 ¡Tienes suficientes puntos para canjear ofertas! Revisa la app para ver las recompensas disponibles.\n' : ''}
 
 ¡Sigue acumulando puntos en cada compra!
 

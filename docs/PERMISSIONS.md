@@ -1,6 +1,6 @@
 # Puntos+ — Roles & Permissions Matrix
 
-Version: 2.0.12 | Updated: 2026-08-10
+Version: 2.0.13 | Updated: 2026-08-17
 
 Puntos+ is a **multi-tenant SaaS**. The capability matrix below is the canonical
 contract; it is mirrored in code at `src/lib/rbac.js` (`PERMISSIONS`) and rendered
@@ -113,14 +113,14 @@ documented in `CLAUDE.md`. Summary of effective access:
 | `SupportTicket` / `SupportTicketMessage` | all | own tenant | — | — | `data.business_id` (+ `is_internal_note=false` for tenant) |
 | `LicenseEvent` | all | read own tenant | — | — | `data.business_id` |
 | `Invitation` | all | own tenant | own email | own email | `data.business_id` / `data.email` |
-| `LoyaltyAccount` | all | own tenant | own store/tenant | own (`user_id`) | `data.business_id` / `data.store_id` / `data.user_id` |
-| `PointsLedger` | all | own tenant | own store/tenant | own (`user_id`) | `data.business_id` / `data.store_id` |
+| `LoyaltyAccount` | all | own tenant | own store | own (`user_id`) | `data.business_id` / `data.store_id` / `data.user_id` |
+| `PointsLedger` | all | own tenant | own store | own (`user_id`) | `data.business_id` / `data.store_id` |
 | `Store` | all | own tenant | active + own tenant | active (join) | `data.business_id` / `data.status` |
-| `Campaign` / `Offer` | all | own tenant | active | active | `data.business_id` / `data.status` |
-| `Redemption` | all | own tenant | own store/tenant | own (`user_id`) | `data.business_id` / `data.store_id` |
+| `Campaign` / `Offer` | all | own tenant (incl. drafts) | active | active | `data.business_id` / `data.status` |
+| `Redemption` | all | own tenant | own store | own (`user_id`) | `data.business_id` / `data.store_id` |
 | `AuditLog` | all | own tenant | own store | own / targeted | `data.business_id` / `data.store_id` |
 | `ChatConversation` | all | own tenant | — | own (`user_id`) | `data.user_id` / `data.business_id` |
-| `NotificationPreference` | all | — | — | own (`user_id`) | `data.user_id` |
+| `NotificationPreference` | all | read own tenant | — | own (`user_id`) | `data.user_id` / `data.business_id` |
 
 **Field-level RLS** on `LoyaltyAccount` restricts financial/identity fields
 (`current_balance`, `lifetime_*`, `tier`, `status`, `subscription_*`, `trial_*`,
