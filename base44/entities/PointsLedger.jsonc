@@ -168,21 +168,6 @@
           "$and": [
             {
               "user_condition": {
-                "role": "merchant"
-              }
-            },
-            {
-              "data.operator_id": "{{user.id}}"
-            },
-            {
-              "data.business_id": "{{user.data.business_id}}"
-            }
-          ]
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
                 "role": "business_admin"
               }
             },
@@ -212,18 +197,6 @@
             },
             {
               "data.store_id": "{{user.data.storeId}}"
-            },
-            {
-              "data.business_id": "{{user.data.business_id}}"
-            }
-          ]
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "merchant"
-              }
             },
             {
               "data.business_id": "{{user.data.business_id}}"
