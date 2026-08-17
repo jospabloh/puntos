@@ -39,12 +39,14 @@ Deno.serve(async (req) => {
     const accountId = body?.account_id;
     const amount = Number(body?.amount);
     const ticketId = (body?.ticket_id || '').toString().trim();
+    const requestId = (body?.request_id || '').toString().trim();
 
     if (!storeId) return Response.json({ error: 'store_id es obligatorio' }, { status: 400 });
     if (!accountId) return Response.json({ error: 'account_id es obligatorio' }, { status: 400 });
     if (!Number.isFinite(amount) || amount <= 0) {
       return Response.json({ error: 'Monto inválido' }, { status: 400 });
     }
+    if (!requestId) return Response.json({ error: 'request_id es obligatorio' }, { status: 400 });
 
     const sr = base44.asServiceRole;
 
@@ -92,22 +94,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Compra muy pequeña para ganar puntos' }, { status: 400 });
     }
 
-    // Idempotency: same store + account + ticket = the same purchase. Without a
-    // ticket the operator is responsible for not double-tapping; we still key on
-    // a stable string so an accidental retry within the same ticket is caught.
-    const idempotencyKey = `earn_${store.id}_${account.id}_${ticketId || 'noticket'}`;
-    if (ticketId) {
-      const existing = await sr.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
-      if (existing && existing.length > 0) {
-        const prev = existing[0];
-        return Response.json({
-          success: true,
-          duplicate: true,
-          points_earned: prev.points,
-          new_balance: prev.balance_after,
-          amount,
-        });
-      }
+    // Idempotency: the client-supplied request_id (generated once per earn
+    // attempt, mandatory as of v2.0.12 — mirrors burnPoints/redeemOffer since
+    // v2.0.11) lets a duplicate/retried request be detected and answered with
+    // the original result instead of crediting points twice. ticket_id remains
+    // a separate, optional business/display field only — it never gated the
+    // dedup check, which is why a blank ticket previously bypassed it entirely.
+    const idempotencyKey = `earn_${store.id}_${account.id}_${requestId}`;
+    const existing = await sr.entities.PointsLedger.filter({ idempotency_key: idempotencyKey });
+    if (existing && existing.length > 0) {
+      const prev = existing[0];
+      return Response.json({
+        success: true,
+        duplicate: true,
+        points_earned: prev.points,
+        new_balance: prev.balance_after,
+        amount,
+      });
     }
 
     const currentBalance = account.current_balance || 0;

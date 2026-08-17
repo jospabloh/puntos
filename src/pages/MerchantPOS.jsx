@@ -167,6 +167,7 @@ export default function MerchantPOS() {
         account_id: selectedCustomer.id,
         amount,
         ticket_id: ticketId || undefined,
+        request_id: crypto.randomUUID(),
       });
       const result = response?.data;
       if (!result?.success) {

@@ -5,6 +5,83 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.12] — 2026-08-10 — Points-dedup gap on earnPoints, dependency patches
+
+Scheduled security/quality/tenant-isolation/loyalty-integrity audit.
+
+### Security
+- **MEDIUM — `earnPoints` had no reliable duplicate-request protection.**
+  Unlike `burnPoints`/`redeemOffer` (which have required a client-generated
+  `request_id` since v2.0.11), `earnPoints` only deduplicated on the
+  operator-entered `ticket_id` — an optional POS field. When the cashier
+  left it blank (a normal, supported flow), the entire idempotency check
+  was skipped, so a double-tap or a client-side network retry on the same
+  purchase created two separate `PointsLedger` `EARN` entries and credited
+  the customer twice. Caught by an automated PR review (`chatgpt-codex-connector`)
+  flagging that this release's audit notes overstated the existing
+  guarantee. Fixed by mirroring the `burnPoints` pattern exactly: the POS
+  now sends a `crypto.randomUUID()` `request_id` per earn attempt
+  (`MerchantPOS.jsx`), `earnPoints` requires it and keys the idempotency
+  check on it unconditionally; `ticket_id` remains a separate, optional
+  business/display field on the ledger entry, no longer tied to dedup.
+- **Dependency patches (transitive, no direct version pins changed).**
+  `npm audit` reported 6 advisories (3 high, 3 moderate) in transitive
+  dependencies; `npm audit fix` resolved 4 within existing semver ranges,
+  verified with a clean `lint` / `build` / `validate:rls` afterward:
+  - `brace-expansion` (HIGH — unbounded expansion DoS, dev-only via
+    `eslint-plugin-react`/`tailwindcss`).
+  - `dompurify` (MODERATE — `IN_PLACE` hook removal could leave a
+    detached subtree executable, causing XSS; transitive via `jspdf`,
+    used for admin-side CSV/PDF export, not for rendering untrusted HTML).
+  - `nanoid` (HIGH — custom generator infinite loop on `size: 0`,
+    build-tool-only via `postcss`).
+  - `socket.io-parser` (HIGH — zero-attachment memory exhaustion,
+    transitive via `@base44/sdk`'s realtime client).
+- **Accepted risk — `react-router` / `react-router-dom` (2 MODERATE).**
+  Two advisories affect the installed `6.30.4` (latest available `6.x`);
+  the fix requires the `7.x` major, a breaking migration out of scope for
+  an automated dependency patch. Verified not exploitable as currently
+  used: (1) the SSR `deserializeErrors()` constructor-injection advisory
+  does not apply — this is a Vite SPA with no server-side rendering; (2)
+  the open-redirect advisory requires a `<Link to>` / `useNavigate` target
+  built from untrusted input with a leading backslash — grepped the
+  codebase for navigation targets derived from query params or
+  `location.state` and found none; all routes are statically defined.
+  Deferred: track the `react-router` v7 migration as separate,
+  deliberately-scoped follow-up work, not a routine-audit fix.
+
+### Audit coverage (no findings requiring a code change)
+- **Tenant isolation:** diffed all 18 `base44/entities/*.jsonc` schemas
+  against the deployed Base44 backend (`list_entity_schemas`) — zero
+  drift in fields, `required`, or `rls` on any entity. Every
+  business-scoped entity still carries the two-halves-correct
+  `data.business_id` / `{{user.data.business_id}}` pattern and the
+  service-role `admin` branch.
+- **Loyalty/points integrity:** re-verified `earnPoints`, `burnPoints`,
+  `redeemOffer` compute balances server-side only and stay tenant/store
+  scoped for staff. All three now require a mandatory `request_id` for
+  duplicate-request protection (`earnPoints` closed this release, see
+  above). `createLoyaltyAccount` uses a different, equally-effective
+  guard — one `LoyaltyAccount` per `user_id`, enforced server-side before
+  create — so a retried onboarding call 409s with the existing account
+  instead of creating a duplicate; it does not use `request_id`.
+- **Wallet/pass:** `passkitWebService` HMAC-signs/verifies with
+  `crypto.subtle` + timing-safe compare, all Apple certs/secrets read
+  from env (`Deno.env.get`), never hardcoded; Google/Apple pass creation
+  is per-caller-account only.
+- **Payment/subscription:** Mercado Pago only (Stripe deps already
+  removed in v2.0.11); no Stripe/webhook secrets present in the repo.
+- **Code quality / CI:** `npm run lint`, `npm run build`,
+  `npm run validate:rls` all pass; GitHub Actions CI green on `main` at
+  the pre-audit HEAD (`1860687`).
+- **Secrets scan:** no hardcoded API keys, tokens, or private-key
+  material found in tracked source.
+- **Permissions matrix / user manual:** reviewed against
+  `src/lib/rbac.js` and current routes — already current for v2.0.11,
+  no capability or role-default changes in this release.
+
+---
+
 ## [2.0.11] — 2026-07-28 — Cross-tenant invitation leak, scheduled-function auth, points dedup hardening
 
 ### Security
