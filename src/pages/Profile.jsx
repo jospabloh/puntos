@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
-import { isStaff } from '@/lib/rbac';
+import { isStaff, isCustomer } from '@/lib/rbac';
 import { APP_VERSION, RELEASE_DATE } from '@/lib/appConfig';
 import { useTenant } from '@/lib/useTenant';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,7 +20,10 @@ import {
   Bell,
   HelpCircle,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Download,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -178,6 +181,54 @@ export default function Profile() {
 
   const handleLogout = () => {
     base44.auth.logout();
+  };
+
+  // Data export mutation — module 7 (cuenta y zona de peligro).
+  const [exporting, setExporting] = useState(false);
+  const handleExportData = async () => {
+    setExporting(true);
+    try {
+      const resp = await base44.functions.invoke('exportMyData', {});
+      if (!resp?.data?.success) {
+        toast.error(resp?.data?.error || 'No se pudieron exportar tus datos');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(resp.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `puntos-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('Datos exportados');
+    } catch (e) {
+      toast.error(`Error al exportar: ${e.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Delete-account danger zone — scoped to customer role (see
+  // deleteMyAccount/entry.ts's header comment for why staff/admin can't).
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const resp = await base44.functions.invoke('deleteMyAccount', {});
+      if (!resp?.data?.success) {
+        toast.error(resp?.data?.error || 'No se pudo eliminar la cuenta');
+        setDeleting(false);
+        return;
+      }
+      toast.success('Cuenta eliminada');
+      setTimeout(() => base44.auth.logout(), 1500);
+    } catch (e) {
+      toast.error(`Error: ${e.message}`);
+      setDeleting(false);
+    }
   };
 
   if (!user) {
@@ -406,6 +457,77 @@ export default function Profile() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Data export */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+        >
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <button
+                onClick={handleExportData}
+                disabled={exporting}
+                className="w-full flex items-center gap-4 disabled:opacity-50"
+              >
+                <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <Download className="h-5 w-5 text-slate-600" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-slate-900">Descargar mis datos</p>
+                  <p className="text-sm text-slate-500">{exporting ? 'Exportando...' : 'Tu saldo, historial de puntos y canjes en formato JSON'}</p>
+                </div>
+              </button>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Danger zone — customer accounts only */}
+        {isCustomer(user) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.27 }}
+          >
+            <Card className="mb-6 border-red-100">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-slate-900">Zona de peligro</p>
+                    <p className="text-sm text-slate-500">Eliminar tu cuenta es permanente. Perderás tu saldo de puntos y acceso al monedero.</p>
+                  </div>
+                </div>
+                {!confirmDelete ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => setConfirmDelete(true)}
+                    className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-400"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Eliminar mi cuenta
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-red-700">¿Seguro? Esta acción no se puede deshacer.</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setConfirmDelete(false)} className="flex-1" disabled={deleting}>
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={handleDeleteAccount}
+                        disabled={deleting}
+                        className="flex-1 bg-red-600 hover:bg-red-700"
+                      >
+                        {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         {/* Menu Items */}
         <motion.div

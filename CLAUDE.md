@@ -184,6 +184,43 @@ exercises these four functions — unverified against a live suspended
 tenant; risk is bounded since this only adds a new rejection path ahead of
 existing logic, nothing existing changed for an `active`/`trial` tenant.
 
+## Self-service data export + delete-account (module 7, added 2026-08-18)
+
+`Profile.jsx` had no way to download your own data or delete your account —
+just profile edit + notification toggles + logout. New:
+
+- **`exportMyData`** — any role. Returns the caller's own `LoyaltyAccount`,
+  `PointsLedger`, `Redemption`, and `NotificationPreference` rows as one
+  JSON payload (all reads explicitly scoped to the caller's own
+  `user_id`/`account_id`, even though it runs as service role).
+  `Profile.jsx` turns the response into a client-side JSON download.
+- **`deleteMyAccount`** — **customer role only.** A `business_admin`/
+  `merchant`/`admin` deleting themselves would orphan a `Store`/`Business`
+  with no operator, which needs a real offboarding flow (reassign or close
+  the business first), not one click — those roles get a `contact_support`
+  error instead, so the one path to fix an account issue stays open (same
+  scoping principle as `jospabloh/radar` leaving `updateSupportTicket`
+  outside its billing gate). Closes the account (`LoyaltyAccount.status:
+  'closed'`, PII cleared) and deletes the `User` row; **never** deletes
+  `PointsLedger`/`Redemption` — those stay as the accounting/audit trail,
+  same convention `jospabloh/stockflow` uses for petty cash. `Profile.jsx`
+  gates the whole danger-zone card on `isCustomer(user)` so staff/admin
+  never see a button that would just 403.
+
+**Not done — dark theme (module 10).** `tailwind.config.js` has
+`darkMode: ["class"]` configured but only 2 `dark:` class usages exist across
+the entire app; every page is hardcoded to light-mode colors
+(`bg-slate-50`, `text-slate-900`, etc.). A real dark theme means re-skinning
+every page and component, which is a design-scale initiative — not a
+same-session patch, and not attempted here without a way to visually verify
+the result in this sandbox. Tracked as a separate initiative, same as
+`jospabloh/rumbo`'s deferred module-3 gap.
+
+**Verified:** `npm run lint`, `npm run build`, `npm run validate:rls` all
+pass. `deno` unavailable in this sandbox — unverified against a live
+account; risk is bounded since `deleteMyAccount` only ever acts on the
+caller's own rows and `exportMyData` is read-only.
+
 ## Build / verify
 
 - `npm run build` — Vite production build (must pass).
