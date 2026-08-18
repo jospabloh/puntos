@@ -20,6 +20,15 @@ function slug(name: string) {
   return (name || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'PP';
 }
 
+// Mirrors src/lib/useTenant.js's canTenantWrite() — see earnPoints/entry.ts
+// for the full rationale (duplicated inline, Deno can't import across
+// function directories; keep in sync).
+function isBusinessWriteBlocked(business: any): boolean {
+  if (!business) return false;
+  const status = business.billing_status || 'trial';
+  return status === 'view_only' || status === 'suspended' || status === 'archived' || business.status === 'suspended';
+}
+
 async function uniqueStoreCode(sr: any, name: string) {
   for (let i = 0; i < 12; i++) {
     const code = i < 8 ? `${slug(name)}${randPart(3)}` : randPart(8);
@@ -58,6 +67,13 @@ Deno.serve(async (req) => {
     if (!name) return Response.json({ error: 'El nombre de la tienda es obligatorio' }, { status: 400 });
 
     const sr = base44.asServiceRole;
+
+    if (!isAdmin) {
+      const business = await sr.entities.Business.get(businessId).catch(() => null);
+      if (isBusinessWriteBlocked(business)) {
+        return Response.json({ error: 'write_blocked', message: 'La licencia de tu negocio está suspendida o en modo solo lectura.' }, { status: 403 });
+      }
+    }
     const code = await uniqueStoreCode(sr, name);
 
     const store = await sr.entities.Store.create({

@@ -12,6 +12,15 @@ function pick(user: any, key: string) {
   return user?.[key] ?? user?.data?.[key];
 }
 
+// Mirrors src/lib/useTenant.js's canTenantWrite() — see earnPoints/entry.ts
+// for the full rationale (duplicated inline, Deno can't import across
+// function directories; keep in sync).
+function isBusinessWriteBlocked(business: any): boolean {
+  if (!business) return false;
+  const status = business.billing_status || 'trial';
+  return status === 'view_only' || status === 'suspended' || status === 'archived' || business.status === 'suspended';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -56,6 +65,13 @@ Deno.serve(async (req) => {
       const isStaff = role === 'merchant' || pick(user, 'merchant_role') === 'merchant';
       if (isStaff && (!assignedStoreId || assignedStoreId !== store.id)) {
         return Response.json({ error: 'Solo puedes operar en tu tienda asignada' }, { status: 403 });
+      }
+    }
+
+    if (role !== 'admin') {
+      const business = await sr.entities.Business.get(store.business_id).catch(() => null);
+      if (isBusinessWriteBlocked(business)) {
+        return Response.json({ error: 'write_blocked', message: 'La licencia de este negocio está suspendida o en modo solo lectura.' }, { status: 403 });
       }
     }
 
