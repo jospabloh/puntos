@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { isStaff } from '@/lib/rbac';
+import { APP_VERSION, RELEASE_DATE } from '@/lib/appConfig';
 import { useTenant } from '@/lib/useTenant';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -464,6 +465,9 @@ export default function Profile() {
           </div>
           <p className="text-xs text-slate-400">
             © 2026 ACACIA Consultoría en Informática y Cómputo. Todos los Derechos Reservados.
+          </p>
+          <p className="text-xs text-slate-300 mt-1">
+            Versión {APP_VERSION} · {RELEASE_DATE}
           </p>
         </div>
       </div>
