@@ -154,6 +154,36 @@ missing the service-role `admin` branch. Run it after touching any `rls` block,
 and remember to **deploy** the fixed schema — the repo `.jsonc` alone does not
 change runtime behavior.
 
+## Billing write-gate on the POS/redemption functions (fixed 2026-08-18)
+
+A portfolio-standard audit (`jospabloh/acacia-app-standard`, module 3) found
+`earnPoints`, `burnPoints`, `redeemOffer`, and `createStore` had **no
+billing-status check at all** — a suspended or view-only tenant's cashier
+could still accrue/redeem points, a customer could still redeem an offer,
+and an admin could still spin up a new store, even though the client already
+hides all of this behind `useTenant()`'s `canTenantWrite()`
+(`SuspendedAccountModal`/`TrialBanner`, see the "License lifecycle" section
+above). The gate existed for the UI; it was never enforced where the actual
+writes happen.
+
+**Fix:** each of the four functions now fetches the relevant `Business`
+record server-side and rejects with `write_blocked` (403) before any write
+if `billing_status` is `view_only`/`suspended`/`archived` or
+`status === 'suspended'` — the exact same condition
+`useTenant.js`'s `canTenantWrite()` already computes client-side. Platform
+owner (`role: admin`) bypasses, same as every other authorization check in
+these functions. Deno functions can't import across directories (same
+constraint as `createEmployee`/`_billingGuard.ts` in `jospabloh/radar`), so
+`isBusinessWriteBlocked()` is duplicated inline in all four — keep them in
+sync if the write-gate logic changes, mirroring any future change to
+`canTenantWrite()`.
+
+**Verified:** `npm run lint`, `npm run build`, `npm run validate:rls` all
+pass. `deno` isn't available in this sandbox and no existing test file
+exercises these four functions — unverified against a live suspended
+tenant; risk is bounded since this only adds a new rejection path ahead of
+existing logic, nothing existing changed for an `active`/`trial` tenant.
+
 ## Build / verify
 
 - `npm run build` — Vite production build (must pass).

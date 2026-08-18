@@ -6,6 +6,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // written server-side — the client never supplies the balance. This closes
 // the hole where a normal user could set their own `current_balance` via a
 // direct LoyaltyAccount update.
+
+// Mirrors src/lib/useTenant.js's canTenantWrite() — see earnPoints/entry.ts
+// for the full rationale (duplicated inline, Deno can't import across
+// function directories; keep in sync).
+function isBusinessWriteBlocked(business: any): boolean {
+  if (!business) return false;
+  const status = business.billing_status || 'trial';
+  return status === 'view_only' || status === 'suspended' || status === 'archived' || business.status === 'suspended';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -52,6 +62,13 @@ Deno.serve(async (req) => {
     // (legacy/unscoped record), reject rather than allow cross-tenant redemption.
     if (!account.business_id || !offer.business_id || account.business_id !== offer.business_id) {
       return Response.json({ error: 'Offer does not belong to your program' }, { status: 403 });
+    }
+
+    if (user.role !== 'admin') {
+      const business = await base44.asServiceRole.entities.Business.get(account.business_id).catch(() => null);
+      if (isBusinessWriteBlocked(business)) {
+        return Response.json({ error: 'write_blocked', message: 'Este programa de lealtad está suspendido o en modo solo lectura.' }, { status: 403 });
+      }
     }
 
     // Idempotency: the client-supplied request_id (generated once per redeem

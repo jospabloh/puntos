@@ -20,6 +20,19 @@ function pick(user: any, key: string) {
   return user?.[key] ?? user?.data?.[key];
 }
 
+// Mirrors src/lib/useTenant.js's canTenantWrite() — the client already hides
+// the POS behind this same posture (SuspendedAccountModal/TrialBanner via
+// useTenant), but nothing server-side enforced it: a suspended/view_only
+// tenant's operator could still call earnPoints directly. Deno functions
+// can't import across directories, so this is duplicated inline in
+// earnPoints/burnPoints/redeemOffer/createStore — keep them all in sync if
+// the write-gate logic changes.
+function isBusinessWriteBlocked(business: any): boolean {
+  if (!business) return false;
+  const status = business.billing_status || 'trial';
+  return status === 'view_only' || status === 'suspended' || status === 'archived' || business.status === 'suspended';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -69,6 +82,13 @@ Deno.serve(async (req) => {
       const isStaff = role === 'merchant' || pick(user, 'merchant_role') === 'merchant';
       if (isStaff && (!assignedStoreId || assignedStoreId !== store.id)) {
         return Response.json({ error: 'Solo puedes operar en tu tienda asignada' }, { status: 403 });
+      }
+    }
+
+    if (role !== 'admin') {
+      const business = await sr.entities.Business.get(store.business_id).catch(() => null);
+      if (isBusinessWriteBlocked(business)) {
+        return Response.json({ error: 'write_blocked', message: 'La licencia de este negocio está suspendida o en modo solo lectura.' }, { status: 403 });
       }
     }
 
