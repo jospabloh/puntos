@@ -179,7 +179,7 @@ suspended → archived`, derived to UI banners by `deriveLicense()` in
 | `passkitWebService` | Apple device | pass `authenticationToken` (HMAC) | Apple PassKit web service: device register/unregister, list-updatable, serve-latest-pass (service role). |
 | `updateWalletPasses` | n/a — scheduled automation | no user session; runs via service role | Scheduled: Google Wallet balance push + token-based APNs push to registered Apple devices. |
 | `acaciaControl` | ACACIA Mission Control | HMAC-SHA256 (`INGEST_HMAC_SECRET`) | Admin bridge for Mission Control reads (usage, licenses, contacts, tickets) and writes (license sync, ticket replies, follow-up emails). Replay-protected (5-min timestamp window). |
-| `checkTrialExpiration` / `regenerateExpiredQR` / `sendWeeklySummary` / `cleanupInactiveUsers` | n/a — scheduled automation | no user session; runs via service role | Scheduled jobs. Base44 invokes scheduled automations without an end-user session (confirmed by `base44-builder[bot]`'s 2026-06-29 commits removing the `role !== 'admin'` gate from the other four scheduled functions after it 403'd in production); there is nothing to gate on. |
+| `regenerateExpiredQR` / `sendWeeklySummary` / `cleanupInactiveUsers` | n/a — scheduled automation | no user session; runs via service role | Scheduled jobs. Base44 invokes scheduled automations without an end-user session (confirmed by `base44-builder[bot]`'s 2026-06-29 commits removing the `role !== 'admin'` gate from these scheduled functions after it 403'd in production); there is nothing to gate on. `checkTrialExpiration` was removed 2026-08-18 — it duplicated Mission Control's unified license lifecycle on a parallel `LoyaltyAccount.subscription_status` state machine; see CLAUDE.md "License lifecycle". |
 
 ---
 

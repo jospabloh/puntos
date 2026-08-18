@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAppRole, ROLES, isStaff } from '@/lib/rbac';
+import { useTenant } from '@/lib/useTenant';
 import PointsCard from '../components/loyalty/PointsCard';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import OfferCard from '../components/loyalty/OfferCard';
@@ -70,6 +71,10 @@ export default function Home() {
   });
 
   const account = accounts?.[0];
+  // Business-level license posture (billing_status) is the only source of
+  // truth for trial/suspended/view_only state — see CLAUDE.md "License
+  // lifecycle" section. Never re-derive this from LoyaltyAccount fields.
+  const { business, license } = useTenant(user);
 
   // Fetch recent transactions
   const { data: transactions, isLoading: loadingTransactions } = useQuery({
@@ -158,13 +163,13 @@ export default function Home() {
   // Show welcome dialog for merchants in trial (only once - first time)
   useEffect(() => {
     const isMerchantUser = user?.role === 'merchant' || user?.role === 'admin';
-    const isInTrial = account?.subscription_status === 'trial' && account?.trial_end_date;
+    const isInTrial = license.isTrial && business?.trial_end_at;
     const hasNotSeenWelcome = account && !account.welcome_message_shown;
-    
+
     if (isMerchantUser && isInTrial && hasNotSeenWelcome) {
       setShowWelcome(true);
     }
-  }, [account, user]);
+  }, [account, user, license.isTrial, business?.trial_end_at]);
 
   const handleCloseWelcome = async () => {
     setShowWelcome(false);
@@ -198,8 +203,8 @@ export default function Home() {
   }
 
   // Calculate days remaining for trial
-  const daysRemaining = account?.trial_end_date 
-    ? Math.ceil((new Date(account.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+  const daysRemaining = business?.trial_end_at
+    ? Math.ceil((new Date(business.trial_end_at) - new Date()) / (1000 * 60 * 60 * 24))
     : 30;
 
   const quickActions = [
@@ -229,13 +234,14 @@ export default function Home() {
     },
   ];
 
-  // Check if account is suspended (only for merchant accounts, not regular customers)
+  // Check if business is suspended (only matters for merchant accounts, not
+  // regular customers) — sourced from Business.billing_status, the only
+  // license authority (Mission Control owns it). See CLAUDE.md.
   const isMerchant = isStaff(user);
-  const isSuspended = isMerchant && (account?.status === 'suspended' || 
-    (account?.subscription_status === 'inactive' && account?.status === 'suspended'));
+  const isSuspended = isMerchant && license.isSuspended;
 
-  // Show trial banner for merchants in trial/demo mode
-  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
+  // Show trial banner for merchants while their business is in trial.
+  const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
     <div className="pb-24 md:pb-8">
@@ -243,7 +249,7 @@ export default function Home() {
       {isSuspended && <SuspendedAccountModal />}
 
       {/* Trial Banner - visible for merchants in trial mode */}
-      {!isSuspended && showTrialBanner && <TrialBanner trialEndDate={account?.trial_end_date} />}
+      {!isSuspended && showTrialBanner && <TrialBanner trialEndDate={business?.trial_end_at} />}
 
       {/* Welcome Dialog */}
       <WelcomeTrialDialog

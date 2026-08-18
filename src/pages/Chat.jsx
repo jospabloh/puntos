@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isStaff } from '@/lib/rbac';
+import { useTenant } from '@/lib/useTenant';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -54,6 +55,7 @@ export default function Chat() {
   });
 
   const account = accounts?.[0];
+  const { business, license } = useTenant(user);
 
   // Fetch recent transactions for context
   const { data: transactions } = useQuery({
@@ -99,7 +101,7 @@ export default function Chat() {
 
   const sendMessage = async (overrideText) => {
     const text = typeof overrideText === 'string' ? overrideText : inputValue;
-    if (!text.trim() || isLoading || account?.status === 'suspended') return;
+    if (!text.trim() || isLoading || license.isSuspended) return;
 
     const userMessage = text.trim();
     setInputValue('');
@@ -197,15 +199,15 @@ PREGUNTA DEL USUARIO:
   }
 
   const isMerchant = isStaff(user);
-  const isSuspended = isMerchant && account?.status === 'suspended';
-  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
+  const isSuspended = isMerchant && license.isSuspended;
+  const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={account?.trial_end_date} />
+          <TrialBanner trialEndDate={business?.trial_end_at} />
         </div>
       )}
       {/* Header */}

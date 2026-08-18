@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
 import { isStaff } from '@/lib/rbac';
+import { useTenant } from '@/lib/useTenant';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
@@ -73,6 +74,7 @@ export default function Profile() {
   });
 
   const account = accounts?.[0];
+  const { business, license } = useTenant(user);
 
   // Keep the edit form's phone in sync with the loaded account (display reads
   // account?.phone in view mode, so the form must start from the same source).
@@ -190,15 +192,15 @@ export default function Profile() {
     ? Math.min(100, ((account?.lifetime_earned || 0) / currentTier.pointsNeeded) * 100)
     : 100;
   const isMerchant = isStaff(user);
-  const isSuspended = isMerchant && account?.status === 'suspended';
-  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
+  const isSuspended = isMerchant && license.isSuspended;
+  const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={account?.trial_end_date} />
+          <TrialBanner trialEndDate={business?.trial_end_at} />
         </div>
       )}
       {/* Header */}
