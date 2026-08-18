@@ -151,7 +151,7 @@ export default function History() {
   const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
-    <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
+    <div className="min-h-screen pb-24 md:pb-8 bg-slate-50 dark:bg-slate-900">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
@@ -159,7 +159,7 @@ export default function History() {
         </div>
       )}
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-16 z-40">
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center gap-3 mb-4">
             <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
@@ -168,20 +168,20 @@ export default function History() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">Historial</h1>
-              <p className="text-slate-500 text-sm">Todos tus movimientos</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Historial</h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Todos tus movimientos</p>
             </div>
           </div>
 
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <Input
               placeholder="Buscar transacción..."
               aria-label="Buscar transacción"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-50 border-0"
+              className="pl-10 bg-slate-50 dark:bg-slate-900 border-0"
             />
             {searchQuery && (
               <button
@@ -190,7 +190,7 @@ export default function History() {
                 aria-label="Limpiar búsqueda"
                 className="absolute right-3 top-1/2 -translate-y-1/2"
               >
-                <X className="h-4 w-4 text-slate-400" />
+                <X className="h-4 w-4 text-slate-400 dark:text-slate-500" />
               </button>
             )}
           </div>
@@ -198,7 +198,7 @@ export default function History() {
           {/* Filter Tabs */}
           <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-2">
             <Tabs value={filter} onValueChange={setFilter}>
-              <TabsList className="bg-slate-100">
+              <TabsList className="bg-slate-100 dark:bg-slate-800">
                 <TabsTrigger value="all" className="text-xs">Todos</TabsTrigger>
                 <TabsTrigger value="EARN" className="text-xs">Ganados</TabsTrigger>
                 <TabsTrigger value="BURN" className="text-xs">Canjeados</TabsTrigger>
@@ -207,7 +207,7 @@ export default function History() {
             </Tabs>
             
             <Select value={dateRange} onValueChange={setDateRange}>
-              <SelectTrigger className="w-32 h-8 text-xs bg-slate-100 border-0">
+              <SelectTrigger className="w-32 h-8 text-xs bg-slate-100 dark:bg-slate-800 border-0">
                 <Calendar className="h-3 w-3 mr-1" />
                 <SelectValue />
               </SelectTrigger>
@@ -225,34 +225,34 @@ export default function History() {
       {/* Summary Cards */}
       <div className="max-w-lg mx-auto px-4 py-4">
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-3 shadow-sm border border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2 mb-1">
               <div className="h-6 w-6 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <TrendingUp className="h-3 w-3 text-emerald-600" />
               </div>
             </div>
             <p className="text-lg font-bold text-emerald-600">+{summary.earned.toLocaleString()}</p>
-            <p className="text-[10px] text-slate-500">Ganados</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Ganados</p>
           </div>
           
-          <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-3 shadow-sm border border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2 mb-1">
               <div className="h-6 w-6 rounded-lg bg-violet-100 flex items-center justify-center">
                 <TrendingDown className="h-3 w-3 text-violet-600" />
               </div>
             </div>
             <p className="text-lg font-bold text-violet-600">-{summary.burned.toLocaleString()}</p>
-            <p className="text-[10px] text-slate-500">Canjeados</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Canjeados</p>
           </div>
           
-          <div className="bg-white rounded-xl p-3 shadow-sm border border-slate-100">
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-3 shadow-sm border border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2 mb-1">
-              <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center">
-                <Sparkles className="h-3 w-3 text-slate-600" />
+              <div className="h-6 w-6 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Sparkles className="h-3 w-3 text-slate-600 dark:text-slate-300" />
               </div>
             </div>
-            <p className="text-lg font-bold text-slate-700">{summary.count}</p>
-            <p className="text-[10px] text-slate-500">Movimientos</p>
+            <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{summary.count}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">Movimientos</p>
           </div>
         </div>
 
@@ -267,7 +267,7 @@ export default function History() {
           <div className="space-y-6">
             {Object.entries(groupedTransactions).map(([date, txs]) => (
               <div key={date}>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3 px-1">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-1">
                   {format(new Date(date), "EEEE, d 'de' MMMM", { locale: es })}
                 </p>
                 <div className="space-y-3">
@@ -285,11 +285,11 @@ export default function History() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <Search className="h-8 w-8 text-slate-300" />
+            <div className="h-16 w-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+              <Search className="h-8 w-8 text-slate-300 dark:text-slate-600" />
             </div>
-            <p className="text-slate-500 font-medium">No hay movimientos</p>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-500 dark:text-slate-400 font-medium">No hay movimientos</p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
               {searchQuery || filter !== 'all' || dateRange !== 'all'
                 ? 'Intenta cambiar los filtros'
                 : 'Realiza tu primera compra para ver tu historial'}

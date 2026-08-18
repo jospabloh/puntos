@@ -128,7 +128,7 @@ function BrandPanel({ tone, brand, code, joining, perks, headline, sub }) {
 /** Right-column shell: brand panel + the scrollable form area. */
 function Shell({ panel, children }) {
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white dark:bg-slate-900">
       {panel}
       <div className="relative flex flex-1 items-center justify-center overflow-y-auto px-5 py-8 sm:px-8">
         <div className="w-full max-w-md">{children}</div>
@@ -152,14 +152,14 @@ function StepHeader({ step, eyebrow, title, sub }) {
       {step != null && (
         <div className="mb-3 flex items-center gap-1.5">
           {[1, 2].map((n) => (
-            <span key={n} className={`h-1.5 rounded-full transition-all ${n === step ? 'w-7 bg-violet-600' : n < step ? 'w-3 bg-violet-300' : 'w-3 bg-slate-200'}`} />
+            <span key={n} className={`h-1.5 rounded-full transition-all ${n === step ? 'w-7 bg-violet-600' : n < step ? 'w-3 bg-violet-300' : 'w-3 bg-slate-200 dark:bg-slate-700'}`} />
           ))}
-          <span className="ml-2 text-xs font-medium text-slate-400">Paso {step} de 2</span>
+          <span className="ml-2 text-xs font-medium text-slate-400 dark:text-slate-500">Paso {step} de 2</span>
         </div>
       )}
       {eyebrow && <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500">{eyebrow}</div>}
-      <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-[1.7rem]">{title}</h1>
-      {sub && <p className="mt-1.5 text-sm text-slate-500">{sub}</p>}
+      <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-50 sm:text-[1.7rem]">{title}</h1>
+      {sub && <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{sub}</p>}
     </div>
   );
 }
@@ -170,14 +170,14 @@ function OptionCard({ icon: Icon, title, desc, accent, onClick }) {
     gold: 'hover:border-amber-300 [&_.chip]:bg-amber-100 [&_.chip]:text-amber-600 group-hover:[&_.chip]:bg-amber-500 group-hover:[&_.chip]:text-white',
   };
   return (
-    <button onClick={onClick} className={`group w-full rounded-2xl border-2 border-slate-200 p-5 text-left transition-all hover:shadow-lg hover:shadow-violet-500/10 ${tones[accent]}`}>
+    <button onClick={onClick} className={`group w-full rounded-2xl border-2 border-slate-200 dark:border-slate-700 p-5 text-left transition-all hover:shadow-lg hover:shadow-violet-500/10 ${tones[accent]}`}>
       <div className="flex items-center gap-4">
         <span className="chip flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors"><Icon className="h-6 w-6" /></span>
         <span className="flex-1">
-          <span className="block font-display text-base font-bold text-slate-900">{title}</span>
-          <span className="block text-sm text-slate-500">{desc}</span>
+          <span className="block font-display text-base font-bold text-slate-900 dark:text-slate-50">{title}</span>
+          <span className="block text-sm text-slate-500 dark:text-slate-400">{desc}</span>
         </span>
-        <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500" />
+        <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 dark:text-slate-600 transition-colors group-hover:text-slate-500 group-hover:dark:text-slate-400" />
       </div>
     </button>
   );
@@ -186,9 +186,9 @@ function OptionCard({ icon: Icon, title, desc, accent, onClick }) {
 function Field({ label, hint, children }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-slate-400 dark:text-slate-500">{hint}</span>}
     </label>
   );
 }
@@ -332,19 +332,19 @@ export default function Onboarding() {
         <StepHeader eyebrow="Invitación" title="Tienes una invitación" sub={`${invitation.business_name} te invitó a colaborar.`} />
         <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-slate-900 text-violet-600 shadow-sm">
               {isAdmin ? <ShieldCheck className="h-5 w-5" /> : <Store className="h-5 w-5" />}
             </span>
             <div>
-              <div className="text-sm text-slate-500">Tu rol</div>
-              <div className="font-display font-semibold text-slate-900">{isAdmin ? 'Administrador del negocio' : 'Equipo / Cajero'}{invitation.store_name ? ` · ${invitation.store_name}` : ''}</div>
+              <div className="text-sm text-slate-500 dark:text-slate-400">Tu rol</div>
+              <div className="font-display font-semibold text-slate-900 dark:text-slate-50">{isAdmin ? 'Administrador del negocio' : 'Equipo / Cajero'}{invitation.store_name ? ` · ${invitation.store_name}` : ''}</div>
             </div>
           </div>
         </div>
         <Button onClick={() => acceptInviteMutation.mutate()} disabled={acceptInviteMutation.isPending} className="mt-5 h-12 w-full bg-violet-600 text-base hover:bg-violet-700">
           {acceptInviteMutation.isPending ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Uniéndote…</> : <><MailCheck className="mr-2 h-5 w-5" />Aceptar invitación</>}
         </Button>
-        <button onClick={() => setInvitation(null)} className="mt-3 w-full text-center text-sm text-slate-400 transition-colors hover:text-slate-600">
+        <button onClick={() => setInvitation(null)} className="mt-3 w-full text-center text-sm text-slate-400 dark:text-slate-500 transition-colors hover:text-slate-600 hover:dark:text-slate-300">
           Prefiero registrarme de otra forma
         </button>
       </Shell>
@@ -368,9 +368,9 @@ export default function Onboarding() {
         <StepHeader eyebrow="Listo" title="¡Tu negocio está creado!" sub="Este es el código que tus clientes usarán para unirse." />
         <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5 text-center">
           <div className="text-xs font-medium uppercase tracking-[0.18em] text-violet-500">Código de tu tienda</div>
-          <div className="mt-1 font-display text-3xl font-bold tracking-[0.3em] text-slate-900">{code}</div>
+          <div className="mt-1 font-display text-3xl font-bold tracking-[0.3em] text-slate-900 dark:text-slate-50">{code}</div>
           <Button variant="outline" onClick={copy} className="mt-3 h-9">Copiar código</Button>
-          <p className="mt-3 text-xs text-slate-400">Puedes verlo y crear más tiendas desde el panel.</p>
+          <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">Puedes verlo y crear más tiendas desde el panel.</p>
         </div>
         <Button onClick={() => { window.location.href = createPageUrl('AdminDashboard'); }} className="mt-5 h-12 w-full bg-violet-600 text-base hover:bg-violet-700">
           Ir a mi panel<ArrowRight className="ml-2 h-4 w-4" />
@@ -410,7 +410,7 @@ export default function Onboarding() {
                 desc="Acumular puntos y canjear recompensas"
                 onClick={() => { setPath('customer'); setStep(2); }} />
             </div>
-            <p className="mt-6 text-center text-xs text-slate-400">
+            <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
               ¿Te invitaron a un equipo? Inicia sesión con el correo invitado.
             </p>
           </motion.div>
@@ -459,8 +459,8 @@ export default function Onboarding() {
               </Field>
 
               <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-violet-50 to-amber-50 p-3.5 ring-1 ring-violet-100">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-violet-600 shadow-sm"><Check className="h-5 w-5" /></span>
-                <p className="text-sm text-slate-600"><span className="font-semibold text-slate-800">Plan Starter gratis {TRIAL_DAYS} días.</span> Sin tarjeta. Cancela cuando quieras.</p>
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white dark:bg-slate-900 text-violet-600 shadow-sm"><Check className="h-5 w-5" /></span>
+                <p className="text-sm text-slate-600 dark:text-slate-300"><span className="font-semibold text-slate-800 dark:text-slate-100">Plan Starter gratis {TRIAL_DAYS} días.</span> Sin tarjeta. Cancela cuando quieras.</p>
               </div>
 
               <div className="flex gap-3 pt-1">

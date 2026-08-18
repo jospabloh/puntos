@@ -233,9 +233,9 @@ export default function BusinessSettings() {
               <Label htmlFor="logo_url">URL del logo</Label>
               <Input id="logo_url" value={form.logo_url} onChange={set('logo_url')} disabled={!canWrite} placeholder="https://…/logo.png" />
               {form.logo_url ? (
-                <div className="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2">
-                  <img src={form.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain bg-white" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-                  <span className="text-xs text-slate-500">Vista previa del logo</span>
+                <div className="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-2">
+                  <img src={form.logo_url} alt="Logo" className="h-10 w-10 rounded-lg object-contain bg-white dark:bg-slate-900" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Vista previa del logo</span>
                 </div>
               ) : null}
             </div>
@@ -248,7 +248,7 @@ export default function BusinessSettings() {
                   value={form.primary_color}
                   onChange={set('primary_color')}
                   disabled={!canWrite}
-                  className="h-10 w-14 cursor-pointer rounded-lg border border-slate-200 bg-white disabled:cursor-not-allowed"
+                  className="h-10 w-14 cursor-pointer rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 disabled:cursor-not-allowed"
                 />
                 <Input value={form.primary_color} onChange={set('primary_color')} disabled={!canWrite} className="tnum uppercase max-w-[140px]" />
               </div>
@@ -289,14 +289,14 @@ export default function BusinessSettings() {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
               <Switch checked={inviteActive} onCheckedChange={setInviteActive} disabled={!canWrite} id="invite_active" />
               <Label htmlFor="invite_active" className="cursor-pointer">
                 {inviteActive ? 'Código activo' : 'Código inactivo'}
               </Label>
             </div>
           </div>
-          <p className="mt-3 flex items-start gap-2 text-xs text-slate-500">
+          <p className="mt-3 flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             Al regenerar el código, el anterior dejará de funcionar. No olvides guardar los cambios.
           </p>

@@ -212,7 +212,7 @@ export default function PlatformSupport() {
         {/* Ticket list */}
         <div className="lg:col-span-2 space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -264,7 +264,7 @@ export default function PlatformSupport() {
             {isLoading ? (
               <div className="p-4 space-y-2">
                 {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
+                  <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
@@ -279,20 +279,20 @@ export default function PlatformSupport() {
                       type="button"
                       onClick={() => openTicket(t)}
                       className={cn(
-                        'w-full text-left px-4 py-3 transition-colors hover:bg-slate-50',
+                        'w-full text-left px-4 py-3 transition-colors hover:bg-slate-50 hover:dark:bg-slate-900',
                         selectedId === t.id && 'bg-violet-50/70',
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {t.unread_for_owner && <span className="h-2 w-2 shrink-0 rounded-full bg-violet-500" />}
-                          <span className="text-sm font-medium text-slate-800 truncate">{t.subject || 'Sin asunto'}</span>
+                          <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{t.subject || 'Sin asunto'}</span>
                         </div>
                         <StatusPill status={t.priority} label={PRIORITY_LABELS[t.priority] || t.priority} />
                       </div>
                       <div className="mt-1 flex items-center justify-between gap-2">
-                        <span className="text-xs text-slate-500 truncate">{t.business_name || 'Negocio'}</span>
-                        <span className="text-[11px] text-slate-400 shrink-0">{relTime(t.last_message_at || t.created_date)}</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.business_name || 'Negocio'}</span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 shrink-0">{relTime(t.last_message_at || t.created_date)}</span>
                       </div>
                       <div className="mt-1">
                         <StatusPill status={t.status} label={STATUS_LABELS[t.status] || t.status} />
@@ -347,11 +347,11 @@ export default function PlatformSupport() {
                 {loadingMessages ? (
                   <div className="space-y-2">
                     {[0, 1, 2].map((i) => (
-                      <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
+                      <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
                     ))}
                   </div>
                 ) : !messages || messages.length === 0 ? (
-                  <p className="text-center text-sm text-slate-400 py-8">Aún no hay mensajes en este ticket.</p>
+                  <p className="text-center text-sm text-slate-400 dark:text-slate-500 py-8">Aún no hay mensajes en este ticket.</p>
                 ) : (
                   messages.map((m) => {
                     const isOwner = m.author_role === 'owner';
@@ -365,7 +365,7 @@ export default function PlatformSupport() {
                               ? 'bg-amber-50 text-amber-900 ring-1 ring-amber-200'
                               : isOwner
                                 ? 'bg-violet-600 text-white'
-                                : 'bg-white text-slate-800 ring-1 ring-slate-200',
+                                : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 ring-1 ring-slate-200',
                           )}
                         >
                           {isNote && (
@@ -377,7 +377,7 @@ export default function PlatformSupport() {
                           <div
                             className={cn(
                               'mt-1 text-[10px]',
-                              isNote ? 'text-amber-600' : isOwner ? 'text-violet-200' : 'text-slate-400',
+                              isNote ? 'text-amber-600' : isOwner ? 'text-violet-200' : 'text-slate-400 dark:text-slate-500',
                             )}
                           >
                             {m.author_name || m.author_email || (isOwner ? 'Soporte' : 'Cliente')}
@@ -391,7 +391,7 @@ export default function PlatformSupport() {
               </div>
 
               {/* Composer */}
-              <div className="border-t border-slate-100 p-4 space-y-3">
+              <div className="border-t border-slate-100 dark:border-slate-800 p-4 space-y-3">
                 <Textarea
                   rows={3}
                   value={body}
@@ -402,7 +402,7 @@ export default function PlatformSupport() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <Switch id="note-toggle" checked={internalNote} onCheckedChange={setInternalNote} />
-                    <Label htmlFor="note-toggle" className="text-xs text-slate-600 cursor-pointer">
+                    <Label htmlFor="note-toggle" className="text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                       Nota interna
                     </Label>
                   </div>

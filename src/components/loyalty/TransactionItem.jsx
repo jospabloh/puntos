@@ -48,9 +48,9 @@ const typeConfig = {
   },
   REVERSAL: {
     icon: RefreshCw,
-    color: 'text-slate-600',
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
+    color: 'text-slate-600 dark:text-slate-300',
+    bg: 'bg-slate-50 dark:bg-slate-900',
+    border: 'border-slate-200 dark:border-slate-700',
     label: 'Reversión',
     sign: ''
   },
@@ -93,17 +93,17 @@ export default function TransactionItem({ transaction, index = 0, showDetails = 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="font-semibold text-slate-900">
+              <p className="font-semibold text-slate-900 dark:text-slate-50">
                 {transaction.description || config.label}
               </p>
               <div className="flex items-center gap-2 mt-1">
                 {transaction.store_name && (
-                  <span className="flex items-center gap-1 text-xs text-slate-500">
+                  <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                     <Store className="h-3 w-3" />
                     {transaction.store_name}
                   </span>
                 )}
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-400 dark:text-slate-500">
                   {format(new Date(transaction.created_date), "d MMM, HH:mm", { locale: es })}
                 </span>
               </div>
@@ -113,11 +113,11 @@ export default function TransactionItem({ transaction, index = 0, showDetails = 
             <div className="text-right flex-shrink-0">
               <p className={cn(
                 "text-lg font-bold",
-                isPositive ? "text-emerald-600" : "text-slate-700"
+                isPositive ? "text-emerald-600" : "text-slate-700 dark:text-slate-200"
               )}>
                 {isPositive ? '+' : ''}{transaction.points.toLocaleString()}
               </p>
-              <p className="text-xs text-slate-400">puntos</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">puntos</p>
             </div>
           </div>
 
@@ -127,15 +127,15 @@ export default function TransactionItem({ transaction, index = 0, showDetails = 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 {transaction.amount > 0 && (
                   <div>
-                    <span className="text-slate-500">Monto:</span>
-                    <span className="ml-1 font-medium text-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">Monto:</span>
+                    <span className="ml-1 font-medium text-slate-700 dark:text-slate-200">
                       ${transaction.amount.toLocaleString()} {transaction.currency || 'MXN'}
                     </span>
                   </div>
                 )}
                 {transaction.multiplier > 1 && (
                   <div>
-                    <span className="text-slate-500">Multiplicador:</span>
+                    <span className="text-slate-500 dark:text-slate-400">Multiplicador:</span>
                     <span className="ml-1 font-medium text-violet-600">
                       x{transaction.multiplier}
                     </span>
@@ -143,16 +143,16 @@ export default function TransactionItem({ transaction, index = 0, showDetails = 
                 )}
                 {transaction.balance_after !== undefined && (
                   <div>
-                    <span className="text-slate-500">Saldo después:</span>
-                    <span className="ml-1 font-medium text-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">Saldo después:</span>
+                    <span className="ml-1 font-medium text-slate-700 dark:text-slate-200">
                       {transaction.balance_after.toLocaleString()}
                     </span>
                   </div>
                 )}
                 {transaction.ticket_id && (
                   <div>
-                    <span className="text-slate-500">Ticket:</span>
-                    <span className="ml-1 font-mono text-slate-700">
+                    <span className="text-slate-500 dark:text-slate-400">Ticket:</span>
+                    <span className="ml-1 font-mono text-slate-700 dark:text-slate-200">
                       #{transaction.ticket_id}
                     </span>
                   </div>

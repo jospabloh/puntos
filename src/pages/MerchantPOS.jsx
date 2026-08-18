@@ -269,7 +269,7 @@ export default function MerchantPOS() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-8">
       {/* Welcome Dialog */}
       <WelcomeTrialDialog
         isOpen={showWelcome}
@@ -361,7 +361,7 @@ export default function MerchantPOS() {
                 <div>
                   <Label>Buscar cliente (email o código QR)</Label>
                   <div className="relative mt-1.5">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                     <Input
                       placeholder="Email o código QR..."
                       value={customerSearch}
@@ -375,9 +375,9 @@ export default function MerchantPOS() {
 
                   {/* Search Results */}
                   {searching && (
-                    <div className="mt-2 p-3 bg-slate-50 rounded-lg flex items-center gap-2">
+                    <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-slate-500">Buscando...</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Buscando...</span>
                     </div>
                   )}
 
@@ -390,18 +390,18 @@ export default function MerchantPOS() {
                             setSelectedCustomer(account);
                             setCustomerSearch(account.user_email);
                           }}
-                          className="w-full p-3 bg-white rounded-lg border border-slate-200 hover:border-violet-300 hover:shadow-sm transition-all flex items-center gap-3 text-left"
+                          className="w-full p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-violet-300 hover:shadow-sm transition-all flex items-center gap-3 text-left"
                         >
                           <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center">
                             <User className="h-5 w-5 text-violet-600" />
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-slate-900">{account.user_name}</p>
-                            <p className="text-sm text-slate-500">{account.user_email}</p>
+                            <p className="font-medium text-slate-900 dark:text-slate-50">{account.user_name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{account.user_email}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-violet-600">{account.current_balance?.toLocaleString()}</p>
-                            <p className="text-xs text-slate-400">puntos</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">puntos</p>
                           </div>
                         </button>
                       ))}
@@ -428,14 +428,14 @@ export default function MerchantPOS() {
                         <User className="h-6 w-6 text-violet-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-semibold text-slate-900">{selectedCustomer.user_name}</p>
-                        <p className="text-sm text-slate-500">{selectedCustomer.user_email}</p>
+                        <p className="font-semibold text-slate-900 dark:text-slate-50">{selectedCustomer.user_name}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">{selectedCustomer.user_email}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-2xl font-bold text-violet-600">
                           {selectedCustomer.current_balance?.toLocaleString()}
                         </p>
-                        <p className="text-xs text-slate-400">puntos actuales</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">puntos actuales</p>
                       </div>
                     </div>
                   </motion.div>
@@ -446,7 +446,7 @@ export default function MerchantPOS() {
                   <div>
                     <Label>Monto de compra (MXN)</Label>
                     <div className="relative mt-1.5">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                       <Input
                         type="number"
                         placeholder="0.00"
@@ -459,7 +459,7 @@ export default function MerchantPOS() {
                   <div>
                     <Label>No. de ticket (opcional)</Label>
                     <div className="relative mt-1.5">
-                      <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Ticket className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                       <Input
                         placeholder="Ticket ID"
                         value={ticketId}
@@ -519,7 +519,7 @@ export default function MerchantPOS() {
                 <div>
                   <Label>Buscar cliente (email o código QR)</Label>
                   <div className="relative mt-1.5">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                     <Input
                       placeholder="Email o código QR..."
                       value={customerSearch}
@@ -540,18 +540,18 @@ export default function MerchantPOS() {
                             setSelectedCustomer(account);
                             setCustomerSearch(account.user_email);
                           }}
-                          className="w-full p-3 bg-white rounded-lg border border-slate-200 hover:border-violet-300 hover:shadow-sm transition-all flex items-center gap-3 text-left"
+                          className="w-full p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-violet-300 hover:shadow-sm transition-all flex items-center gap-3 text-left"
                         >
                           <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center">
                             <User className="h-5 w-5 text-violet-600" />
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium text-slate-900">{account.user_name}</p>
-                            <p className="text-sm text-slate-500">{account.user_email}</p>
+                            <p className="font-medium text-slate-900 dark:text-slate-50">{account.user_name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{account.user_email}</p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-violet-600">{account.current_balance?.toLocaleString()}</p>
-                            <p className="text-xs text-slate-400">puntos</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">puntos</p>
                           </div>
                         </button>
                       ))}
@@ -571,14 +571,14 @@ export default function MerchantPOS() {
                           <User className="h-6 w-6 text-violet-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-slate-900">{selectedCustomer.user_name}</p>
-                          <p className="text-sm text-slate-500">{selectedCustomer.user_email}</p>
+                          <p className="font-semibold text-slate-900 dark:text-slate-50">{selectedCustomer.user_name}</p>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">{selectedCustomer.user_email}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-violet-600">
                             {selectedCustomer.current_balance?.toLocaleString()}
                           </p>
-                          <p className="text-xs text-slate-400">puntos disponibles</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500">puntos disponibles</p>
                         </div>
                       </div>
                     </motion.div>
@@ -593,15 +593,15 @@ export default function MerchantPOS() {
                         max={selectedCustomer.current_balance}
                         className="mt-1.5"
                       />
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                         Máximo: {selectedCustomer.current_balance?.toLocaleString()} puntos
                       </p>
                     </div>
 
                     {burnPoints && parseInt(burnPoints) > 0 && (
-                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                        <p className="text-sm text-slate-600">Saldo después del canje:</p>
-                        <p className="text-2xl font-bold text-slate-800">
+                      <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <p className="text-sm text-slate-600 dark:text-slate-300">Saldo después del canje:</p>
+                        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
                           {(selectedCustomer.current_balance - parseInt(burnPoints)).toLocaleString()} puntos
                         </p>
                       </div>
@@ -635,7 +635,7 @@ export default function MerchantPOS() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5 text-slate-600" />
+                  <History className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                   Transacciones Recientes
                 </CardTitle>
                 <CardDescription>
@@ -648,7 +648,7 @@ export default function MerchantPOS() {
                     {recentTransactions.map((tx) => (
                       <div 
                         key={tx.id}
-                        className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg"
+                        className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg"
                       >
                         <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                           tx.type === 'EARN' ? 'bg-emerald-100' : 'bg-violet-100'
@@ -660,19 +660,19 @@ export default function MerchantPOS() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium text-slate-900 text-sm">{tx.description}</p>
-                          <p className="text-xs text-slate-500">
+                          <p className="font-medium text-slate-900 dark:text-slate-50 text-sm">{tx.description}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
                             {new Date(tx.created_date).toLocaleString('es-MX')}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className={`font-bold ${
-                            tx.points > 0 ? 'text-emerald-600' : 'text-slate-600'
+                            tx.points > 0 ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-300'
                           }`}>
                             {tx.points > 0 ? '+' : ''}{tx.points.toLocaleString()}
                           </p>
                           {tx.amount > 0 && (
-                            <p className="text-xs text-slate-400">${tx.amount} MXN</p>
+                            <p className="text-xs text-slate-400 dark:text-slate-500">${tx.amount} MXN</p>
                           )}
                         </div>
                       </div>
@@ -680,8 +680,8 @@ export default function MerchantPOS() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <History className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">No hay transacciones aún</p>
+                    <History className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                    <p className="text-slate-500 dark:text-slate-400">No hay transacciones aún</p>
                   </div>
                 )}
               </CardContent>
@@ -701,7 +701,7 @@ export default function MerchantPOS() {
             >
               <CheckCircle className="h-8 w-8 text-emerald-600" />
             </motion.div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">
               ¡{showResult?.action === 'earn' ? 'Puntos acreditados' : 'Canje procesado'}!
             </h3>
             
@@ -714,7 +714,7 @@ export default function MerchantPOS() {
                 <p className="text-sm text-emerald-600 mt-2">
                   Por compra de ${showResult.data.amount.toLocaleString()} MXN
                 </p>
-                <p className="text-sm text-slate-500 mt-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
                   Nuevo saldo: {showResult.data.newBalance.toLocaleString()} puntos
                 </p>
               </div>
@@ -726,7 +726,7 @@ export default function MerchantPOS() {
                 <p className="text-3xl font-bold text-violet-600">
                   -{showResult.data.pointsBurned.toLocaleString()} puntos
                 </p>
-                <p className="text-sm text-slate-500 mt-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
                   Nuevo saldo: {showResult.data.newBalance.toLocaleString()} puntos
                 </p>
               </div>
@@ -734,7 +734,7 @@ export default function MerchantPOS() {
 
             <Button 
               onClick={() => setShowResult(null)} 
-              className="mt-6 w-full bg-slate-800 hover:bg-slate-900"
+              className="mt-6 w-full bg-slate-800 dark:bg-slate-100 hover:bg-slate-900 hover:dark:bg-slate-50"
             >
               Continuar
             </Button>

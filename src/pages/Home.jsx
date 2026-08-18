@@ -377,7 +377,7 @@ export default function Home() {
           transition={{ delay: 0.3 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-900">Actividad reciente</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Actividad reciente</h2>
             <Link 
               to={createPageUrl('History')}
               className="text-sm text-violet-600 hover:text-violet-700 font-medium"
@@ -399,10 +399,10 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-slate-50 rounded-2xl p-8 text-center">
-              <History className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm">Aún no tienes movimientos</p>
-              <p className="text-slate-400 text-xs mt-1">
+            <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-8 text-center">
+              <History className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Aún no tienes movimientos</p>
+              <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">
                 Realiza tu primera compra para acumular puntos
               </p>
             </div>
@@ -416,7 +416,7 @@ export default function Home() {
           transition={{ delay: 0.4 }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-900">Ofertas destacadas</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Ofertas destacadas</h2>
             <Link 
               to={createPageUrl('Offers')}
               className="text-sm text-violet-600 hover:text-violet-700 font-medium"
@@ -443,9 +443,9 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="bg-slate-50 rounded-2xl p-8 text-center">
-              <Gift className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500 text-sm">Próximamente más ofertas</p>
+            <div className="bg-slate-50 dark:bg-slate-900 rounded-2xl p-8 text-center">
+              <Gift className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Próximamente más ofertas</p>
             </div>
           )}
         </motion.div>

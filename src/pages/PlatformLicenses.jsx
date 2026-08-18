@@ -69,16 +69,16 @@ function LicenseRow({ b, action, busy, onAction }) {
     : `Licencia: ${fmtDate(b.license_expires_at)}`;
   const days = isTrial ? daysUntil(b.trial_end_at) : daysUntil(b.license_expires_at);
   return (
-    <div className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 transition-colors">
+    <div className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 hover:dark:bg-slate-900 transition-colors">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-slate-800 truncate">{b.name || 'Sin nombre'}</span>
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{b.name || 'Sin nombre'}</span>
           <PlanBadge plan={b.license_plan || 'starter'} />
         </div>
-        <p className="text-xs text-slate-500 truncate">
+        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
           {dateLabel}
           {days !== null && (
-            <span className={days < 0 ? 'text-rose-600' : 'text-slate-500'}>
+            <span className={days < 0 ? 'text-rose-600' : 'text-slate-500 dark:text-slate-400'}>
               {' '}· {days < 0 ? `vencida hace ${Math.abs(days)}d` : `${days}d restantes`}
             </span>
           )}
@@ -219,31 +219,31 @@ export default function PlatformLicenses() {
                 </span>
               )}
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-lg font-bold text-slate-900">{plan.name}</h3>
+                <h3 className="font-display text-lg font-bold text-slate-900 dark:text-slate-50">{plan.name}</h3>
                 <span className="h-3 w-3 rounded-full" style={{ backgroundColor: plan.accent }} />
               </div>
-              <p className="mt-1 text-xs text-slate-500 min-h-[32px]">{plan.tagline}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 min-h-[32px]">{plan.tagline}</p>
               <div className="mt-3">
-                <span className="font-display text-2xl font-bold text-slate-900 tnum">
+                <span className="font-display text-2xl font-bold text-slate-900 dark:text-slate-50 tnum">
                   {formatMoney(plan.monthly_price_mxn)}
                 </span>
                 {plan.monthly_price_mxn != null && plan.monthly_price_mxn > 0 && (
-                  <span className="text-xs text-slate-400"> /mes</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500"> /mes</span>
                 )}
               </div>
 
-              <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-3">
+              <div className="mt-4 space-y-1.5 border-t border-slate-100 dark:border-slate-800 pt-3">
                 {Object.keys(LIMIT_LABELS).map((k) => (
                   <div key={k} className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500">{LIMIT_LABELS[k]}</span>
-                    <span className="font-medium text-slate-700 tnum">{formatLimit(plan.limits[k])}</span>
+                    <span className="text-slate-500 dark:text-slate-400">{LIMIT_LABELS[k]}</span>
+                    <span className="font-medium text-slate-700 dark:text-slate-200 tnum">{formatLimit(plan.limits[k])}</span>
                   </div>
                 ))}
               </div>
 
-              <ul className="mt-4 space-y-1.5 border-t border-slate-100 pt-3 flex-1">
+              <ul className="mt-4 space-y-1.5 border-t border-slate-100 dark:border-slate-800 pt-3 flex-1">
                 {activeFeatures.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-xs text-slate-600">
+                  <li key={f} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                     <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                     {FEATURE_LABELS[f] || f}
                   </li>
@@ -263,7 +263,7 @@ export default function PlatformLicenses() {
       </div>
 
       <SectionCard title="Cartera de licencias" icon={KeyRound} description="Negocios agrupados por estado de licencia" className="mb-6" bodyClassName="p-5">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Renueva o activa licencias directamente desde cada sección. Cada acción extiende la vigencia 1 año y registra un evento.
         </p>
       </SectionCard>
@@ -271,7 +271,7 @@ export default function PlatformLicenses() {
       {isLoading ? (
         <div className="space-y-4">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-100" />
+            <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
           ))}
         </div>
       ) : (

@@ -150,9 +150,9 @@ export default function Wallet() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100"
+          className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-800"
         >
-          <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+          <h3 className="font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-violet-500" />
             ¿Cómo funciona?
           </h3>
@@ -162,8 +162,8 @@ export default function Wallet() {
                 1
               </div>
               <div>
-                <p className="font-medium text-slate-900">Muestra tu QR</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-medium text-slate-900 dark:text-slate-50">Muestra tu QR</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Al momento de pagar, muestra este código al cajero
                 </p>
               </div>
@@ -173,8 +173,8 @@ export default function Wallet() {
                 2
               </div>
               <div>
-                <p className="font-medium text-slate-900">Acumula puntos</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-medium text-slate-900 dark:text-slate-50">Acumula puntos</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Gana 1 punto por cada $10 MXN de compra
                 </p>
               </div>
@@ -184,8 +184,8 @@ export default function Wallet() {
                 3
               </div>
               <div>
-                <p className="font-medium text-slate-900">Canjea premios</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-medium text-slate-900 dark:text-slate-50">Canjea premios</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Usa tus puntos en ofertas y descuentos exclusivos
                 </p>
               </div>
@@ -201,7 +201,7 @@ export default function Wallet() {
             transition={{ delay: 0.2 }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-900">Últimos movimientos</h3>
+              <h3 className="font-semibold text-slate-900 dark:text-slate-50">Últimos movimientos</h3>
               <Link 
                 to={createPageUrl('History')}
                 className="text-sm text-violet-600 font-medium"

@@ -187,8 +187,8 @@ export default function AdminDashboard() {
 
   const dateSelect = (
     <Select value={dateRange} onValueChange={setDateRange}>
-      <SelectTrigger className="w-36 border-slate-200 bg-white">
-        <Calendar className="mr-2 h-4 w-4 text-slate-400" />
+      <SelectTrigger className="w-36 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+        <Calendar className="mr-2 h-4 w-4 text-slate-400 dark:text-slate-500" />
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
             {(tierData || []).map((tier) => (
               <div key={tier.name} className="flex items-center gap-2">
                 <div className="h-3 w-3 rounded-full" style={{ backgroundColor: tier.color }} />
-                <span className="text-xs text-slate-600 tnum">
+                <span className="text-xs text-slate-600 dark:text-slate-300 tnum">
                   {tier.name}: {tier.value}
                 </span>
               </div>

@@ -207,19 +207,58 @@ just profile edit + notification toggles + logout. New:
   gates the whole danger-zone card on `isCustomer(user)` so staff/admin
   never see a button that would just 403.
 
-**Not done — dark theme (module 10).** `tailwind.config.js` has
-`darkMode: ["class"]` configured but only 2 `dark:` class usages exist across
-the entire app; every page is hardcoded to light-mode colors
-(`bg-slate-50`, `text-slate-900`, etc.). A real dark theme means re-skinning
-every page and component, which is a design-scale initiative — not a
-same-session patch, and not attempted here without a way to visually verify
-the result in this sandbox. Tracked as a separate initiative, same as
-`jospabloh/rumbo`'s deferred module-3 gap.
-
 **Verified:** `npm run lint`, `npm run build`, `npm run validate:rls` all
 pass. `deno` unavailable in this sandbox — unverified against a live
 account; risk is bounded since `deleteMyAccount` only ever acts on the
 caller's own rows and `exportMyData` is read-only.
+
+## Dark theme (module 10, added 2026-08-19)
+
+`tailwind.config.js` already had `darkMode: ["class"]` and `index.css`
+already had a complete `.dark` token palette (shadcn boilerplate) — neither
+was ever engaged. Fixed:
+
+- **`src/lib/ThemeContext.jsx`** — `ThemeProvider`/`useTheme()`, resolves
+  `localStorage('pp-theme')` → `prefers-color-scheme` → light, toggles the
+  `.dark` class on `<html>`, persists the choice. `index.html` carries a
+  matching inline pre-mount script (same resolution order, kept in sync by
+  hand — comment on both sides says so) so there's no light-mode flash
+  before React hydrates.
+- **`ThemeToggle`** (`Layout.jsx`) — sun/moon icon button wired into both
+  shells: the consumer header's mobile menu bar and the back-office
+  sidebar/mobile top bar.
+- **Every hardcoded neutral color re-skinned.** ~500 `bg-slate-*`/
+  `text-slate-*`/`border-slate-*`/`bg-white` occurrences across 37 files
+  got a paired `dark:` variant via a scripted inversion (50↔900, 100↔800,
+  … symmetric around the scale), preserving any existing variant prefix
+  (`hover:text-slate-800` → `hover:dark:text-slate-100`, not a bare
+  `dark:text-slate-100` that would apply outside of hover too — the first
+  version of the script got this wrong and briefly shipped it, caught by
+  diffing before commit). Opacity-suffixed tokens (`bg-slate-900/30`,
+  `bg-white/70`) were deliberately left alone — those are almost always
+  scrims/overlays/frosted-glass layered over other content, not themed
+  surfaces, and a flat inversion would have dropped the opacity. A handful
+  of `from-/via-/to-` gradient stops (full-page backgrounds, the auth split
+  panel, `WelcomeTrialDialog`) needed the same treatment by hand — the
+  script only matched `bg-`/`text-`/`border-`. `PointsCard.jsx`'s
+  `from-slate-400 via-slate-300 to-slate-200` is the loyalty tier's
+  *silver* color, not a themed surface — intentionally untouched.
+  `.pp-glass`/`.pp-shell-bg`/`.glass-card` (the frosted-panel and
+  control-room-shell custom classes in `index.css`) got their own `.dark`
+  overrides since they're plain CSS, not Tailwind utility classes the
+  inversion script could reach.
+
+**Verified, including visually** (unlike every other module-10 deferral in
+this portfolio) — a Playwright screenshot pass against the running dev
+server confirmed Login/Register/ForgotPassword render correctly in both
+themes (the only pages reachable without a live Base44 session in this
+sandbox); a scripted coverage sweep confirmed zero remaining un-paired
+slate/gray tokens across the scanned files. `npm run lint`, `npm run build`,
+`npm run validate:rls` all pass. Not independently visually verified:
+the ~30 authenticated pages (Home, Wallet, Offers, the back-office admin
+pages, …) — the systematic script covered them the same way as the
+verified pages, but an actual authenticated browser session wasn't
+achievable here; worth a spot-check on a live deploy.
 
 ## Build / verify
 

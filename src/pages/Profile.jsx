@@ -248,7 +248,7 @@ export default function Profile() {
   const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-24 md:pb-8">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
@@ -296,12 +296,12 @@ export default function Profile() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-sm text-slate-500">Tu nivel actual</p>
-                  <p className="text-xl font-bold text-slate-900">{currentTier.icon} {currentTier.label}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Tu nivel actual</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-slate-50">{currentTier.icon} {currentTier.label}</p>
                 </div>
                 {currentTier.nextTier && (
                   <div className="text-right">
-                    <p className="text-sm text-slate-500">Siguiente nivel</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Siguiente nivel</p>
                     <p className="font-semibold text-violet-600">
                       {tierConfig[currentTier.nextTier].icon} {tierConfig[currentTier.nextTier].label}
                     </p>
@@ -311,7 +311,7 @@ export default function Profile() {
               
               {currentTier.nextTier && (
                 <>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                  <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${progress}%` }}
@@ -319,7 +319,7 @@ export default function Profile() {
                       className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full"
                     />
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {(account?.lifetime_earned || 0).toLocaleString()} / {currentTier.pointsNeeded.toLocaleString()} puntos para el siguiente nivel
                   </p>
                 </>
@@ -337,7 +337,7 @@ export default function Profile() {
           <Card className="mb-6">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-slate-400" />
+                <User className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                 Información Personal
               </CardTitle>
               {!isEditing && (
@@ -358,15 +358,15 @@ export default function Profile() {
                     className="mt-1.5"
                   />
                 ) : (
-                  <p className="text-slate-700 mt-1">{user.full_name || 'No especificado'}</p>
+                  <p className="text-slate-700 dark:text-slate-200 mt-1">{user.full_name || 'No especificado'}</p>
                 )}
               </div>
               
               <div>
                 <Label>Email</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  <Mail className="h-4 w-4 text-slate-400" />
-                  <p className="text-slate-700">{user.email}</p>
+                  <Mail className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                  <p className="text-slate-700 dark:text-slate-200">{user.email}</p>
                 </div>
               </div>
               
@@ -382,8 +382,8 @@ export default function Profile() {
                   />
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
-                    <Phone className="h-4 w-4 text-slate-400" />
-                    <p className="text-slate-700">{account?.phone || 'No especificado'}</p>
+                    <Phone className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                    <p className="text-slate-700 dark:text-slate-200">{account?.phone || 'No especificado'}</p>
                   </div>
                 )}
               </div>
@@ -416,15 +416,15 @@ export default function Profile() {
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-slate-400" />
+                <Bell className="h-5 w-5 text-slate-400 dark:text-slate-500" />
                 Notificaciones
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-slate-900">Campañas especiales</p>
-                  <p className="text-sm text-slate-500">Alertas de nuevas campañas y bonificaciones</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-50">Campañas especiales</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Alertas de nuevas campañas y bonificaciones</p>
                 </div>
                 <Switch
                   checked={notifPrefs.campaigns_enabled}
@@ -434,8 +434,8 @@ export default function Profile() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-slate-900">Ofertas y promociones</p>
-                  <p className="text-sm text-slate-500">Recibe alertas de nuevas ofertas</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-50">Ofertas y promociones</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Recibe alertas de nuevas ofertas</p>
                 </div>
                 <Switch
                   checked={notifPrefs.offers_enabled}
@@ -445,8 +445,8 @@ export default function Profile() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-slate-900">Movimientos de puntos</p>
-                  <p className="text-sm text-slate-500">Notificaciones al ganar o canjear</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-50">Movimientos de puntos</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Notificaciones al ganar o canjear</p>
                 </div>
                 <Switch
                   checked={notifPrefs.points_activity_enabled}
@@ -471,12 +471,12 @@ export default function Profile() {
                 disabled={exporting}
                 className="w-full flex items-center gap-4 disabled:opacity-50"
               >
-                <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                  <Download className="h-5 w-5 text-slate-600" />
+                <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
+                  <Download className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-medium text-slate-900">Descargar mis datos</p>
-                  <p className="text-sm text-slate-500">{exporting ? 'Exportando...' : 'Tu saldo, historial de puntos y canjes en formato JSON'}</p>
+                  <p className="font-medium text-slate-900 dark:text-slate-50">Descargar mis datos</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{exporting ? 'Exportando...' : 'Tu saldo, historial de puntos y canjes en formato JSON'}</p>
                 </div>
               </button>
             </CardContent>
@@ -495,8 +495,8 @@ export default function Profile() {
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="font-medium text-slate-900">Zona de peligro</p>
-                    <p className="text-sm text-slate-500">Eliminar tu cuenta es permanente. Perderás tu saldo de puntos y acceso al monedero.</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-50">Zona de peligro</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Eliminar tu cuenta es permanente. Perderás tu saldo de puntos y acceso al monedero.</p>
                   </div>
                 </div>
                 {!confirmDelete ? (
@@ -538,34 +538,34 @@ export default function Profile() {
         >
           <button
             onClick={() => toast.info('Para cambiar tu contraseña, cierra sesión y usa la opción "¿Olvidaste tu contraseña?" al iniciar sesión.')}
-            className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 hover:shadow-md transition-all"
+            className="w-full flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all"
           >
             <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center">
               <Shield className="h-5 w-5 text-blue-600" />
             </div>
             <div className="flex-1 text-left">
-              <p className="font-medium text-slate-900">Seguridad</p>
-              <p className="text-sm text-slate-500">Cambiar contraseña</p>
+              <p className="font-medium text-slate-900 dark:text-slate-50">Seguridad</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Cambiar contraseña</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-400" />
+            <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500" />
           </button>
 
           <Link to={createPageUrl('Chat')}>
-            <button className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 hover:shadow-md transition-all">
+            <button className="w-full flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all">
               <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
                 <HelpCircle className="h-5 w-5 text-violet-600" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium text-slate-900">Ayuda</p>
-                <p className="text-sm text-slate-500">Preguntas frecuentes y soporte</p>
+                <p className="font-medium text-slate-900 dark:text-slate-50">Ayuda</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Preguntas frecuentes y soporte</p>
               </div>
-              <ChevronRight className="h-5 w-5 text-slate-400" />
+              <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500" />
             </button>
           </Link>
 
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-red-100 hover:shadow-md hover:border-red-200 transition-all"
+            className="w-full flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-red-100 hover:shadow-md hover:border-red-200 transition-all"
           >
             <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
               <LogOut className="h-5 w-5 text-red-600" />
@@ -585,10 +585,10 @@ export default function Profile() {
             </div>
             <span className="text-sm font-semibold gradient-text">Puntos+</span>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             © 2026 ACACIA Consultoría en Informática y Cómputo. Todos los Derechos Reservados.
           </p>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-slate-300 dark:text-slate-600 mt-1">
             Versión {APP_VERSION} · {RELEASE_DATE}
           </p>
         </div>

@@ -343,7 +343,7 @@ export default function PlatformTenants() {
 
       <Toolbar>
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -381,7 +381,7 @@ export default function PlatformTenants() {
         {isLoading ? (
           <div className="p-5 space-y-2">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
+              <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
@@ -409,8 +409,8 @@ export default function PlatformTenants() {
                 {filtered.map((b) => (
                   <TableRow key={b.id} className="cursor-pointer" onClick={() => openDetail(b)}>
                     <TableCell>
-                      <div className="font-medium text-slate-800">{b.name || 'Sin nombre'}</div>
-                      <div className="text-xs text-slate-500">{b.owner_email || b.contact_email || '—'}</div>
+                      <div className="font-medium text-slate-800 dark:text-slate-100">{b.name || 'Sin nombre'}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{b.owner_email || b.contact_email || '—'}</div>
                     </TableCell>
                     <TableCell>
                       <PlanBadge plan={b.license_plan || 'starter'} />
@@ -418,14 +418,14 @@ export default function PlatformTenants() {
                     <TableCell>
                       <StatusPill status={b.billing_status || 'trial'} />
                     </TableCell>
-                    <TableCell className="text-xs text-slate-600 tnum">
+                    <TableCell className="text-xs text-slate-600 dark:text-slate-300 tnum">
                       {formatLimit(b.licensed_user_limit ?? getPlan(b.license_plan).limits.staff_users)} usr ·{' '}
                       {formatLimit(b.licensed_store_limit ?? getPlan(b.license_plan).limits.stores)} tnd
                     </TableCell>
-                    <TableCell className="text-xs text-slate-600">
+                    <TableCell className="text-xs text-slate-600 dark:text-slate-300">
                       {b.billing_status === 'trial' ? fmtDate(b.trial_end_at) : fmtDate(b.license_expires_at)}
                     </TableCell>
-                    <TableCell className="text-xs text-slate-500">{fmtDate(b.created_date)}</TableCell>
+                    <TableCell className="text-xs text-slate-500 dark:text-slate-400">{fmtDate(b.created_date)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -511,7 +511,7 @@ export default function PlatformTenants() {
                   <Label>Referencia de pago</Label>
                   <Input value={form.payment_reference} onChange={(e) => set('payment_reference', e.target.value)} />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2">
                   <Label className="cursor-pointer">Renovación automática</Label>
                   <Switch checked={form.auto_renewal} onCheckedChange={(v) => set('auto_renewal', v)} />
                 </div>
@@ -537,7 +537,7 @@ export default function PlatformTenants() {
                   <PlayCircle className="h-4 w-4 mr-1.5 text-emerald-600" /> Reactivar
                 </Button>
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => runLifecycle('archive')}>
-                  <Archive className="h-4 w-4 mr-1.5 text-slate-500" /> Archivar
+                  <Archive className="h-4 w-4 mr-1.5 text-slate-500 dark:text-slate-400" /> Archivar
                 </Button>
               </div>
 
@@ -587,7 +587,7 @@ export default function PlatformTenants() {
                 </SelectContent>
               </Select>
             </div>
-            <p className="text-xs text-slate-500">Se crea con una prueba gratuita de 30 días y un código de invitación.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Se crea con una prueba gratuita de 30 días y un código de invitación.</p>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>

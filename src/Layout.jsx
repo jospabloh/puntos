@@ -6,14 +6,33 @@ import {
   Wallet, Gift, History as HistoryIcon, MessageCircle, User as UserIcon, Store,
   LayoutDashboard, LogOut, Menu, X, Sparkles, Building2, KeyRound, LifeBuoy,
   Users, Receipt, Settings, ShieldCheck, ScrollText, Megaphone, Crown, ChevronRight,
+  Sun, Moon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
+import { useTheme } from '@/lib/ThemeContext';
 
 const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding', 'ForgotPassword'];
+
+function ThemeToggle({ className }) {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      title={isDark ? 'Modo claro' : 'Modo oscuro'}
+      className={className}
+    >
+      {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+    </Button>
+  );
+}
 
 // Back-office (sidebar) navigation per role
 const OWNER_NAV = [
@@ -55,7 +74,7 @@ function Wordmark({ subtitle }) {
         <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-amber-400 ring-2 ring-white" />
       </div>
       <div className="leading-none">
-        <span className="font-display text-lg font-bold text-slate-900">Puntos<span className="text-amber-500">+</span></span>
+        <span className="font-display text-lg font-bold text-slate-900 dark:text-slate-50">Puntos<span className="text-amber-500">+</span></span>
         {subtitle && <div className="text-[10px] font-medium uppercase tracking-[0.15em] text-violet-400">{subtitle}</div>}
       </div>
     </Link>
@@ -67,7 +86,7 @@ function RoleChip({ role }) {
     owner: { label: 'Plataforma', cls: 'bg-amber-50 text-amber-700 ring-amber-600/20', icon: Crown },
     business_admin: { label: 'Negocio', cls: 'bg-violet-50 text-violet-700 ring-violet-600/20', icon: Building2 },
     staff: { label: 'Equipo', cls: 'bg-sky-50 text-sky-700 ring-sky-600/20', icon: Store },
-    customer: { label: 'Cliente', cls: 'bg-slate-100 text-slate-600 ring-slate-500/20', icon: UserIcon },
+    customer: { label: 'Cliente', cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20', icon: UserIcon },
   };
   const r = map[role] || map.customer;
   const Icon = r.icon;
@@ -91,10 +110,10 @@ function NavLink({ item, currentPageName, onNavigate }) {
       onClick={onNavigate}
       className={cn(
         'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-        active ? 'bg-white text-violet-700 shadow-sm ring-1 ring-violet-100' : 'text-slate-500 hover:bg-white/60 hover:text-slate-800',
+        active ? 'bg-white dark:bg-slate-900 text-violet-700 shadow-sm ring-1 ring-violet-100' : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 hover:text-slate-800 hover:dark:text-slate-100',
       )}
     >
-      <Icon className={cn('h-[18px] w-[18px]', active ? 'text-violet-600' : 'text-slate-400 group-hover:text-violet-500')} />
+      <Icon className={cn('h-[18px] w-[18px]', active ? 'text-violet-600' : 'text-slate-400 dark:text-slate-500 group-hover:text-violet-500')} />
       <span>{item.name}</span>
       {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-amber-400" />}
     </Link>
@@ -107,7 +126,7 @@ function BackOfficeNav({ groups, role, currentPageName, onNavigate }) {
       {groups.map((group, gi) => (
         <div key={group.label || gi} className={gi > 0 ? 'pt-3' : ''}>
           {group.label && (
-            <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{group.label}</div>
+            <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{group.label}</div>
           )}
           <div className="space-y-1">
             {group.items.map((item) => (
@@ -139,9 +158,12 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-40 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-4 py-3 backdrop-blur-xl">
         <Wordmark subtitle={subtitle} />
-        <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} aria-label={open ? 'Cerrar menú' : 'Abrir menú'}>
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} aria-label={open ? 'Cerrar menú' : 'Abrir menú'}>
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       <div className="mx-auto flex max-w-[1400px]">
@@ -155,11 +177,12 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
                 {user?.full_name?.[0] || user?.email?.[0] || 'U'}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-slate-800">{user?.full_name || user?.email}</div>
+                <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{user?.full_name || user?.email}</div>
                 <RoleChip role={role} />
               </div>
+              <ThemeToggle className="h-8 w-8 shrink-0" />
             </div>
-            <button onClick={() => base44.auth.logout()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-rose-50 hover:text-rose-600">
+            <button onClick={() => base44.auth.logout()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-rose-50 hover:text-rose-600">
               <LogOut className="h-3.5 w-3.5" /> Cerrar sesión
             </button>
           </div>
@@ -169,7 +192,7 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
         {open && (
           <div className="md:hidden fixed inset-0 z-40" onClick={() => setOpen(false)}>
             <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" />
-            <aside className="absolute left-0 top-0 h-full w-72 bg-white p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <aside className="absolute left-0 top-0 h-full w-72 bg-white dark:bg-slate-900 p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="px-2 pb-4"><Wordmark subtitle={subtitle} /></div>
               <BackOfficeNav groups={groups} role={role} currentPageName={currentPageName} onNavigate={() => setOpen(false)} />
               <button onClick={() => base44.auth.logout()} className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50">
@@ -188,7 +211,7 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
               <span className="flex items-center gap-3">
                 <Link to={createPageUrl('PlatformTenants')} className="font-medium text-violet-700 hover:underline">Cambiar negocio</Link>
                 {isImpersonatingTenant(user) && (
-                  <button onClick={() => { clearActiveBusiness(); window.location.reload(); }} className="font-medium text-slate-500 hover:underline">Volver al mío</button>
+                  <button onClick={() => { clearActiveBusiness(); window.location.reload(); }} className="font-medium text-slate-500 dark:text-slate-400 hover:underline">Volver al mío</button>
                 )}
               </span>
             </div>
@@ -208,7 +231,7 @@ function ConsumerShell({ user, role, currentPageName, children }) {
   const canAdmin = role === ROLES.BUSINESS_ADMIN || role === ROLES.OWNER;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/40">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-violet-950/20">
       <header className="fixed top-0 left-0 right-0 z-50 pp-glass border-b border-slate-200/50">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <Wordmark />
@@ -216,7 +239,7 @@ function ConsumerShell({ user, role, currentPageName, children }) {
             {navigation.map((item) => (
               <Link key={item.page} to={createPageUrl(item.page)}
                 className={cn('rounded-lg px-4 py-2 text-sm font-medium transition-all',
-                  currentPageName === item.page ? 'bg-violet-100 text-violet-700' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700')}>
+                  currentPageName === item.page ? 'bg-violet-100 text-violet-700' : 'text-slate-600 dark:text-slate-300 hover:bg-violet-50 hover:text-violet-700')}>
                 {item.name}
               </Link>
             ))}
@@ -258,19 +281,19 @@ function ConsumerShell({ user, role, currentPageName, children }) {
                 return (
                   <Link key={item.page} to={createPageUrl(item.page)} onClick={() => setIsMenuOpen(false)}
                     className={cn('flex items-center gap-3 rounded-xl px-4 py-3 transition-all',
-                      currentPageName === item.page ? 'bg-violet-100 text-violet-700' : 'text-slate-600 hover:bg-slate-50')}>
+                      currentPageName === item.page ? 'bg-violet-100 text-violet-700' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900')}>
                     <Icon className="h-5 w-5" /><span className="font-medium">{item.name}</span><ChevronRight className="ml-auto h-4 w-4 opacity-40" />
                   </Link>
                 );
               })}
-              {(canPOS || canAdmin) && <div className="my-2 border-t border-slate-100" />}
+              {(canPOS || canAdmin) && <div className="my-2 border-t border-slate-100 dark:border-slate-800" />}
               {canAdmin && (
-                <Link to={createPageUrl(role === ROLES.OWNER ? 'PlatformDashboard' : 'AdminDashboard')} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-50">
+                <Link to={createPageUrl(role === ROLES.OWNER ? 'PlatformDashboard' : 'AdminDashboard')} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900">
                   <LayoutDashboard className="h-5 w-5" /><span className="font-medium">{role === ROLES.OWNER ? 'Consola plataforma' : 'Administrar negocio'}</span>
                 </Link>
               )}
               {canPOS && (
-                <Link to={createPageUrl('MerchantPOS')} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 hover:bg-slate-50">
+                <Link to={createPageUrl('MerchantPOS')} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900">
                   <Store className="h-5 w-5" /><span className="font-medium">Punto de venta</span>
                 </Link>
               )}
@@ -286,8 +309,8 @@ function ConsumerShell({ user, role, currentPageName, children }) {
 
       <main className="min-h-screen pt-16">{children}</main>
 
-      <footer className="border-t border-slate-100 bg-white py-4 text-center">
-        <p className="text-xs text-slate-400">© 2026 ACACIA Consultoría en Informática y Cómputo · Puntos+ · Todos los derechos reservados.</p>
+      <footer className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 py-4 text-center">
+        <p className="text-xs text-slate-400 dark:text-slate-500">© 2026 ACACIA Consultoría en Informática y Cómputo · Puntos+ · Todos los derechos reservados.</p>
       </footer>
 
       {user && (
@@ -297,7 +320,7 @@ function ConsumerShell({ user, role, currentPageName, children }) {
               const Icon = item.icon;
               const isActive = currentPageName === item.page;
               return (
-                <Link key={item.page} to={createPageUrl(item.page)} className={cn('flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 transition-all', isActive ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600')}>
+                <Link key={item.page} to={createPageUrl(item.page)} className={cn('flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 transition-all', isActive ? 'text-violet-600' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:dark:text-slate-300')}>
                   <Icon className={cn('h-5 w-5', isActive && 'scale-110')} />
                   <span className="text-[10px] font-medium">{item.name}</span>
                 </Link>
