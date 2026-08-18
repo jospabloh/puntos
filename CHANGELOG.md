@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.14] — 2026-08-18 — In-app version/changelog display
+
+Portfolio-standard audit flagged module 6 ("changelog & versioning") as
+missing, since there was no `APP_VERSION`/in-app changelog surface — only
+this file. That part of the finding was accurate; a second, separate claim
+in the same audit round ("no changelog system exists at all") was not — this
+file already existed and was already being kept up to date every release.
+
+- Added `src/lib/appConfig.js` (`APP_VERSION`, `RELEASE_DATE`, a condensed
+  `CHANGELOG` array mirroring this file's own entry titles) and surfaced it
+  in the footer of `src/pages/Profile.jsx`, matching the pattern already used
+  in stockflow/cateqhub.
+- The same audit also flagged module 5 ("health & latency") as fully
+  missing. That claim was wrong: `base44/functions/acaciaControl/entry.ts`'s
+  `case 'ping'` has existed all along and Mission Control's `syncHealth.js`
+  already polls it — no code change was needed, just correcting the record.
+
 ## [2.0.13] — 2026-08-17 — Same-tenant RLS over-permission, notification-preference gap, wallet/email crash guards
 
 Scheduled security/quality/tenant-isolation/permissions/UX audit. No cross-tenant
