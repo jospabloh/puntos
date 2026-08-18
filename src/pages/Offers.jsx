@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isStaff } from '@/lib/rbac';
+import { useTenant } from '@/lib/useTenant';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -63,6 +64,7 @@ export default function Offers() {
   });
 
   const account = accounts?.[0];
+  const { business, license } = useTenant(user);
 
   // Fetch all offers
   // Client-side tenant scope (defense in depth): the RLS `read` rule's
@@ -180,14 +182,14 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
   }, [recommendations, offers]);
 
   const handleRedeem = (offer) => {
-    if (account?.status === 'suspended') return;
+    if (license.isSuspended) return;
     setSelectedOffer(offer);
     setRedeemStatus(null);
     setRedeemError('');
   };
 
   const confirmRedeem = () => {
-    if (selectedOffer && account?.status !== 'suspended') {
+    if (selectedOffer && !license.isSuspended) {
       redeemMutation.mutate(selectedOffer);
     }
   };
@@ -201,8 +203,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
   }
 
   const isMerchant = isStaff(user);
-  const isSuspended = isMerchant && account?.status === 'suspended';
-  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
+  const isSuspended = isMerchant && license.isSuspended;
+  const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   const categories = [
     { value: 'all', label: 'Todas' },
@@ -218,7 +220,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={account?.trial_end_date} />
+          <TrialBanner trialEndDate={business?.trial_end_at} />
         </div>
       )}
       

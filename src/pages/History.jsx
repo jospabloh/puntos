@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { isStaff } from '@/lib/rbac';
+import { useTenant } from '@/lib/useTenant';
 import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -57,6 +58,7 @@ export default function History() {
   });
 
   const account = accounts?.[0];
+  const { business, license } = useTenant(user);
 
   // Fetch all transactions
   const { data: transactions, isLoading } = useQuery({
@@ -145,15 +147,15 @@ export default function History() {
   }
 
   const isMerchant = isStaff(user);
-  const isSuspended = isMerchant && account?.status === 'suspended';
-  const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
+  const isSuspended = isMerchant && license.isSuspended;
+  const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={account?.trial_end_date} />
+          <TrialBanner trialEndDate={business?.trial_end_at} />
         </div>
       )}
       {/* Header */}

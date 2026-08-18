@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { getActiveBusinessId } from '@/lib/activeTenant';
 import { isStaff } from '@/lib/rbac';
+import { useTenant } from '@/lib/useTenant';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -232,22 +233,23 @@ export default function MerchantPOS() {
   });
   
   const merchantAccount = merchantAccounts?.[0];
-  const showTrialBanner = merchantAccount?.subscription_status === 'trial' && merchantAccount?.trial_end_date;
-  
+  const { business, license } = useTenant(user);
+  const showTrialBanner = license.isTrial && business?.trial_end_at;
+
   // Calculate days remaining
-  const daysRemaining = merchantAccount?.trial_end_date 
-    ? Math.ceil((new Date(merchantAccount.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24))
+  const daysRemaining = business?.trial_end_at
+    ? Math.ceil((new Date(business.trial_end_at) - new Date()) / (1000 * 60 * 60 * 24))
     : 30;
 
   // Show welcome dialog for trial merchants (only once - first time)
   useEffect(() => {
-    const isInTrial = merchantAccount?.subscription_status === 'trial' && merchantAccount?.trial_end_date;
+    const isInTrial = license.isTrial && business?.trial_end_at;
     const hasNotSeenWelcome = merchantAccount && !merchantAccount.welcome_message_shown;
-    
+
     if (isInTrial && hasNotSeenWelcome) {
       setShowWelcome(true);
     }
-  }, [merchantAccount]);
+  }, [merchantAccount, license.isTrial, business?.trial_end_at]);
 
   const handleCloseWelcome = async () => {
     setShowWelcome(false);
@@ -280,7 +282,7 @@ export default function MerchantPOS() {
 
       {showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={merchantAccount?.trial_end_date} />
+          <TrialBanner trialEndDate={business?.trial_end_at} />
         </div>
       )}
       {/* Header */}

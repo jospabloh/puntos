@@ -37,7 +37,6 @@ value was ever shared, logged, or exposed.
 | `APPLE_APNS_KEY_P8` / `APPLE_APNS_KEY_ID` | `updateWalletPasses` | APNs auth key (.p8) + key id. |
 | `APP_OWNER_EMAIL` | `getAppContext` | Platform-owner address that gates self-promotion to the `admin` (owner) tier. Not a credential, but **access-control sensitive** — keep server-side only, never `VITE_`-prefixed. |
 | `APP_SUPPORT_EMAIL` | `getAppContext` | Support address surfaced to users. Low sensitivity; kept server-side for consistency. |
-| `ADMIN_NOTIFICATION_EMAIL` | `checkTrialExpiration` | Recipient address (not a credential, but kept server-side). |
 
 > Removed in this change: the unused `VITE_ADMIN_NOTIFICATION_EMAIL` (the client
 > no longer sends admin notifications), eliminating a client-bundled value.

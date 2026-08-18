@@ -5,6 +5,69 @@ front-end). One platform owner (ACACIA) licenses many **tenants** (the `Business
 entity); each tenant runs its own loyalty program with stores, staff, campaigns,
 offers, and customers. See `docs/ARCHITECTURE.md` and `docs/PERMISSIONS.md`.
 
+## License lifecycle is owned by Mission Control (fixed 2026-08-18)
+
+Puntos+ had a **native, live parallel lifecycle cron** — `checkTrialExpiration`
+— duplicating the unified portfolio lifecycle that
+`jospabloh/acacia-mission-control` (`api/cron/license-lifecycle.js`) already
+runs against `Business.billing_status`. Unlike the equivalent crons already
+removed from StockFlow/FlowFin (see their CLAUDE.md), this one wasn't scoped
+to the tenant (`Business`) at all — it ran against a **second, disconnected
+trial clock on the merchant's own `LoyaltyAccount`** (`subscription_status`,
+`trial_end_date`), set by `createBusiness/entry.ts` in parallel with (but
+never read by) `Business.billing_status`/`trial_end_at`. The two clocks were
+computed from the same `trialEndIso` at signup, so they started in sync — but
+only `Business.billing_status` was ever advanced by Mission Control, so a
+tenant Mission Control correctly kept `active` (e.g. after the owner paid)
+would still have their merchant's `LoyaltyAccount` age past its own trial
+window, get flagged `inactive`/`suspended` by `checkTrialExpiration`, and
+start showing `SuspendedAccountModal`/`TrialBanner` in the app — wrong, and
+contradicting what the license panel said.
+
+**Fix:**
+- Removed `base44/functions/checkTrialExpiration` entirely.
+- `createBusiness/entry.ts` no longer writes `subscription_status` /
+  `subscription_plan` / `trial_start_date` / `trial_end_date` on the owner's
+  `LoyaltyAccount` — `Business.billing_status`/`trial_end_at` (already written
+  in the same function) is the only license authority now.
+- All merchant-facing trial/suspended UI (`Home.jsx`, `Wallet.jsx`,
+  `Offers.jsx`, `History.jsx`, `Chat.jsx`, `Profile.jsx`, `MerchantPOS.jsx`)
+  now derives `isSuspended`/`showTrialBanner` from `useTenant(user)`'s
+  `license.isSuspended`/`license.isTrial` + `business.trial_end_at` — the same
+  `Business.billing_status`-derived posture `PlatformDashboard.jsx` and
+  `PlatformLicenses.jsx` already used — instead of the per-account fields.
+  `TrialBanner`/`SuspendedAccountModal` themselves didn't need to change; only
+  what feeds them did.
+- The `LoyaltyAccount` schema still has the `subscription_status`/`trial_*`
+  fields (not dropped — a schema removal on a live entity is a separate,
+  riskier change and nothing depends on cleaning them up immediately); nothing
+  writes or reads them for lifecycle purposes anymore. `createLoyaltyAccount`
+  still stamps `subscription_status: 'active'` on new *customer* (non-merchant)
+  accounts — harmless, purely informational, not read by anything.
+- `ADMIN_NOTIFICATION_EMAIL` was only ever consumed by the removed cron —
+  dropped from `docs/SECURITY-secrets.md`.
+
+Do not re-add a Puntos+-native cron for trial/license status transitions or
+lifecycle reminder emails, and do not gate any merchant-facing UI on
+`LoyaltyAccount.subscription_status`/`trial_end_date` again — that logic
+belongs on `Business.billing_status`, read via `useTenant`/`deriveLicense`
+(`src/lib/useTenant.js`), full stop.
+
+**Still needed, cannot be done from this environment:** committing this
+removal does **not** un-schedule the cron if the Base44 dashboard has a
+scheduled-automation entry pointing at `checkTrialExpiration` — check the
+scheduler panel and remove it there too, or Base44 will call an endpoint that
+no longer exists (harmless 404s, but worth cleaning up). Also verify
+`npx base44 functions deploy` actually ran — the repo change alone doesn't
+touch the deployed backend.
+
+**Verified:** `npm run lint`, `npm run build`, `npm run validate:rls` all pass.
+**Not verified:** an actual browser session as a merchant mid-trial or
+suspended (not achievable in this environment) — the change is a like-for-like
+swap of the data source feeding the exact same banner/modal components, so
+the UI behavior itself (what shows, when) is unchanged; only which field
+authorizes it changed.
+
 ## Base44 schema-as-code
 
 Data models live as schema-as-code in `base44/entities/*.jsonc`, but the running

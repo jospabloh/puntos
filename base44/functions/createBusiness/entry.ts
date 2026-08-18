@@ -132,10 +132,13 @@ Deno.serve(async (req) => {
         qr_token_expires: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
         last_activity: nowIso,
         onboarding_completed: true,
-        subscription_status: 'trial',
-        subscription_plan: 'trial',
-        trial_start_date: nowIso,
-        trial_end_date: trialEndIso,
+        // NOTE: no subscription_status/trial_end_date here — this account's
+        // trial/billing state is Business.billing_status/trial_end_at (set
+        // above), the only license authority (owned by Mission Control's
+        // unified lifecycle cron). Writing a second trial clock here used to
+        // feed a parallel, disconnected state machine — see
+        // base44/functions/checkTrialExpiration (removed) and CLAUDE.md
+        // "License lifecycle" section.
       });
     }
 
