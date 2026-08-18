@@ -87,7 +87,7 @@ export default function AiIntakeChat({ kind, subject, description, onComplete, o
     <div className="flex flex-col" style={{ maxHeight: '70vh' }}>
       <div className="mb-3 flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2">
         <Sparkles className="h-4 w-4 shrink-0 text-violet-600" />
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Un asistente experto te hará unas preguntas para que el equipo pueda resolverlo más rápido.
           Máximo {MAX_QUESTIONS} preguntas.
         </p>
@@ -100,13 +100,13 @@ export default function AiIntakeChat({ kind, subject, description, onComplete, o
             <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
               m.role === 'user'
                 ? 'rounded-br-sm bg-violet-600 text-white'
-                : 'rounded-bl-sm bg-slate-100 text-slate-800'}`}>
+                : 'rounded-bl-sm bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100'}`}>
               <p className="whitespace-pre-wrap">{m.text}</p>
               {m.role === 'ai' && i === messages.length - 1 && Array.isArray(m.suggestions) && m.suggestions.length > 0 && !brief && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {m.suggestions.map((s, j) => (
                     <button key={j} type="button" onClick={() => submitAnswer(s)} disabled={thinking}
-                      className="rounded-full border border-violet-300 bg-white px-2.5 py-1 text-xs text-slate-700 hover:bg-violet-50 disabled:opacity-50">
+                      className="rounded-full border border-violet-300 bg-white dark:bg-slate-900 px-2.5 py-1 text-xs text-slate-700 dark:text-slate-200 hover:bg-violet-50 disabled:opacity-50">
                       {s}
                     </button>
                   ))}
@@ -117,7 +117,7 @@ export default function AiIntakeChat({ kind, subject, description, onComplete, o
         ))}
         {thinking && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2 text-sm text-slate-500">
+            <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-slate-100 dark:bg-slate-800 px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" /> Analizando…
             </div>
           </div>
@@ -129,16 +129,16 @@ export default function AiIntakeChat({ kind, subject, description, onComplete, o
         <div className="mt-3 max-h-56 overflow-y-auto rounded-lg border border-emerald-300 bg-emerald-50 p-3">
           <div className="mb-1.5 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <p className="text-sm font-semibold text-slate-800">Resumen para el equipo</p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Resumen para el equipo</p>
           </div>
-          <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-slate-600">{briefToMarkdown(brief)}</pre>
+          <pre className="whitespace-pre-wrap font-sans text-xs leading-relaxed text-slate-600 dark:text-slate-300">{briefToMarkdown(brief)}</pre>
         </div>
       )}
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
       {/* Entrada / acciones */}
-      <div className="mt-3 border-t border-slate-100 pt-3">
+      <div className="mt-3 border-t border-slate-100 dark:border-slate-800 pt-3">
         {!brief ? (
           <>
             <div className="flex items-end gap-2">
@@ -155,7 +155,7 @@ export default function AiIntakeChat({ kind, subject, description, onComplete, o
               </Button>
             </div>
             <div className="mt-2 flex justify-between">
-              <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 text-slate-500">
+              <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 text-slate-500 dark:text-slate-400">
                 <ArrowLeft className="h-4 w-4" /> Volver
               </Button>
               {error && (

@@ -223,7 +223,7 @@ export default function PlatformDashboard() {
           className="lg:col-span-2"
         >
           {loadingAll ? (
-            <div className="h-64 animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-64 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -243,7 +243,7 @@ export default function PlatformDashboard() {
 
         <SectionCard title="Negocios por plan" description="Distribución de la cartera" icon={Layers}>
           {loadingAll ? (
-            <div className="h-48 animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-48 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
           ) : planData.length === 0 ? (
             <EmptyState icon={Layers} title="Sin datos" description="Aún no hay negocios para graficar." />
           ) : (
@@ -264,7 +264,7 @@ export default function PlatformDashboard() {
                 {planData.map((p) => (
                   <div key={p.name} className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: p.color }} />
-                    <span className="text-xs text-slate-600">
+                    <span className="text-xs text-slate-600 dark:text-slate-300">
                       {p.name}: <span className="tnum font-medium">{p.value}</span>
                     </span>
                   </div>
@@ -285,7 +285,7 @@ export default function PlatformDashboard() {
           {loadingAll ? (
             <div className="p-5 space-y-2">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
               ))}
             </div>
           ) : atencion.length === 0 ? (
@@ -298,15 +298,15 @@ export default function PlatformDashboard() {
                 <li key={`${a.type}-${a.id}`}>
                   <Link
                     to={createPageUrl(a.to)}
-                    className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 transition-colors"
+                    className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50 hover:dark:bg-slate-900 transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{a.title}</p>
-                      <p className="text-xs text-slate-500 truncate">{a.detail}</p>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{a.title}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{a.detail}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusPill status={a.tone} label={a.tone === 'urgent' ? 'Urgente' : 'Atención'} />
-                      <ArrowRight className="h-4 w-4 text-slate-400" />
+                      <ArrowRight className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                     </div>
                   </Link>
                 </li>
@@ -324,7 +324,7 @@ export default function PlatformDashboard() {
           {loadingEvents ? (
             <div className="p-5 space-y-2">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />
+                <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />
               ))}
             </div>
           ) : !events || events.length === 0 ? (
@@ -344,11 +344,11 @@ export default function PlatformDashboard() {
                     <Activity className="h-3.5 w-3.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-slate-800">
+                    <p className="text-sm text-slate-800 dark:text-slate-100">
                       <span className="font-medium">{EVENT_LABELS[e.event_type] || e.event_type}</span>
                       {e.business_name ? ` · ${e.business_name}` : ''}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {e.to_plan && <PlanBadge plan={e.to_plan} className="mr-1" />}
                       {e.amount_mxn ? `${formatMoney(e.amount_mxn)} · ` : ''}
                       {e.created_date

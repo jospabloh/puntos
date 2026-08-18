@@ -40,8 +40,8 @@ export function PageHeader({ eyebrow, title, description, icon: Icon, actions, a
           {eyebrow && (
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500/80">{eyebrow}</div>
           )}
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{title}</h1>
-          {description && <p className="mt-1 text-sm text-slate-500 max-w-2xl">{description}</p>}
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-50 leading-tight">{title}</h1>
+          {description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">{description}</p>}
         </div>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -57,13 +57,13 @@ export function StatTile({ label, value, sublabel, icon: Icon, tone = 'violet', 
     pink: 'bg-pink-100 text-pink-600',
     emerald: 'bg-emerald-100 text-emerald-600',
     sky: 'bg-sky-100 text-sky-600',
-    slate: 'bg-slate-100 text-slate-600',
+    slate: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
     rose: 'bg-rose-100 text-rose-600',
   };
   return (
     <Card className="pp-card-hover border-slate-200/70 p-5">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</span>
         {Icon && (
           <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', tones[tone] || tones.violet)}>
             <Icon className="h-4.5 w-4.5" />
@@ -72,18 +72,18 @@ export function StatTile({ label, value, sublabel, icon: Icon, tone = 'violet', 
       </div>
       <div className="mt-3 flex items-end gap-2">
         {loading ? (
-          <Loader2 className="h-6 w-6 animate-spin text-slate-300" />
+          <Loader2 className="h-6 w-6 animate-spin text-slate-300 dark:text-slate-600" />
         ) : (
-          <span className="font-display text-3xl font-bold tracking-tight text-slate-900 tnum">{value}</span>
+          <span className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 tnum">{value}</span>
         )}
         {delta && (
           <span className={cn('mb-1 rounded-full px-2 py-0.5 text-xs font-semibold',
-            delta.dir === 'up' ? 'bg-emerald-50 text-emerald-600' : delta.dir === 'down' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500')}>
+            delta.dir === 'up' ? 'bg-emerald-50 text-emerald-600' : delta.dir === 'down' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400')}>
             {delta.label}
           </span>
         )}
       </div>
-      {sublabel && <p className="mt-1 text-xs text-slate-400">{sublabel}</p>}
+      {sublabel && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{sublabel}</p>}
     </Card>
   );
 }
@@ -93,12 +93,12 @@ export function SectionCard({ title, description, actions, children, className, 
   return (
     <Card className={cn('border-slate-200/70 overflow-hidden', className)}>
       {(title || actions) && (
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 px-5 py-4">
           <div className="flex items-center gap-2.5 min-w-0">
             {Icon && <Icon className="h-4.5 w-4.5 shrink-0 text-violet-500" />}
             <div className="min-w-0">
-              {title && <h3 className="font-display text-base font-semibold text-slate-900 truncate">{title}</h3>}
-              {description && <p className="text-xs text-slate-500 truncate">{description}</p>}
+              {title && <h3 className="font-display text-base font-semibold text-slate-900 dark:text-slate-50 truncate">{title}</h3>}
+              {description && <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{description}</p>}
             </div>
           </div>
           {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
@@ -114,17 +114,17 @@ const PILL_TONES = {
   trial: 'bg-violet-50 text-violet-700 ring-violet-600/20',
   view_only: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   suspended: 'bg-rose-50 text-rose-700 ring-rose-600/20',
-  archived: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  archived: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20',
   open: 'bg-sky-50 text-sky-700 ring-sky-600/20',
   in_progress: 'bg-violet-50 text-violet-700 ring-violet-600/20',
   waiting_customer: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   resolved: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  closed: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  closed: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20',
   urgent: 'bg-rose-50 text-rose-700 ring-rose-600/20',
   high: 'bg-orange-50 text-orange-700 ring-orange-600/20',
-  normal: 'bg-slate-100 text-slate-600 ring-slate-500/20',
-  low: 'bg-slate-50 text-slate-500 ring-slate-400/20',
-  default: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  normal: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20',
+  low: 'bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 ring-slate-400/20',
+  default: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20',
 };
 
 /* A status chip keyed by a known status string (falls back gracefully). */
@@ -156,14 +156,14 @@ export function PlanBadge({ plan, className }) {
 /* Empty / zero-state with optional call to action. */
 export function EmptyState({ icon: Icon, title, description, action, className }) {
   return (
-    <div className={cn('flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white/60 px-6 py-12 text-center', className)}>
+    <div className={cn('flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 bg-white/60 px-6 py-12 text-center', className)}>
       {Icon && (
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-400">
           <Icon className="h-6 w-6" />
         </div>
       )}
-      <h3 className="font-display text-base font-semibold text-slate-800">{title}</h3>
-      {description && <p className="mt-1 max-w-sm text-sm text-slate-500">{description}</p>}
+      <h3 className="font-display text-base font-semibold text-slate-800 dark:text-slate-100">{title}</h3>
+      {description && <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -178,8 +178,8 @@ export function Toolbar({ children, className }) {
 export function Field({ label, children, className }) {
   return (
     <div className={cn('space-y-1', className)}>
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="text-sm text-slate-800">{children ?? '—'}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{label}</dt>
+      <dd className="text-sm text-slate-800 dark:text-slate-100">{children ?? '—'}</dd>
     </div>
   );
 }
@@ -187,7 +187,7 @@ export function Field({ label, children, className }) {
 /* Full-page centered spinner. */
 export function PageLoader({ label = 'Cargando…' }) {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-slate-400">
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-slate-400 dark:text-slate-500">
       <Loader2 className="h-7 w-7 animate-spin text-violet-400" />
       <span className="text-sm">{label}</span>
     </div>

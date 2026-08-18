@@ -50,7 +50,7 @@ export default function Register() {
       <Button
         type="button"
         variant="outline"
-        className="w-full h-12 flex items-center justify-center gap-3 border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium"
+        className="w-full h-12 flex items-center justify-center gap-3 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 hover:dark:bg-slate-900 text-sm font-medium"
         onClick={handleGoogle}
       >
         <GoogleIcon className="h-5 w-5" />
@@ -59,9 +59,9 @@ export default function Register() {
 
       {/* Divider */}
       <div className="my-5 flex items-center gap-3">
-        <div className="flex-1 h-px bg-slate-200" />
-        <span className="text-xs text-slate-400 font-medium">O</span>
-        <div className="flex-1 h-px bg-slate-200" />
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">O</span>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
       </div>
 
       {/* Registration form */}
@@ -74,20 +74,20 @@ export default function Register() {
 
         <div className="relative">
           <Label htmlFor="register-name" className="sr-only">Nombre completo</Label>
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
           <Input
             id="register-name"
             type="text"
             placeholder="Tu nombre completo"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-12 pl-10 border-slate-200 focus:border-violet-400"
+            className="h-12 pl-10 border-slate-200 dark:border-slate-700 focus:border-violet-400"
           />
         </div>
 
         <div className="relative">
           <Label htmlFor="register-email" className="sr-only">Correo electrónico</Label>
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
           <Input
             id="register-email"
             type="email"
@@ -95,13 +95,13 @@ export default function Register() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="h-12 pl-10 border-slate-200 focus:border-violet-400"
+            className="h-12 pl-10 border-slate-200 dark:border-slate-700 focus:border-violet-400"
           />
         </div>
 
         <div className="relative">
           <Label htmlFor="register-password" className="sr-only">Contraseña</Label>
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
           <Input
             id="register-password"
             type="password"
@@ -109,7 +109,7 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="h-12 pl-10 border-slate-200 focus:border-violet-400"
+            className="h-12 pl-10 border-slate-200 dark:border-slate-700 focus:border-violet-400"
           />
         </div>
 

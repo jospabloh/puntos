@@ -111,7 +111,7 @@ function CampaignCard({ campaign, index, onEdit, onDelete, onNotify, notifyDisab
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.3) }}
-      className="flex flex-col rounded-2xl border border-slate-200/70 bg-white p-5 pp-card-hover"
+      className="flex flex-col rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900 p-5 pp-card-hover"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
@@ -119,8 +119,8 @@ function CampaignCard({ campaign, index, onEdit, onDelete, onNotify, notifyDisab
             <Sparkles className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <h3 className="truncate font-display font-semibold text-slate-900" title={campaign.name}>{campaign.name || 'Sin nombre'}</h3>
-            {campaign.description && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">{campaign.description}</p>}
+            <h3 className="truncate font-display font-semibold text-slate-900 dark:text-slate-50" title={campaign.name}>{campaign.name || 'Sin nombre'}</h3>
+            {campaign.description && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{campaign.description}</p>}
           </div>
         </div>
         <DropdownMenu>
@@ -148,8 +148,8 @@ function CampaignCard({ campaign, index, onEdit, onDelete, onNotify, notifyDisab
         </Badge>
       </div>
 
-      <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 text-sm text-slate-500">
-        <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+      <div className="mt-4 flex items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-sm text-slate-500 dark:text-slate-400">
+        <Calendar className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
         <span className="tnum">
           {campaign.start_date ? format(new Date(campaign.start_date), 'd MMM', { locale: es }) : 'Sin fecha'}
           {' — '}
@@ -166,7 +166,7 @@ function OfferCard({ offer, index, onEdit, onDelete, onNotify, notifyDisabled })
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.3) }}
-      className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white pp-card-hover"
+      className="flex flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900 pp-card-hover"
     >
       {offer.image_url && (
         <img src={offer.image_url} alt={offer.title} className="h-32 w-full object-cover" />
@@ -180,8 +180,8 @@ function OfferCard({ offer, index, onEdit, onDelete, onNotify, notifyDisabled })
               </span>
             )}
             <div className="min-w-0">
-              <h3 className="truncate font-display font-semibold text-slate-900" title={offer.title}>{offer.title || 'Sin título'}</h3>
-              {offer.short_description && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500">{offer.short_description}</p>}
+              <h3 className="truncate font-display font-semibold text-slate-900 dark:text-slate-50" title={offer.title}>{offer.title || 'Sin título'}</h3>
+              {offer.short_description && <p className="mt-0.5 line-clamp-2 text-sm text-slate-500 dark:text-slate-400">{offer.short_description}</p>}
             </div>
           </div>
           <DropdownMenu>
@@ -198,7 +198,7 @@ function OfferCard({ offer, index, onEdit, onDelete, onNotify, notifyDisabled })
           </DropdownMenu>
         </div>
 
-        <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+        <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
           <span className="inline-flex items-center gap-1 font-semibold text-violet-600 tnum">
             <Star className="h-4 w-4 text-violet-500" />
             {(offer.points_cost || 0).toLocaleString('es-MX')}
@@ -488,7 +488,7 @@ export default function AdminCampaigns() {
       {tab === 'campaigns' && (
         loadingCampaigns ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white" />)}
+            {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900" />)}
           </div>
         ) : allCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -518,7 +518,7 @@ export default function AdminCampaigns() {
       {tab === 'offers' && (
         loadingOffers ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white" />)}
+            {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900" />)}
           </div>
         ) : allOffers.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

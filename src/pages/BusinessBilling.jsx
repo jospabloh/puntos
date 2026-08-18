@@ -174,7 +174,7 @@ export default function BusinessBilling() {
       )}
 
       {/* Hero plan card */}
-      <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-violet-600 to-fuchsia-600 p-6 text-white shadow-lg shadow-violet-500/20">
+      <div className="mb-6 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-violet-600 to-fuchsia-600 p-6 text-white shadow-lg shadow-violet-500/20">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -197,12 +197,12 @@ export default function BusinessBilling() {
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Fin de prueba">
             {business.trial_end_at ? (
-              <span>{fmtDate(business.trial_end_at)} <span className="text-xs text-slate-400">({daysLabel(business.trial_end_at)})</span></span>
+              <span>{fmtDate(business.trial_end_at)} <span className="text-xs text-slate-400 dark:text-slate-500">({daysLabel(business.trial_end_at)})</span></span>
             ) : '—'}
           </Field>
           <Field label="Vencimiento de licencia">
             {business.license_expires_at ? (
-              <span>{fmtDate(business.license_expires_at)} <span className="text-xs text-slate-400">({daysLabel(business.license_expires_at)})</span></span>
+              <span>{fmtDate(business.license_expires_at)} <span className="text-xs text-slate-400 dark:text-slate-500">({daysLabel(business.license_expires_at)})</span></span>
             ) : '—'}
           </Field>
           <Field label="Ciclo de facturación">{business.license_cycle || 'Mensual'}</Field>
@@ -220,8 +220,8 @@ export default function BusinessBilling() {
             return (
               <div key={key}>
                 <div className="mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700"><Icon className="h-4 w-4 text-violet-500" />{LIMIT_LABELS[key]}</span>
-                  <span className="text-sm text-slate-600 tnum">{used.toLocaleString('es-MX')} / {formatLimit(c.limit)}</span>
+                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200"><Icon className="h-4 w-4 text-violet-500" />{LIMIT_LABELS[key]}</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-300 tnum">{used.toLocaleString('es-MX')} / {formatLimit(c.limit)}</span>
                 </div>
                 {c.unlimited ? (
                   <div className="h-2.5 w-full rounded-full bg-emerald-100"><div className="h-2.5 rounded-full bg-emerald-400" style={{ width: '100%' }} /></div>
@@ -246,20 +246,20 @@ export default function BusinessBilling() {
             return (
               <div
                 key={key}
-                className={`flex flex-col rounded-2xl border p-5 transition ${isCurrent ? 'border-violet-400 ring-2 ring-violet-200 bg-violet-50/40' : 'border-slate-200 bg-white hover:border-violet-200'}`}
+                className={`flex flex-col rounded-2xl border p-5 transition ${isCurrent ? 'border-violet-400 ring-2 ring-violet-200 bg-violet-50/40' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-violet-200'}`}
               >
                 <div className="flex items-center justify-between">
                   <PlanBadge plan={key} />
                   {isCurrent && <span className="text-xs font-semibold text-violet-600">Actual</span>}
                   {p.popular && !isCurrent && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Popular</span>}
                 </div>
-                <h3 className="mt-3 font-display text-lg font-bold text-slate-900">{p.name}</h3>
-                <p className="mt-1 text-xs text-slate-500">{p.tagline}</p>
-                <p className="mt-3 font-display text-2xl font-bold text-slate-900 tnum">{formatMoney(p.monthly_price_mxn)}</p>
-                {p.monthly_price_mxn ? <p className="text-xs text-slate-400">/ mes</p> : null}
+                <h3 className="mt-3 font-display text-lg font-bold text-slate-900 dark:text-slate-50">{p.name}</h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{p.tagline}</p>
+                <p className="mt-3 font-display text-2xl font-bold text-slate-900 dark:text-slate-50 tnum">{formatMoney(p.monthly_price_mxn)}</p>
+                {p.monthly_price_mxn ? <p className="text-xs text-slate-400 dark:text-slate-500">/ mes</p> : null}
                 <ul className="mt-4 flex-1 space-y-1.5">
                   {Object.entries(p.features).filter(([, v]) => v).slice(0, 6).map(([f]) => (
-                    <li key={f} className="flex items-start gap-1.5 text-xs text-slate-600">
+                    <li key={f} className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300">
                       <Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />{FEATURE_LABELS[f] || f}
                     </li>
                   ))}
@@ -285,15 +285,15 @@ export default function BusinessBilling() {
         ) : events.length === 0 ? (
           <EmptyState icon={HistoryIcon} title="Sin movimientos" description="Aquí verás los cambios de tu licencia." />
         ) : (
-          <ol className="relative space-y-5 border-l border-slate-200 pl-5">
+          <ol className="relative space-y-5 border-l border-slate-200 dark:border-slate-700 pl-5">
             {events.map((ev) => (
               <li key={ev.id} className="relative">
                 <span className="absolute -left-[1.45rem] top-1 h-2.5 w-2.5 rounded-full bg-violet-400 ring-4 ring-violet-100" />
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-slate-800">{(ev.event_type || 'Evento').replace(/_/g, ' ')}</p>
-                  <span className="text-xs text-slate-400">{fmtDate(ev.effective_at || ev.created_date)}</span>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{(ev.event_type || 'Evento').replace(/_/g, ' ')}</p>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{fmtDate(ev.effective_at || ev.created_date)}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-slate-500">
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {ev.from_plan && ev.to_plan ? `Plan: ${ev.from_plan} → ${ev.to_plan}. ` : ''}
                   {ev.from_status && ev.to_status ? `Estado: ${ev.from_status} → ${ev.to_status}. ` : ''}
                   {ev.amount_mxn ? `${formatMoney(ev.amount_mxn)}. ` : ''}

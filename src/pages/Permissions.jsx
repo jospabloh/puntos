@@ -32,21 +32,21 @@ const ROLE_CARD_TONES = {
   amber: 'border-amber-200 bg-amber-50/60',
   violet: 'border-violet-200 bg-violet-50/60',
   sky: 'border-sky-200 bg-sky-50/60',
-  slate: 'border-slate-200 bg-slate-50/60',
+  slate: 'border-slate-200 dark:border-slate-700 bg-slate-50/60',
 };
 
 const ROLE_DOT_TONES = {
   amber: 'bg-amber-400',
   violet: 'bg-violet-500',
   sky: 'bg-sky-500',
-  slate: 'bg-slate-400',
+  slate: 'bg-slate-400 dark:bg-slate-500',
 };
 
 const ROLE_HEAD_TONES = {
   amber: 'text-amber-700',
   violet: 'text-violet-700',
   sky: 'text-sky-700',
-  slate: 'text-slate-600',
+  slate: 'text-slate-600 dark:text-slate-300',
 };
 
 /* Human-readable labels for the action half of a '<module>:<action>' key. */
@@ -194,11 +194,11 @@ export default function Permissions() {
           >
             <div className="flex items-center gap-2">
               <span className={`h-2.5 w-2.5 rounded-full ${ROLE_DOT_TONES[accent]}`} />
-              <span className="font-display text-sm font-semibold text-slate-900">
+              <span className="font-display text-sm font-semibold text-slate-900 dark:text-slate-50">
                 {ROLE_LABELS[key]}
               </span>
             </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+            <p className="mt-1.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
               {ROLE_DESCRIPTIONS[key]}
             </p>
           </div>
@@ -217,8 +217,8 @@ export default function Permissions() {
         </div>
       )}
       {!canEdit && role !== ROLES.OWNER && (
-        <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-slate-400" />
+        <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4 text-sm text-slate-600 dark:text-slate-300">
+          <Info className="mt-0.5 h-4.5 w-4.5 shrink-0 text-slate-400 dark:text-slate-500" />
           <p>
             Esta es una vista de solo lectura de las capacidades por rol. La edición de
             permisos está disponible para el administrador del negocio.
@@ -239,8 +239,8 @@ export default function Permissions() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[640px] border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100">
-                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <tr className="border-b border-slate-100 dark:border-slate-800">
+                      <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                         Capacidad
                       </th>
                       {ROLE_COLUMNS.map(({ key, accent }) => (
@@ -259,13 +259,13 @@ export default function Permissions() {
                       return (
                         <tr
                           key={permissionKey}
-                          className="border-b border-slate-50 last:border-0 hover:bg-slate-50/60"
+                          className="border-b border-slate-50 dark:border-slate-900 last:border-0 hover:bg-slate-50/60"
                         >
                           <td className="px-5 py-3">
-                            <div className="font-medium text-slate-800">
+                            <div className="font-medium text-slate-800 dark:text-slate-100">
                               {actionLabel(action)}
                             </div>
-                            <div className="font-mono text-[11px] text-slate-400">
+                            <div className="font-mono text-[11px] text-slate-400 dark:text-slate-500">
                               {permissionKey}
                             </div>
                           </td>
@@ -293,7 +293,7 @@ export default function Permissions() {
                                 ) : allowed ? (
                                   <Check className="mx-auto h-4 w-4 text-emerald-500" />
                                 ) : (
-                                  <Minus className="mx-auto h-4 w-4 text-slate-300" />
+                                  <Minus className="mx-auto h-4 w-4 text-slate-300 dark:text-slate-600" />
                                 )}
                               </td>
                             );

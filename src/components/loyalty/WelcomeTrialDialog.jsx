@@ -35,7 +35,7 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="relative bg-gradient-to-br from-white to-violet-50 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
+          className="relative bg-gradient-to-br from-white to-violet-50 dark:from-slate-900 dark:to-violet-950/40 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
         >
           {/* Background decoration */}
           <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-violet-300/20 blur-3xl" />
@@ -44,9 +44,9 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-white/80 flex items-center justify-center hover:bg-white transition-colors"
+            className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-white/80 flex items-center justify-center hover:bg-white hover:dark:bg-slate-900 transition-colors"
           >
-            <X className="h-4 w-4 text-slate-600" />
+            <X className="h-4 w-4 text-slate-600 dark:text-slate-300" />
           </button>
 
           {/* Content */}
@@ -57,12 +57,12 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-2">
               ¡Bienvenido{userName ? `, ${userName}` : ''}! 🎉
             </h2>
 
             {/* Description */}
-            <p className="text-slate-600 mb-6">
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
               {isMerchant ? (
                 <>
                   Tu comercio está en <span className="font-bold text-orange-600">modo DEMO/TRIAL</span>.
@@ -81,8 +81,8 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                 {/* Store Code */}
                 <div className="bg-gradient-to-br from-violet-50 to-pink-50 rounded-2xl p-5 mb-6 border-2 border-violet-200">
                   <p className="text-sm font-medium text-violet-700 mb-2">Tu código de comercio:</p>
-                  <div className="flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm">
-                    <code className="flex-1 text-2xl font-bold text-slate-900 tracking-wider">
+                  <div className="flex items-center gap-3 bg-white dark:bg-slate-900 rounded-xl p-4 shadow-sm">
+                    <code className="flex-1 text-2xl font-bold text-slate-900 dark:text-slate-50 tracking-wider">
                       {storeCode}
                     </code>
                     <Button
@@ -104,8 +104,8 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                 </div>
 
                 {/* Setup Guide */}
-                <div className="bg-white/80 rounded-2xl p-5 mb-6 text-left border border-slate-200">
-                  <h3 className="font-bold text-slate-900 mb-4 text-center">Guía de configuración rápida</h3>
+                <div className="bg-white/80 rounded-2xl p-5 mb-6 text-left border border-slate-200 dark:border-slate-700">
+                  <h3 className="font-bold text-slate-900 dark:text-slate-50 mb-4 text-center">Guía de configuración rápida</h3>
                   
                   <div className="space-y-3">
                     <div className="flex gap-3">
@@ -113,8 +113,8 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                         <span className="text-sm font-bold text-violet-600">1</span>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 text-sm">Comparte tu código</p>
-                        <p className="text-xs text-slate-600">Pide a tus clientes que ingresen el código <code className="bg-slate-100 px-1 rounded">{storeCode}</code> al registrarse</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-50 text-sm">Comparte tu código</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Pide a tus clientes que ingresen el código <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{storeCode}</code> al registrarse</p>
                       </div>
                     </div>
 
@@ -123,8 +123,8 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                         <span className="text-sm font-bold text-pink-600">2</span>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 text-sm">Usa el Punto de Venta</p>
-                        <p className="text-xs text-slate-600">Registra compras y acumula puntos a tus clientes desde el POS</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-50 text-sm">Usa el Punto de Venta</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Registra compras y acumula puntos a tus clientes desde el POS</p>
                       </div>
                     </div>
 
@@ -133,8 +133,8 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                         <span className="text-sm font-bold text-amber-600">3</span>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 text-sm">Revisa tus reportes</p>
-                        <p className="text-xs text-slate-600">Consulta estadísticas y comportamiento de tus clientes</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-50 text-sm">Revisa tus reportes</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Consulta estadísticas y comportamiento de tus clientes</p>
                       </div>
                     </div>
 
@@ -143,8 +143,8 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                         <span className="text-sm font-bold text-emerald-600">4</span>
                       </div>
                       <div>
-                        <p className="font-medium text-slate-900 text-sm">Activa tu suscripción</p>
-                        <p className="text-xs text-slate-600">Antes de que termine el trial para seguir usando el sistema</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-50 text-sm">Activa tu suscripción</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">Antes de que termine el trial para seguir usando el sistema</p>
                       </div>
                     </div>
                   </div>
@@ -155,29 +155,29 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                   <div className="flex items-start gap-2">
                     <Store className="h-5 w-5 text-violet-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Punto de Venta completo</p>
-                      <p className="text-xs text-slate-600">Acumula y canjea puntos fácilmente</p>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Punto de Venta completo</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">Acumula y canjea puntos fácilmente</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Users className="h-5 w-5 text-pink-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Gestión de clientes</p>
-                      <p className="text-xs text-slate-600">Base de datos de tus clientes leales</p>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Gestión de clientes</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">Base de datos de tus clientes leales</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Gift className="h-5 w-5 text-amber-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Ofertas personalizadas</p>
-                      <p className="text-xs text-slate-600">Crea promociones para premiar a tus clientes</p>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Ofertas personalizadas</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">Crea promociones para premiar a tus clientes</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <BarChart3 className="h-5 w-5 text-emerald-600 mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">Reportes en tiempo real</p>
-                      <p className="text-xs text-slate-600">Analiza el desempeño de tu programa</p>
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100">Reportes en tiempo real</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">Analiza el desempeño de tu programa</p>
                     </div>
                   </div>
                 </div>
@@ -190,19 +190,19 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
                   <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center mt-0.5">
                     <div className="h-2 w-2 rounded-full bg-green-500" />
                   </div>
-                  <p className="text-sm text-slate-700">Acumula y canjea puntos</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-200">Acumula y canjea puntos</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center mt-0.5">
                     <div className="h-2 w-2 rounded-full bg-green-500" />
                   </div>
-                  <p className="text-sm text-slate-700">Acceso a todas las ofertas</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-200">Acceso a todas las ofertas</p>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center mt-0.5">
                     <div className="h-2 w-2 rounded-full bg-green-500" />
                   </div>
-                  <p className="text-sm text-slate-700">Soporte completo del programa</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-200">Soporte completo del programa</p>
                 </div>
               </div>
             )}
@@ -215,7 +215,7 @@ export default function WelcomeTrialDialog({ isOpen, onClose, userName, daysRema
               {isMerchant ? '¡Comenzar a usar Puntos+!' : '¡Comenzar a explorar!'}
             </Button>
 
-            <p className="text-xs text-slate-500 mt-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-4">
               {isMerchant 
                 ? 'Verás un banner recordatorio durante el período de trial'
                 : 'Recibirás información sobre planes cuando termine tu prueba'

@@ -79,8 +79,8 @@ const ROLE_TONE = {
   admin: 'bg-sky-50 text-sky-700 ring-sky-600/20',
   business_admin: 'bg-violet-50 text-violet-700 ring-violet-600/20',
   merchant: 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  customer: 'bg-slate-100 text-slate-600 ring-slate-500/20',
-  user: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  customer: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20',
+  user: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-slate-500/20',
 };
 
 const BANNER_TONES = {
@@ -269,7 +269,7 @@ export default function BusinessUsers() {
         <SectionCard title="Uso de asientos" description="Usuarios de equipo según tu licencia." icon={Users} className="mb-6">
           <div className="flex items-center gap-4">
             <Progress value={pct} className="h-2.5" />
-            <span className="shrink-0 text-sm font-semibold text-slate-700 tnum">{seatsUsed} / {seatLimit}</span>
+            <span className="shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-200 tnum">{seatsUsed} / {seatLimit}</span>
           </div>
           {atLimit && (
             <p className="mt-2 flex items-start gap-2 text-xs text-amber-600">
@@ -307,8 +307,8 @@ export default function BusinessUsers() {
                         <AvatarFallback className="bg-violet-100 text-xs font-semibold text-violet-700">{initials(m.full_name, m.email)}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-900">{m.full_name || '—'}{isSelf(m) && <span className="ml-1 text-xs text-slate-400">(tú)</span>}</p>
-                        <p className="truncate text-xs text-slate-500">{m.email}</p>
+                        <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-50">{m.full_name || '—'}{isSelf(m) && <span className="ml-1 text-xs text-slate-400 dark:text-slate-500">(tú)</span>}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{m.email}</p>
                       </div>
                     </div>
                   </TableCell>
@@ -317,11 +317,11 @@ export default function BusinessUsers() {
                       {ROLE_DISPLAY[m.role] || m.role}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600">{m.store_name || '—'}</TableCell>
-                  <TableCell className="text-sm text-slate-500"><span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{relTime(m.last_active_at)}</span></TableCell>
+                  <TableCell className="text-sm text-slate-600 dark:text-slate-300">{m.store_name || '—'}</TableCell>
+                  <TableCell className="text-sm text-slate-500 dark:text-slate-400"><span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />{relTime(m.last_active_at)}</span></TableCell>
                   <TableCell className="text-right">
                     {isSelf(m) || isOwnerRow(m) ? (
-                      <span className="text-xs text-slate-400">—</span>
+                      <span className="text-xs text-slate-400 dark:text-slate-500">—</span>
                     ) : (
                       <div className="flex items-center justify-end gap-2">
                         <Select
@@ -387,11 +387,11 @@ export default function BusinessUsers() {
             <TableBody>
               {invites.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="text-sm font-medium text-slate-800">{inv.email}</TableCell>
+                  <TableCell className="text-sm font-medium text-slate-800 dark:text-slate-100">{inv.email}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{inv.role === 'staff' ? 'Equipo / Cajero' : 'Administrador'}</Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-slate-600">{inv.store_name || '—'}</TableCell>
+                  <TableCell className="text-sm text-slate-600 dark:text-slate-300">{inv.store_name || '—'}</TableCell>
                   <TableCell><StatusPill status="open" label="Pendiente" /></TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => setRevokeTarget(inv)} disabled={!canWrite}>
@@ -403,8 +403,8 @@ export default function BusinessUsers() {
             </TableBody>
           </Table>
         )}
-        <div className="border-t border-slate-100 px-5 py-3">
-          <p className="flex items-start gap-2 text-xs text-slate-500">
+        <div className="border-t border-slate-100 dark:border-slate-800 px-5 py-3">
+          <p className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             El rol se aplica cuando la persona se registra e ingresa el código de invitación de tu negocio durante su alta.
           </p>

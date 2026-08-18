@@ -203,7 +203,7 @@ PREGUNTA DEL USUARIO:
   const showTrialBanner = isMerchant && license.isTrial && business?.trial_end_at;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
@@ -211,7 +211,7 @@ PREGUNTA DEL USUARIO:
         </div>
       )}
       {/* Header */}
-      <div className="bg-white border-b border-slate-100 sticky top-16 z-40">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-16 z-40">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center gap-3">
             <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
@@ -224,7 +224,7 @@ PREGUNTA DEL USUARIO:
                 <Bot className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="font-bold text-slate-900">Nexo</h1>
+                <h1 className="font-bold text-slate-900 dark:text-slate-50">Nexo</h1>
                 <p className="text-xs text-emerald-600 flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                   En línea
@@ -248,8 +248,8 @@ PREGUNTA DEL USUARIO:
               <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-500/25">
                 <Bot className="h-8 w-8 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">¡Hola! Soy Nexo 👋</h2>
-              <p className="text-slate-500 text-sm max-w-sm mx-auto">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">¡Hola! Soy Nexo 👋</h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
                 Tu asistente del programa de lealtad. Pregúntame sobre tus puntos, ofertas o cómo ganar más.
               </p>
 
@@ -265,10 +265,10 @@ PREGUNTA DEL USUARIO:
                       transition={{ delay: index * 0.1 }}
                       disabled={isLoading || isSuspended}
                       onClick={() => sendMessage(action.query)}
-                      className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200 hover:border-violet-300 hover:shadow-md transition-all text-left"
+                      className="flex items-center gap-2 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-violet-300 hover:shadow-md transition-all text-left"
                     >
                       <Icon className="h-4 w-4 text-violet-500 flex-shrink-0" />
-                      <span className="text-sm text-slate-700">{action.label}</span>
+                      <span className="text-sm text-slate-700 dark:text-slate-200">{action.label}</span>
                     </motion.button>
                   );
                 })}
@@ -304,12 +304,12 @@ PREGUNTA DEL USUARIO:
                     <div className={`rounded-2xl px-4 py-3 ${
                       message.role === 'user'
                         ? 'bg-violet-600 text-white'
-                        : 'bg-white border border-slate-200 shadow-sm'
+                        : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm'
                     }`}>
                       {message.role === 'user' ? (
                         <p className="text-sm">{message.content}</p>
                       ) : (
-                        <div className="text-sm text-slate-700 prose prose-sm prose-violet">
+                        <div className="text-sm text-slate-700 dark:text-slate-200 prose prose-sm prose-violet">
                           <ReactMarkdown>{message.content}</ReactMarkdown>
                         </div>
                       )}
@@ -330,10 +330,10 @@ PREGUNTA DEL USUARIO:
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
                     <Bot className="h-4 w-4 text-white" />
                   </div>
-                  <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
-                      <span className="text-sm text-slate-500">Escribiendo...</span>
+                      <span className="text-sm text-slate-500 dark:text-slate-400">Escribiendo...</span>
                     </div>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ PREGUNTA DEL USUARIO:
       </div>
 
       {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-24 md:pb-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 p-4 pb-24 md:pb-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex gap-2">
             <Input
@@ -355,7 +355,7 @@ PREGUNTA DEL USUARIO:
               onKeyDown={handleKeyPress}
               placeholder="Escribe tu pregunta..."
               aria-label="Escribe tu pregunta"
-              className="flex-1 bg-slate-50 border-0 h-12"
+              className="flex-1 bg-slate-50 dark:bg-slate-900 border-0 h-12"
               disabled={isLoading || isSuspended}
             />
             <Button

@@ -12,8 +12,8 @@ const categoryConfig = {
   shopping: { icon: '🛍️', label: 'Compras', color: 'bg-pink-100 text-pink-700' },
   travel: { icon: '✈️', label: 'Viajes', color: 'bg-blue-100 text-blue-700' },
   entertainment: { icon: '🎬', label: 'Entretenimiento', color: 'bg-purple-100 text-purple-700' },
-  services: { icon: '🔧', label: 'Servicios', color: 'bg-slate-100 text-slate-700' },
-  other: { icon: '🎁', label: 'Otro', color: 'bg-gray-100 text-gray-700' }
+  services: { icon: '🔧', label: 'Servicios', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
+  other: { icon: '🎁', label: 'Otro', color: 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200' }
 };
 
 export default function OfferCard({ 
@@ -35,8 +35,8 @@ export default function OfferCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className={cn(
-        "group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300",
-        "border border-slate-100 hover:border-violet-200"
+        "group relative bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300",
+        "border border-slate-100 dark:border-slate-800 hover:border-violet-200"
       )}
     >
       {/* Recommended Badge */}
@@ -79,7 +79,7 @@ export default function OfferCard({
         {/* Value Badge */}
         {offer.value_mxn && (
           <div className="absolute bottom-3 right-3">
-            <span className="bg-white/90 backdrop-blur-sm text-slate-700 px-2.5 py-1 rounded-full text-xs font-semibold">
+            <span className="bg-white/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full text-xs font-semibold">
               Valor: ${offer.value_mxn.toLocaleString()}
             </span>
           </div>
@@ -88,10 +88,10 @@ export default function OfferCard({
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="font-semibold text-slate-900 mb-1 line-clamp-1">
+        <h3 className="font-semibold text-slate-900 dark:text-slate-50 mb-1 line-clamp-1">
           {offer.title}
         </h3>
-        <p className="text-sm text-slate-500 mb-3 line-clamp-2">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">
           {offer.short_description || offer.description}
         </p>
 
@@ -112,7 +112,7 @@ export default function OfferCard({
               <p className="text-lg font-bold text-violet-600">
                 {offer.points_cost.toLocaleString()}
               </p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider">puntos</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider">puntos</p>
             </div>
           </div>
 
@@ -124,7 +124,7 @@ export default function OfferCard({
               </p>
             )}
             {offer.end_date && (
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
                 Hasta {format(new Date(offer.end_date), "d MMM", { locale: es })}
               </p>
             )}
@@ -138,10 +138,10 @@ export default function OfferCard({
           className={cn(
             "w-full h-11 rounded-xl font-medium transition-all",
             isSoldOut 
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+              ? "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
               : canRedeem
                 ? "bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white shadow-lg shadow-violet-500/25"
-                : "bg-slate-100 text-slate-500"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
           )}
         >
           {isSoldOut ? (

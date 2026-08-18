@@ -60,7 +60,7 @@ function StoreCard({ store, index, onEdit, onDelete, onCopyCode }) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.3) }}
-      className="rounded-2xl border border-slate-200/70 bg-white p-5 pp-card-hover"
+      className="rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900 p-5 pp-card-hover"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -68,10 +68,10 @@ function StoreCard({ store, index, onEdit, onDelete, onCopyCode }) {
             <Store className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <h3 className="truncate font-display font-semibold text-slate-900" title={store.name}>{store.name || 'Sin nombre'}</h3>
+            <h3 className="truncate font-display font-semibold text-slate-900 dark:text-slate-50" title={store.name}>{store.name || 'Sin nombre'}</h3>
             <button
               onClick={() => onCopyCode(store.code)}
-              className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-slate-600 transition-colors hover:bg-violet-100 hover:text-violet-700"
+              className="mt-0.5 inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-600 dark:text-slate-300 transition-colors hover:bg-violet-100 hover:text-violet-700"
               title="Copiar código"
             >
               {store.code || '—'} <Copy className="h-3 w-3" />
@@ -91,18 +91,18 @@ function StoreCard({ store, index, onEdit, onDelete, onCopyCode }) {
         </DropdownMenu>
       </div>
 
-      <div className="mt-4 space-y-1.5 text-sm text-slate-600">
+      <div className="mt-4 space-y-1.5 text-sm text-slate-600 dark:text-slate-300">
         {(store.address || store.city) && (
-          <div className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{[store.address, store.city].filter(Boolean).join(', ')}</span></div>
+          <div className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" /><span className="truncate">{[store.address, store.city].filter(Boolean).join(', ')}</span></div>
         )}
         {store.phone && (
-          <div className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-slate-400" />{store.phone}</div>
+          <div className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />{store.phone}</div>
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
         <StatusPill status={store.status === 'active' ? 'active' : store.status === 'suspended' ? 'suspended' : 'closed'} label={STATUS_LABEL[store.status] || store.status} />
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 tnum">
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-300 tnum">
           <Coins className="h-4 w-4 text-amber-500" />{store.points_rate || 0} pt / $10
         </span>
       </div>
@@ -221,14 +221,14 @@ export default function AdminStores() {
 
       <Toolbar>
         <div className="relative w-full">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input placeholder="Buscar por nombre, código o ciudad…" aria-label="Buscar tiendas" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="border-slate-200 bg-white pl-10" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+          <Input placeholder="Buscar por nombre, código o ciudad…" aria-label="Buscar tiendas" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10" />
         </div>
       </Toolbar>
 
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900" />)}
         </div>
       ) : filteredStores.length > 0 ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -257,8 +257,8 @@ export default function AdminStores() {
               </div>
               <div>
                 <Label>Código {editingStore ? '' : '(automático)'}</Label>
-                <Input value={editingStore ? formData.code : 'Se genera al crear'} readOnly disabled className="font-mono text-slate-500" />
-                <p className="mt-1 text-xs text-slate-400">{editingStore ? 'El código no se puede cambiar.' : 'Se asigna un código único.'}</p>
+                <Input value={editingStore ? formData.code : 'Se genera al crear'} readOnly disabled className="font-mono text-slate-500 dark:text-slate-400" />
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{editingStore ? 'El código no se puede cambiar.' : 'Se asigna un código único.'}</p>
               </div>
             </div>
             <div>

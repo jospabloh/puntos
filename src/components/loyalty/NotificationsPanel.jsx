@@ -21,7 +21,7 @@ export default function NotificationsPanel({ isOpen, onClose, notifications }) {
       case 'earn': return 'text-green-600 bg-green-100';
       case 'burn': return 'text-pink-600 bg-pink-100';
       case 'campaign': return 'text-violet-600 bg-violet-100';
-      default: return 'text-slate-600 bg-slate-100';
+      default: return 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800';
     }
   };
 
@@ -39,12 +39,12 @@ export default function NotificationsPanel({ isOpen, onClose, notifications }) {
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl"
+          className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-900 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Notificaciones</h2>
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Notificaciones</h2>
             <Button
               variant="ghost"
               size="icon"
@@ -70,7 +70,7 @@ export default function NotificationsPanel({ isOpen, onClose, notifications }) {
                       transition={{ delay: index * 0.05 }}
                       className={cn(
                         "p-4 rounded-2xl border transition-all hover:shadow-md",
-                        notif.read ? 'bg-slate-50 border-slate-200' : 'bg-white border-violet-200'
+                        notif.read ? 'bg-slate-50 border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-900 border-violet-200'
                       )}
                     >
                       <div className="flex gap-3">
@@ -78,13 +78,13 @@ export default function NotificationsPanel({ isOpen, onClose, notifications }) {
                           <Icon className="h-5 w-5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-900 mb-1">
+                          <p className="font-semibold text-slate-900 dark:text-slate-50 mb-1">
                             {notif.title}
                           </p>
-                          <p className="text-sm text-slate-600 mb-2">
+                          <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">
                             {notif.message}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
                             <Clock className="h-3 w-3" />
                             {formatTimeAgo(notif.created_date)}
                           </div>
@@ -96,11 +96,11 @@ export default function NotificationsPanel({ isOpen, onClose, notifications }) {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-96 px-4">
-                <div className="h-20 w-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-                  <CheckCircle className="h-10 w-10 text-slate-300" />
+                <div className="h-20 w-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+                  <CheckCircle className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                 </div>
-                <p className="text-slate-500 font-medium">No hay notificaciones</p>
-                <p className="text-slate-400 text-sm text-center mt-1">
+                <p className="text-slate-500 dark:text-slate-400 font-medium">No hay notificaciones</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm text-center mt-1">
                   Te avisaremos cuando haya novedades
                 </p>
               </div>

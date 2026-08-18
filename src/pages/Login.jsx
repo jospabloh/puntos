@@ -70,7 +70,7 @@ export default function Login() {
     >
       {/* One-tap returning user card */}
       {remembered && (
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-4">
           <div className="flex items-center gap-3 mb-3">
             {remembered.avatar ? (
               <img src={remembered.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
@@ -80,8 +80,8 @@ export default function Login() {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              {remembered.name && <p className="text-sm font-medium text-slate-900 truncate">{remembered.name}</p>}
-              <p className="text-xs text-slate-500 truncate">{remembered.email}</p>
+              {remembered.name && <p className="text-sm font-medium text-slate-900 dark:text-slate-50 truncate">{remembered.name}</p>}
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{remembered.email}</p>
             </div>
             <GoogleIcon className="h-4 w-4" />
           </div>
@@ -93,7 +93,7 @@ export default function Login() {
           </Button>
           <button
             onClick={handleUseAnother}
-            className="mt-2 w-full text-xs text-slate-500 hover:text-slate-700 text-center"
+            className="mt-2 w-full text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 hover:dark:text-slate-200 text-center"
           >
             Usar otra cuenta
           </button>
@@ -104,7 +104,7 @@ export default function Login() {
       <Button
         type="button"
         variant="outline"
-        className="w-full h-12 flex items-center justify-center gap-3 border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium"
+        className="w-full h-12 flex items-center justify-center gap-3 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 hover:dark:bg-slate-900 text-sm font-medium"
         onClick={handleGoogle}
       >
         <GoogleIcon className="h-5 w-5" />
@@ -113,9 +113,9 @@ export default function Login() {
 
       {/* Divider */}
       <div className="my-5 flex items-center gap-3">
-        <div className="flex-1 h-px bg-slate-200" />
-        <span className="text-xs text-slate-400 font-medium">O</span>
-        <div className="flex-1 h-px bg-slate-200" />
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+        <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">O</span>
+        <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
       </div>
 
       {/* Email / password form */}
@@ -128,7 +128,7 @@ export default function Login() {
 
         <div className="relative">
           <Label htmlFor="login-email" className="sr-only">Correo electrónico</Label>
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
           <Input
             id="login-email"
             type="email"
@@ -136,19 +136,19 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="h-12 pl-10 border-slate-200 focus:border-violet-400"
+            className="h-12 pl-10 border-slate-200 dark:border-slate-700 focus:border-violet-400"
           />
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <Label htmlFor="login-password" className="text-sm text-slate-600 font-medium">Contraseña</Label>
+            <Label htmlFor="login-password" className="text-sm text-slate-600 dark:text-slate-300 font-medium">Contraseña</Label>
             <Link to="/ForgotPassword" className="text-xs text-violet-600 hover:text-violet-700 font-medium">
               ¿Olvidaste tu contraseña?
             </Link>
           </div>
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <Input
               id="login-password"
               type="password"
@@ -156,7 +156,7 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-12 pl-10 border-slate-200 focus:border-violet-400"
+              className="h-12 pl-10 border-slate-200 dark:border-slate-700 focus:border-violet-400"
             />
           </div>
         </div>

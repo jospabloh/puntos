@@ -11,6 +11,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Puntos+ · Lealtad para tu negocio</title>
+    <script>
+      // Applies the dark class before React mounts to avoid a light-mode
+      // flash on load — mirrors the resolution logic in lib/ThemeContext.jsx
+      // (stored preference, else prefers-color-scheme). Keep both in sync.
+      (function () {
+        try {
+          var stored = localStorage.getItem('pp-theme');
+          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.classList.add('dark');
+        } catch (e) { /* localStorage/matchMedia unavailable — default to light */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

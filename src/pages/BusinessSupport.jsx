@@ -283,13 +283,13 @@ export default function BusinessSupport() {
                 const mine = m.author_role === 'tenant';
                 return (
                   <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${mine ? 'bg-violet-600 text-white' : 'border border-slate-200 bg-white text-slate-800'}`}>
-                      <div className={`mb-0.5 flex items-center gap-1.5 text-[11px] font-medium ${mine ? 'text-white/80' : 'text-slate-500'}`}>
+                    <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${mine ? 'bg-violet-600 text-white' : 'border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100'}`}>
+                      <div className={`mb-0.5 flex items-center gap-1.5 text-[11px] font-medium ${mine ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
                         {!mine && <Headset className="h-3 w-3" />}
                         {mine ? (m.author_name || 'Tú') : 'Soporte Puntos+'}
                       </div>
                       <p className="whitespace-pre-wrap leading-relaxed">{m.body}</p>
-                      <div className={`mt-1 text-[10px] ${mine ? 'text-white/60' : 'text-slate-400'}`}>{fmtDateTime(m.created_date)}</div>
+                      <div className={`mt-1 text-[10px] ${mine ? 'text-white/60' : 'text-slate-400 dark:text-slate-500'}`}>{fmtDateTime(m.created_date)}</div>
                     </div>
                   </div>
                 );
@@ -300,8 +300,8 @@ export default function BusinessSupport() {
 
           {/* Satisfaction rating when resolved */}
           {activeTicket.status === 'resolved' && (
-            <div className="border-t border-slate-100 bg-emerald-50/50 px-5 py-4">
-              <p className="text-sm font-medium text-slate-700">¿Qué tan satisfecho quedaste con la atención?</p>
+            <div className="border-t border-slate-100 dark:border-slate-800 bg-emerald-50/50 px-5 py-4">
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-200">¿Qué tan satisfecho quedaste con la atención?</p>
               <div className="mt-2 flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
@@ -312,7 +312,7 @@ export default function BusinessSupport() {
                     className="p-0.5 disabled:opacity-50"
                     aria-label={`${n} estrellas`}
                   >
-                    <Star className={`h-6 w-6 transition ${n <= (activeTicket.satisfaction_rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-300 hover:text-amber-300'}`} />
+                    <Star className={`h-6 w-6 transition ${n <= (activeTicket.satisfaction_rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-300'}`} />
                   </button>
                 ))}
                 {activeTicket.satisfaction_rating ? (
@@ -326,7 +326,7 @@ export default function BusinessSupport() {
 
           {/* Composer */}
           {activeTicket.status !== 'closed' && (
-            <div className="border-t border-slate-100 p-4">
+            <div className="border-t border-slate-100 dark:border-slate-800 p-4">
               <div className="flex items-end gap-2">
                 <Textarea
                   rows={2}
@@ -383,14 +383,14 @@ export default function BusinessSupport() {
                 <button
                   type="button"
                   onClick={() => setActiveId(t.id)}
-                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50 hover:dark:bg-slate-900"
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-slate-900">{t.subject}</p>
+                      <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-50">{t.subject}</p>
                       {t.unread_for_tenant && <span className="h-2 w-2 shrink-0 rounded-full bg-violet-500" title="Nuevo mensaje" />}
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-slate-500">
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
                       {CATEGORY_LABEL[t.category] || t.category} · {relTime(t.last_message_at || t.created_date)}
                     </p>
                   </div>
@@ -466,7 +466,7 @@ export default function BusinessSupport() {
                   <Textarea id="t-desc" rows={5} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Cuéntanos con detalle qué necesitas…" />
                 </div>
                 {intakeKind && (
-                  <p className="flex items-start gap-1.5 text-xs text-slate-500">
+                  <p className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" />
                     Un asistente experto te hará unas preguntas para dejar tu solicitud lista para el equipo.
                   </p>

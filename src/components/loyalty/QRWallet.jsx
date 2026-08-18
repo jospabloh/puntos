@@ -115,7 +115,7 @@ export default function QRWallet({ account, onRefreshToken }) {
       className="relative"
     >
       {/* Main QR Card */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-violet-600 to-pink-600 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -149,7 +149,7 @@ export default function QRWallet({ account, onRefreshToken }) {
                   exit={{ opacity: 0, scale: 0.8 }}
                   className="relative"
                 >
-                  <div className="p-4 bg-white rounded-2xl shadow-lg ring-1 ring-slate-100">
+                  <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-lg ring-1 ring-slate-100">
                     <img 
                       src={qrUrl} 
                       alt="QR Code" 
@@ -168,11 +168,11 @@ export default function QRWallet({ account, onRefreshToken }) {
                   key="expired"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="w-56 h-56 flex flex-col items-center justify-center bg-slate-100 rounded-2xl"
+                  className="w-56 h-56 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-2xl"
                 >
-                  <QrCode className="h-12 w-12 text-slate-300 mb-3" />
-                  <p className="text-slate-500 text-sm font-medium">QR Expirado</p>
-                  <p className="text-slate-400 text-xs">Presiona refrescar</p>
+                  <QrCode className="h-12 w-12 text-slate-300 dark:text-slate-600 mb-3" />
+                  <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">QR Expirado</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-xs">Presiona refrescar</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -182,7 +182,7 @@ export default function QRWallet({ account, onRefreshToken }) {
           {account?.qr_token && (
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-slate-500 uppercase tracking-wider">Código único</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider">Código único</p>
                 <button
                   onClick={handleCopy}
                   className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700"
@@ -200,7 +200,7 @@ export default function QRWallet({ account, onRefreshToken }) {
                   )}
                 </button>
               </div>
-              <div className="font-mono text-sm bg-slate-50 rounded-xl px-4 py-3 text-center text-slate-700 tracking-wider">
+              <div className="font-mono text-sm bg-slate-50 dark:bg-slate-900 rounded-xl px-4 py-3 text-center text-slate-700 dark:text-slate-200 tracking-wider">
                 {account.qr_token?.substring(0, 4)}-{account.qr_token?.substring(4, 8)}-{account.qr_token?.substring(8, 12)}
               </div>
             </div>
@@ -208,7 +208,7 @@ export default function QRWallet({ account, onRefreshToken }) {
 
           {/* Wallet Buttons */}
           <div className="mt-6 space-y-3">
-            <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 text-center">
+            <div className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-center">
               Agregar a tu cartera digital
             </div>
             
@@ -216,7 +216,7 @@ export default function QRWallet({ account, onRefreshToken }) {
               <Button
                 onClick={handleAddToGoogleWallet}
                 variant="outline"
-                className="h-12 rounded-xl border-2 border-slate-200 hover:border-violet-300 hover:bg-violet-50 transition-all"
+                className="h-12 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-violet-300 hover:bg-violet-50 transition-all"
               >
                 <Wallet className="h-4 w-4 mr-2 text-violet-600" />
                 <span className="text-sm font-medium">Google</span>
@@ -225,9 +225,9 @@ export default function QRWallet({ account, onRefreshToken }) {
               <Button
                 onClick={handleAddToAppleWallet}
                 variant="outline"
-                className="h-12 rounded-xl border-2 border-slate-200 hover:border-slate-400 hover:bg-slate-50 transition-all"
+                className="h-12 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-slate-400 hover:dark:border-slate-500 hover:bg-slate-50 hover:dark:bg-slate-900 transition-all"
               >
-                <Wallet className="h-4 w-4 mr-2 text-slate-700" />
+                <Wallet className="h-4 w-4 mr-2 text-slate-700 dark:text-slate-200" />
                 <span className="text-sm font-medium">Apple</span>
               </Button>
             </div>
@@ -241,7 +241,7 @@ export default function QRWallet({ account, onRefreshToken }) {
               "w-full mt-4 h-12 rounded-xl font-medium transition-all",
               isExpired || isExpiringSoon
                 ? "bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 hover:dark:bg-slate-700 text-slate-700 dark:text-slate-200"
             )}
           >
             <RefreshCw className={cn("h-4 w-4 mr-2", isRefreshing && "animate-spin")} />
@@ -249,7 +249,7 @@ export default function QRWallet({ account, onRefreshToken }) {
           </Button>
 
           {/* Security Note */}
-          <div className="mt-4 flex items-start gap-2 text-xs text-slate-500">
+          <div className="mt-4 flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Shield className="h-4 w-4 text-green-500 flex-shrink-0" />
             <p>
               Este código es único y expira por seguridad. 

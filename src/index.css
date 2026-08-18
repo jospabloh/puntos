@@ -139,12 +139,22 @@
     backdrop-filter: blur(18px) saturate(1.4);
     border: 1px solid rgba(124, 58, 237, 0.10);
   }
+  .dark .pp-glass {
+    background: rgba(15, 12, 26, 0.72);
+    border: 1px solid rgba(167, 139, 250, 0.14);
+  }
   /* The control-room shell background for back-office pages */
   .pp-shell-bg {
     background:
       radial-gradient(1100px 520px at 15% -8%, rgba(124, 58, 237, 0.10), transparent 60%),
       radial-gradient(900px 480px at 100% 0%, rgba(236, 72, 153, 0.08), transparent 55%),
       linear-gradient(180deg, #fbfaff 0%, #f6f4fc 100%);
+  }
+  .dark .pp-shell-bg {
+    background:
+      radial-gradient(1100px 520px at 15% -8%, rgba(124, 58, 237, 0.16), transparent 60%),
+      radial-gradient(900px 480px at 100% 0%, rgba(236, 72, 153, 0.12), transparent 55%),
+      linear-gradient(180deg, #0f0c1a 0%, #0b0914 100%);
   }
   /* Hairline grid texture for hero panels */
   .pp-grid-texture {
@@ -173,6 +183,10 @@
     background: rgba(255, 255, 255, 0.72);
     backdrop-filter: blur(18px) saturate(1.4);
     border: 1px solid rgba(124, 58, 237, 0.10);
+  }
+  .dark .glass-card {
+    background: rgba(15, 12, 26, 0.72);
+    border: 1px solid rgba(167, 139, 250, 0.14);
   }
 }
 

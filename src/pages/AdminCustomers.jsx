@@ -58,7 +58,7 @@ import { PageShell, PageHeader, StatTile, SectionCard, StatusPill, EmptyState, T
 
 const tierConfig = {
   bronze: { label: 'Bronce', color: 'bg-amber-100 text-amber-700' },
-  silver: { label: 'Plata', color: 'bg-slate-100 text-slate-700' },
+  silver: { label: 'Plata', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
   gold: { label: 'Oro', color: 'bg-yellow-100 text-yellow-700' },
   platinum: { label: 'Platino', color: 'bg-violet-100 text-violet-700' },
 };
@@ -75,7 +75,7 @@ function tierBadge(tier, className = '') {
 
 function CustomerRow({ account, onView, onAdjust }) {
   return (
-    <TableRow className="hover:bg-slate-50">
+    <TableRow className="hover:bg-slate-50 hover:dark:bg-slate-900">
       <TableCell>
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100">
@@ -84,8 +84,8 @@ function CustomerRow({ account, onView, onAdjust }) {
             </span>
           </div>
           <div className="min-w-0">
-            <p className="truncate font-medium text-slate-900">{account.user_name || 'Sin nombre'}</p>
-            <p className="truncate text-sm text-slate-500">{account.user_email}</p>
+            <p className="truncate font-medium text-slate-900 dark:text-slate-50">{account.user_name || 'Sin nombre'}</p>
+            <p className="truncate text-sm text-slate-500 dark:text-slate-400">{account.user_email}</p>
           </div>
         </div>
       </TableCell>
@@ -101,10 +101,10 @@ function CustomerRow({ account, onView, onAdjust }) {
       <TableCell className="text-right text-emerald-600 tnum">
         +{(account.lifetime_earned || 0).toLocaleString('es-MX')}
       </TableCell>
-      <TableCell className="text-right text-slate-600 tnum">
+      <TableCell className="text-right text-slate-600 dark:text-slate-300 tnum">
         -{(account.lifetime_redeemed || 0).toLocaleString('es-MX')}
       </TableCell>
-      <TableCell className="text-sm text-slate-500">
+      <TableCell className="text-sm text-slate-500 dark:text-slate-400">
         {account.last_activity
           ? format(new Date(account.last_activity), 'd MMM, HH:mm', { locale: es })
           : 'Nunca'}
@@ -273,17 +273,17 @@ export default function AdminCustomers() {
 
       <Toolbar>
         <div className="relative w-full sm:flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             placeholder="Buscar por nombre o email…"
             aria-label="Buscar clientes"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-slate-200 bg-white pl-10"
+            className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10"
           />
         </div>
         <Select value={tierFilter} onValueChange={setTierFilter}>
-          <SelectTrigger className="w-full sm:w-40 bg-white">
+          <SelectTrigger className="w-full sm:w-40 bg-white dark:bg-slate-900">
             <SelectValue placeholder="Nivel" />
           </SelectTrigger>
           <SelectContent>
@@ -350,7 +350,7 @@ export default function AdminCustomers() {
           {selectedCustomer && (
             <div className="space-y-6">
               {/* Profile */}
-              <div className="flex items-center gap-4 rounded-xl bg-slate-50 p-4">
+              <div className="flex items-center gap-4 rounded-xl bg-slate-50 dark:bg-slate-900 p-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violet-100">
                   <span className="text-2xl font-bold text-violet-600">
                     {selectedCustomer.user_name?.[0]?.toUpperCase() || '?'}
@@ -358,9 +358,9 @@ export default function AdminCustomers() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="truncate text-lg font-semibold">{selectedCustomer.user_name}</h3>
-                  <p className="truncate text-slate-500">{selectedCustomer.user_email}</p>
+                  <p className="truncate text-slate-500 dark:text-slate-400">{selectedCustomer.user_email}</p>
                   {selectedCustomer.phone && (
-                    <p className="text-sm text-slate-400">{selectedCustomer.phone}</p>
+                    <p className="text-sm text-slate-400 dark:text-slate-500">{selectedCustomer.phone}</p>
                   )}
                 </div>
                 {tierBadge(selectedCustomer.tier, 'text-base px-4 py-2')}
@@ -380,11 +380,11 @@ export default function AdminCustomers() {
                   </p>
                   <p className="text-sm text-emerald-600">Total ganado</p>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-4 text-center">
-                  <p className="text-2xl font-bold text-slate-600 tnum">
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-900 p-4 text-center">
+                  <p className="text-2xl font-bold text-slate-600 dark:text-slate-300 tnum">
                     -{(selectedCustomer.lifetime_redeemed || 0).toLocaleString('es-MX')}
                   </p>
-                  <p className="text-sm text-slate-600">Total canjeado</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">Total canjeado</p>
                 </div>
               </div>
 
@@ -394,31 +394,31 @@ export default function AdminCustomers() {
                 {customerTransactions?.length > 0 ? (
                   <div className="max-h-64 space-y-2 overflow-y-auto">
                     {customerTransactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+                      <div key={tx.id} className="flex items-center gap-3 rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
                         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                          tx.points > 0 ? 'bg-emerald-100' : 'bg-slate-100'
+                          tx.points > 0 ? 'bg-emerald-100' : 'bg-slate-100 dark:bg-slate-800'
                         }`}
                         >
                           {tx.points > 0 ? (
                             <TrendingUp className="h-4 w-4 text-emerald-600" />
                           ) : (
-                            <TrendingDown className="h-4 w-4 text-slate-600" />
+                            <TrendingDown className="h-4 w-4 text-slate-600 dark:text-slate-300" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{tx.description}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">
                             {format(new Date(tx.created_date), 'd MMM, HH:mm', { locale: es })}
                           </p>
                         </div>
-                        <span className={`font-bold tnum ${tx.points > 0 ? 'text-emerald-600' : 'text-slate-600'}`}>
+                        <span className={`font-bold tnum ${tx.points > 0 ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-300'}`}>
                           {tx.points > 0 ? '+' : ''}{tx.points}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="py-4 text-center text-slate-400">Sin movimientos</p>
+                  <p className="py-4 text-center text-slate-400 dark:text-slate-500">Sin movimientos</p>
                 )}
               </div>
 
@@ -451,8 +451,8 @@ export default function AdminCustomers() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-xl bg-slate-50 p-4">
-              <p className="text-sm text-slate-500">Saldo actual</p>
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-900 p-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">Saldo actual</p>
               <p className="text-2xl font-bold text-violet-600 tnum">
                 {(selectedCustomer?.current_balance || 0).toLocaleString('es-MX')} puntos
               </p>

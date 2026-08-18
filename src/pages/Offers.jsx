@@ -216,7 +216,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
   ];
 
   return (
-    <div className="min-h-screen pb-24 md:pb-8 bg-slate-50">
+    <div className="min-h-screen pb-24 md:pb-8 bg-slate-50 dark:bg-slate-900">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
         <div className="fixed top-16 left-0 right-0 z-40">
@@ -264,15 +264,15 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
       {/* Main Content */}
       <div className="max-w-2xl mx-auto px-4 -mt-8">
         {/* Search & Filters */}
-        <div className="bg-white rounded-2xl p-4 shadow-lg mb-6">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-lg mb-6">
           <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <Input
               placeholder="Buscar ofertas..."
               aria-label="Buscar ofertas"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-50 border-0"
+              className="pl-10 bg-slate-50 dark:bg-slate-900 border-0"
             />
           </div>
           
@@ -303,7 +303,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
           >
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-violet-600" />
-              <h2 className="text-lg font-bold text-slate-900">Recomendado para ti</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">Recomendado para ti</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {recommendedOffers.map((offer, index) => (
@@ -323,10 +323,10 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
 
         {/* All Offers */}
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">
             {category === 'all' ? 'Todas las ofertas' : categories.find(c => c.value === category)?.label}
           </h2>
-          <p className="text-sm text-slate-500">{filteredOffers.length} disponibles</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{filteredOffers.length} disponibles</p>
         </div>
 
         {isLoading ? (
@@ -349,9 +349,9 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
           </div>
         ) : (
           <div className="text-center py-12">
-            <Gift className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-            <p className="text-slate-500 font-medium">No hay ofertas</p>
-            <p className="text-slate-400 text-sm mt-1">
+            <Gift className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-500 dark:text-slate-400 font-medium">No hay ofertas</p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">
               {searchQuery ? 'Intenta otra búsqueda' : 'Próximamente más ofertas'}
             </p>
           </div>
@@ -370,14 +370,14 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
               >
                 <CheckCircle className="h-8 w-8 text-emerald-600" />
               </motion.div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">¡Canje exitoso!</h3>
-              <p className="text-slate-500 mb-4">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">¡Canje exitoso!</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">
                 Tu código de confirmación es:
               </p>
-              <div className="bg-slate-100 rounded-xl px-6 py-3 font-mono text-lg font-bold text-violet-600">
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-xl px-6 py-3 font-mono text-lg font-bold text-violet-600">
                 {redeemMutation.data?.confirmationCode}
               </div>
-              <p className="text-sm text-slate-400 mt-4">
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-4">
                 Muestra este código al momento de usar tu beneficio
               </p>
               <Button 
@@ -392,8 +392,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
               <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="h-8 w-8 text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Error al canjear</h3>
-              <p className="text-slate-500 mb-4">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">Error al canjear</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">
                 {redeemError || 'Hubo un problema procesando tu canje. Por favor intenta de nuevo.'}
               </p>
               <Button 
@@ -426,8 +426,8 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
                     </div>
                   )}
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900">{selectedOffer.title}</h4>
-                    <p className="text-sm text-slate-500 mt-1">{selectedOffer.short_description}</p>
+                    <h4 className="font-semibold text-slate-900 dark:text-slate-50">{selectedOffer.title}</h4>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{selectedOffer.short_description}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <Star className="h-4 w-4 text-violet-500" />
                       <span className="font-bold text-violet-600">
@@ -437,17 +437,17 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
                   </div>
                 </div>
 
-                <div className="mt-4 p-4 bg-slate-50 rounded-xl">
+                <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-500">Tu saldo actual</span>
+                    <span className="text-slate-500 dark:text-slate-400">Tu saldo actual</span>
                     <span className="font-medium">{(account?.current_balance || 0).toLocaleString()} pts</span>
                   </div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-500">Costo del canje</span>
+                    <span className="text-slate-500 dark:text-slate-400">Costo del canje</span>
                     <span className="font-medium text-red-500">-{(selectedOffer.points_cost || 0).toLocaleString()} pts</span>
                   </div>
-                  <div className="border-t border-slate-200 pt-2 mt-2 flex justify-between">
-                    <span className="font-medium text-slate-700">Saldo después</span>
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-2 mt-2 flex justify-between">
+                    <span className="font-medium text-slate-700 dark:text-slate-200">Saldo después</span>
                     <span className="font-bold text-violet-600">
                       {((account?.current_balance || 0) - (selectedOffer.points_cost || 0)).toLocaleString()} pts
                     </span>

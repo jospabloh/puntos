@@ -61,14 +61,14 @@ export default function ForgotPassword() {
           )}
 
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <Input
               type="email"
               placeholder="tu@correo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-12 pl-10 border-slate-200 focus:border-violet-400"
+              className="h-12 pl-10 border-slate-200 dark:border-slate-700 focus:border-violet-400"
             />
           </div>
 

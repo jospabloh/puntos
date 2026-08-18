@@ -13,7 +13,7 @@ export default function SuspendedAccountModal() {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center"
+        className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl max-w-md w-full p-8 text-center"
       >
         {/* Icon */}
         <div className="inline-flex h-16 w-16 rounded-full bg-red-100 items-center justify-center mb-4">
@@ -21,12 +21,12 @@ export default function SuspendedAccountModal() {
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-bold text-slate-900 mb-3">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-50 mb-3">
           Cuenta Suspendida
         </h2>
 
         {/* Description */}
-        <p className="text-slate-600 mb-6">
+        <p className="text-slate-600 dark:text-slate-300 mb-6">
           Tu período de prueba ha finalizado. Para reactivar tu cuenta y continuar disfrutando de Puntos+, por favor contacta con nosotros.
         </p>
 
@@ -40,7 +40,7 @@ export default function SuspendedAccountModal() {
         </Button>
 
         {/* Footer */}
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           © {new Date().getFullYear()} ACACIA Consultoría
         </p>
       </motion.div>

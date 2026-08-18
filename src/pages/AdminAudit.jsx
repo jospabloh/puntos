@@ -45,12 +45,12 @@ const actionConfig = {
   burn: { label: 'Canjear', color: 'bg-violet-100 text-violet-700' },
   adjust: { label: 'Ajuste', color: 'bg-blue-100 text-blue-700' },
   reverse: { label: 'Reversión', color: 'bg-orange-100 text-orange-700' },
-  create: { label: 'Crear', color: 'bg-slate-100 text-slate-700' },
-  update: { label: 'Actualizar', color: 'bg-slate-100 text-slate-700' },
+  create: { label: 'Crear', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
+  update: { label: 'Actualizar', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
   delete: { label: 'Eliminar', color: 'bg-red-100 text-red-700' },
-  login: { label: 'Login', color: 'bg-slate-100 text-slate-700' },
-  view: { label: 'Ver', color: 'bg-slate-100 text-slate-700' },
-  export: { label: 'Exportar', color: 'bg-slate-100 text-slate-700' },
+  login: { label: 'Login', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
+  view: { label: 'Ver', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
+  export: { label: 'Exportar', color: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200' },
 };
 
 const roleConfig = {
@@ -58,7 +58,7 @@ const roleConfig = {
   merchant: { label: 'Comercio', color: 'bg-purple-50 text-purple-600' },
   business_admin: { label: 'Negocio', color: 'bg-indigo-50 text-indigo-600' },
   admin: { label: 'Admin', color: 'bg-red-50 text-red-600' },
-  system: { label: 'Sistema', color: 'bg-slate-50 text-slate-600' },
+  system: { label: 'Sistema', color: 'bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300' },
 };
 
 function AuditStatus({ status }) {
@@ -86,7 +86,7 @@ function AuditStatus({ status }) {
       </span>
     );
   }
-  return <span className="text-sm text-slate-400">—</span>;
+  return <span className="text-sm text-slate-400 dark:text-slate-500">—</span>;
 }
 
 function AuditRow({ log, index }) {
@@ -95,15 +95,15 @@ function AuditRow({ log, index }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: Math.min(index * 0.02, 0.3) }}
-      className="hover:bg-slate-50"
+      className="hover:bg-slate-50 hover:dark:bg-slate-900"
     >
-      <TableCell className="font-mono text-xs text-slate-500 tnum">
+      <TableCell className="font-mono text-xs text-slate-500 dark:text-slate-400 tnum">
         {log.created_date ? format(new Date(log.created_date), 'dd/MM/yy HH:mm:ss') : '-'}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100">
-            <User className="h-3 w-3 text-slate-500" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+            <User className="h-3 w-3 text-slate-500 dark:text-slate-400" />
           </div>
           <span className="block max-w-[150px] truncate text-sm" title={log.actor_email}>
             {log.actor_email}
@@ -111,20 +111,20 @@ function AuditRow({ log, index }) {
         </div>
       </TableCell>
       <TableCell>
-        <Badge className={roleConfig[log.actor_role]?.color || 'bg-slate-100'}>
+        <Badge className={roleConfig[log.actor_role]?.color || 'bg-slate-100 dark:bg-slate-800'}>
           {roleConfig[log.actor_role]?.label || log.actor_role}
         </Badge>
       </TableCell>
       <TableCell>
-        <Badge className={actionConfig[log.action]?.color || 'bg-slate-100'}>
+        <Badge className={actionConfig[log.action]?.color || 'bg-slate-100 dark:bg-slate-800'}>
           {actionConfig[log.action]?.label || log.action}
         </Badge>
       </TableCell>
-      <TableCell className="text-sm text-slate-600">
+      <TableCell className="text-sm text-slate-600 dark:text-slate-300">
         {log.entity_type}
       </TableCell>
       <TableCell className="max-w-[200px]">
-        <span className="block truncate text-sm text-slate-600" title={log.payload_summary}>
+        <span className="block truncate text-sm text-slate-600 dark:text-slate-300" title={log.payload_summary}>
           {log.payload_summary || '-'}
         </span>
       </TableCell>
@@ -180,17 +180,17 @@ export default function AdminAudit() {
 
       <Toolbar>
         <div className="relative min-w-[200px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             placeholder="Buscar…"
             aria-label="Buscar registros de auditoría"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-slate-200 bg-white pl-10"
+            className="border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 pl-10"
           />
         </div>
         <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-32 border-slate-200 bg-white">
+          <SelectTrigger className="w-32 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
             <SelectValue placeholder="Acción" />
           </SelectTrigger>
           <SelectContent>
@@ -202,7 +202,7 @@ export default function AdminAudit() {
           </SelectContent>
         </Select>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-32 border-slate-200 bg-white">
+          <SelectTrigger className="w-32 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
             <SelectValue placeholder="Rol" />
           </SelectTrigger>
           <SelectContent>
@@ -214,7 +214,7 @@ export default function AdminAudit() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-32 border-slate-200 bg-white">
+          <SelectTrigger className="w-32 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
@@ -237,7 +237,7 @@ export default function AdminAudit() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50">
+                <TableRow className="bg-slate-50 dark:bg-slate-900">
                   <TableHead className="w-[180px]">Fecha</TableHead>
                   <TableHead>Actor</TableHead>
                   <TableHead>Rol</TableHead>
