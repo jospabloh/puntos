@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getAppRole, ROLES } from '@/lib/rbac';
+import { getAppRole, ROLES, isStaff } from '@/lib/rbac';
 import PointsCard from '../components/loyalty/PointsCard';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import OfferCard from '../components/loyalty/OfferCard';
@@ -230,7 +230,7 @@ export default function Home() {
   ];
 
   // Check if account is suspended (only for merchant accounts, not regular customers)
-  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isMerchant = isStaff(user);
   const isSuspended = isMerchant && (account?.status === 'suspended' || 
     (account?.subscription_status === 'inactive' && account?.status === 'suspended'));
 

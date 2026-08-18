@@ -27,7 +27,12 @@ Deno.serve(async (req) => {
     }
 
     const serviceAccount = JSON.parse(serviceAccountJson);
-    
+
+    // Tier label — guard against null/undefined on legacy or partially-migrated
+    // accounts, same pattern as createAppleWalletPass/passkitWebService.
+    const tierName = account.tier || 'bronze';
+    const tierLabel = tierName.charAt(0).toUpperCase() + tierName.slice(1);
+
     // Define the Loyalty Class (template)
     const classId = `${issuerId}.puntos_plus_loyalty`;
     const loyaltyClass = {
@@ -44,7 +49,7 @@ Deno.serve(async (req) => {
       accountNameLabel: 'Titular',
       accountIdLabel: 'ID de Cuenta',
       rewardsTierLabel: 'Nivel',
-      rewardsTier: account.tier.charAt(0).toUpperCase() + account.tier.slice(1),
+      rewardsTier: tierLabel,
     };
 
     // Define the Loyalty Object (user-specific instance)
@@ -61,18 +66,18 @@ Deno.serve(async (req) => {
       },
       loyaltyPoints: {
         balance: {
-          int: account.current_balance
+          int: account.current_balance || 0
         },
         label: 'Puntos disponibles'
       },
       textModulesData: [
         {
           header: 'Total ganado',
-          body: `${account.lifetime_earned.toLocaleString()} puntos`
+          body: `${(account.lifetime_earned || 0).toLocaleString()} puntos`
         },
         {
           header: 'Total canjeado',
-          body: `${account.lifetime_redeemed.toLocaleString()} puntos`
+          body: `${(account.lifetime_redeemed || 0).toLocaleString()} puntos`
         }
       ]
     };

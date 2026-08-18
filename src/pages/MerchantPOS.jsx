@@ -287,7 +287,7 @@ export default function MerchantPOS() {
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-4 py-6">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <Link to={createPageUrl('Home')}>
+            <Link to={createPageUrl('Home')} aria-label="Volver al inicio">
               <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10">
                 <ArrowLeft className="h-5 w-5" />
               </Button>

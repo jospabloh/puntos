@@ -32,7 +32,7 @@ Business  ── tenant ──┐ (license_plan, billing_status, limits, invite_
 | Data models + RLS | `base44/entities/*.jsonc` (deployed to Base44) |
 | Server-side safe ops | `base44/functions/*/entry.ts` |
 
-## Entities (16)
+## Entities (18)
 
 **New for multi-tenancy:** `Business`, `PermissionProfile`, `SupportTicket`,
 `SupportTicketMessage`, `LicenseEvent`, `Invitation`.
@@ -40,6 +40,11 @@ Business  ── tenant ──┐ (license_plan, billing_status, limits, invite_
 **Extended with `business_id` + tenant RLS:** `LoyaltyAccount`, `PointsLedger`,
 `Store`, `Campaign`, `Offer`, `Redemption`, `AuditLog`, `ChatConversation`,
 `NotificationPreference`, `User`.
+
+**Operational (not tenant-scoped by `business_id`):** `AppSession` (one row per
+login, scoped by the built-in `created_by_id`; read by ACACIA Mission Control's
+`acaciaControl` bridge), `WalletRegistration` (Apple PassKit device
+registrations, written only by `passkitWebService`, service-role only).
 
 ## Key flows
 

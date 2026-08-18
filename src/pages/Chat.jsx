@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { isStaff } from '@/lib/rbac';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -195,7 +196,7 @@ PREGUNTA DEL USUARIO:
     );
   }
 
-  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isMerchant = isStaff(user);
   const isSuspended = isMerchant && account?.status === 'suspended';
   const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 

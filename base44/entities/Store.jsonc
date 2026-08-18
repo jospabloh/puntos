@@ -126,7 +126,16 @@
           "data.merchant_id": "{{user.id}}"
         },
         {
-          "data.business_id": "{{user.data.business_id}}"
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
         }
       ]
     },

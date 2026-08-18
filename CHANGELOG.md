@@ -5,6 +5,125 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.13] — 2026-08-17 — Same-tenant RLS over-permission, notification-preference gap, wallet/email crash guards
+
+Scheduled security/quality/tenant-isolation/permissions/UX audit. No cross-tenant
+leaks found (the audit's gating check) — every finding below is **same-tenant**
+over-permission or a functional/quality bug. Inventory step found PR #43
+(v2.0.12) still open a week after CI passed with no blocking review comment;
+merged it first, then continued this pass on top of it.
+
+### Security — RLS (same-tenant over-permission, all additive/narrowing-safe)
+- **MEDIUM — `LoyaltyAccount.read`, `PointsLedger.{create,read}`, `AuditLog.create`,
+  `Redemption.{read,update}` each carried a redundant, wider `$or` branch**
+  (merchant + `business_id` only, no `store_id`/`storeId`) sitting alongside the
+  already-correct store-pinned branch. Net effect: any staff (`merchant`) account
+  could read every customer's `LoyaltyAccount` (balance, tier, phone) tenant-wide,
+  read/forge `PointsLedger`/`AuditLog` entries for stores they don't operate, and
+  read/update `Redemption`s from other stores in the same tenant — all via a
+  direct SDK call bypassing the UI, which already scopes correctly by
+  `store_id` (see `MerchantPOS.jsx`'s own `// SECURITY: Only customers from this
+  store` comment) and contradicts `rbac.js`'s declared matrix (`customers:view`
+  excludes `staff`). Verified no legitimate flow relied on the wider grant before
+  removing it. Fixed by deleting each redundant branch — the store-pinned branch
+  already covers all legitimate staff access.
+- **LOW — `Offer.read`, `Campaign.read`, `Store.read` each carried a trailing,
+  unconditional `data.business_id`-only branch that neutralized the preceding
+  `status: "active"` gate**, letting any tenant member — including plain
+  `customer` — read draft/paused/ended `Offer`s and `Campaign`s and
+  inactive/suspended `Store`s. Fixed by replacing the unconditional branch with
+  one scoped to `business_admin` (who legitimately needs to see and manage
+  drafts — confirmed `AdminCampaigns.jsx`/`AdminStores.jsx` query without a
+  status filter); customers/staff still only ever see `status: "active"` rows.
+- **MEDIUM — `NotificationPreference` had no `business_admin` read branch**, so
+  `AdminCampaigns.jsx`'s "Notificar usuarios" button (campaign/offer emails)
+  silently sent to ~0 recipients for every tenant admin — RLS narrowed the
+  client-side `filter({business_id})` call down to the admin's own row. Doubly
+  broken: `Profile.jsx`'s `NotificationPreference.create` never stamped
+  `business_id` in the first place, so even a correct RLS branch would have
+  matched nothing. Fixed both: added the `business_admin` + `data.business_id`
+  read branch (additive), and `Profile.jsx` now stamps `business_id` from the
+  signed-in user's own record at creation. Pre-existing rows created before this
+  fix won't retroactively gain a `business_id` (no destructive backfill run);
+  going forward, all new opt-ins are tenant-discoverable.
+- All 8 changed entity schemas deployed to the Base44 backend and independently
+  re-verified against `list_entity_schemas` — zero drift between repo and
+  deployed `rls`/`properties`/`required`.
+
+### Security — email / crash guards
+- **HIGH — stored HTML injection in `checkTrialExpiration`'s admin/customer
+  emails.** `account.user_name` is a copy of the customer-editable
+  `User.full_name` (`Profile.jsx`, no validation) interpolated unescaped into
+  HTML `<p>` tags — a customer could embed markup/a phishing link that renders
+  in the platform admin's inbox (`ADMIN_NOTIFICATION_EMAIL`) or their own
+  suspension/reminder emails. Fixed with a local `escapeHtml()` applied to every
+  `user_name`/`user_email` interpolation in the file.
+- **MEDIUM — `createGoogleWalletPass` crashed on legacy accounts with a null
+  `tier`** (`account.tier.charAt(...)` with no guard), and read
+  `current_balance`/`lifetime_earned`/`lifetime_redeemed` without the `|| 0`
+  fallback its sibling `createAppleWalletPass` already uses. Brought in line
+  with the Apple-pass guard pattern.
+- **LOW — `sendWeeklySummary`/`cleanupInactiveUsers` read `current_balance`
+  unguarded**, silently dropping that customer's email (swallowed by the
+  per-account try/catch, logged as a generic "email send" failure) on any
+  legacy record missing the field. Added the same `|| 0` guard.
+- **LOW — `sendWeeklySummary` never consulted `NotificationPreference`**, unlike
+  `cleanupInactiveUsers`. It's a promotional digest, not transactional; now
+  skips accounts with `email_enabled` or `points_activity_enabled` off.
+
+### Code quality
+- Centralized the `merchant_role === 'merchant' || role === 'merchant'`
+  inline check — duplicated across `Wallet.jsx`, `Home.jsx`, `Chat.jsx`,
+  `Offers.jsx`, `History.jsx`, `Profile.jsx` — to `rbac.js`'s `isStaff()`,
+  which also correctly covers the `app_role === 'staff'` case the six inline
+  copies omitted.
+- Removed `src/components/ProtectedRoute.jsx` — dead code, never imported
+  anywhere (route guarding is done inline in `App.jsx`).
+- `docs/ARCHITECTURE.md` entity count corrected (16 → 18; `AppSession` and
+  `WalletRegistration` were never listed).
+
+### Accessibility
+- Added `aria-label`s to icon-only buttons that were missing one, matching the
+  app's own established pattern: `MerchantPOS.jsx` back button,
+  `NotificationsPanel.jsx` close button, `Layout.jsx`'s two mobile menu toggles.
+- `Login.jsx`/`Register.jsx` password/email/name fields now have a
+  programmatically-associated `<Label htmlFor>` instead of placeholder-only or
+  a plain `<span>`.
+- `BusinessSupport.jsx`'s satisfaction-rating stars and "Cerrar ticket" now
+  disable while the rating mutation is in flight, matching the double-submit
+  guard used everywhere else in the app.
+
+### Dependencies
+- `npm audit fix` (non-breaking) re-confirmed clean after the above changes:
+  `lint`/`build`/`validate:rls`/`check:secrets` all pass.
+
+### Deferred (documented, not fixed in this pass — see rationale)
+- **The `tier` field never advances past `bronze`** — `earnPoints`/`burnPoints`
+  update balances but never recompute tier from `lifetime_earned`, even though
+  `Profile.jsx` already renders specific progression thresholds (1,000 / 5,000
+  / 15,000 pts) that can now never be reached. Real, customer-visible, but a
+  scoped feature change to a live points-earning function, not a pure bug fix —
+  deferred to its own PR so it gets dedicated testing rather than riding along
+  in a routine audit, same treatment this repo has already given the
+  `react-router` v6→v7 migration (still open, still accepted-risk, re-verified
+  not exploitable this pass).
+- `earnPoints`/`burnPoints` duplicate ~35 lines of auth/store-scoping logic
+  verbatim (a past fix, "G-1", had to be hand-applied to both) — a shared-helper
+  refactor across Base44 Deno functions is a larger, separate change.
+- Dark mode CSS/Tailwind tokens and the `next-themes` dependency are fully
+  wired but never activated (no `ThemeProvider`, nothing toggles the `dark`
+  class) — flagged as dead weight or unfinished feature, a product decision
+  either way, not touched here.
+- ~20 pages using `useQuery` check `isLoading` but not `isError` (e.g.
+  `Wallet.jsx`, `Offers.jsx` fall through to rendering with `undefined` data on
+  a failed fetch) — real, but a broad sweep better scoped as its own change.
+- Locale-inconsistent `.toLocaleString()` (~45 call sites, roughly half omit
+  `'es-MX'`) and `PageNotFound.jsx`/`UserNotRegisteredError.jsx`'s
+  English-only text + hand-rolled SVGs instead of `lucide-react` — cosmetic,
+  deferred.
+
+---
+
 ## [2.0.12] — 2026-08-10 — Points-dedup gap on earnPoints, dependency patches
 
 Scheduled security/quality/tenant-isolation/loyalty-integrity audit.

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '../utils';
 import { base44 } from '@/api/base44Client';
+import { isStaff } from '@/lib/rbac';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
@@ -96,10 +97,14 @@ export default function Profile() {
     const initPreferences = async () => {
       if (user && preferences !== undefined) {
         if (preferences.length === 0) {
-          // Create default preferences
+          // Create default preferences. Stamp business_id (Base44 keeps custom
+          // fields under `user.data`) so a tenant admin can find this row when
+          // sending campaign/offer notifications — see NotificationPreference's
+          // RLS business_admin branch in base44/entities/NotificationPreference.jsonc.
           await base44.entities.NotificationPreference.create({
             user_id: user.id,
             user_email: user.email,
+            business_id: user.data?.business_id || user.business_id || undefined,
             campaigns_enabled: true,
             offers_enabled: true,
             points_activity_enabled: true,
@@ -184,7 +189,7 @@ export default function Profile() {
   const progress = currentTier.nextTier 
     ? Math.min(100, ((account?.lifetime_earned || 0) / currentTier.pointsNeeded) * 100)
     : 100;
-  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isMerchant = isStaff(user);
   const isSuspended = isMerchant && account?.status === 'suspended';
   const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 

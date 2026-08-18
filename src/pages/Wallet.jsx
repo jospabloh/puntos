@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { isStaff } from '@/lib/rbac';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -95,7 +96,7 @@ export default function Wallet() {
     );
   }
 
-  const isMerchant = user?.merchant_role === 'merchant' || user?.role === 'merchant';
+  const isMerchant = isStaff(user);
   const isSuspended = isMerchant && account?.status === 'suspended';
   const showTrialBanner = isMerchant && account?.subscription_status === 'trial' && account?.trial_end_date;
 

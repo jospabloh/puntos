@@ -1,6 +1,6 @@
 # Puntos+ — User Manual
 
-Version: 2.0.12 | Updated: 2026-08-10
+Version: 2.0.13 | Updated: 2026-08-17
 
 ---
 

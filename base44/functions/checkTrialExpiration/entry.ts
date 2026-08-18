@@ -9,6 +9,17 @@ const SUPPORT_CONTACT_LINE = ADMIN_NOTIFICATION_EMAIL
   ? `<p>Email: ${ADMIN_NOTIFICATION_EMAIL}</p>`
   : '';
 
+// account.user_name is a copy of the Base44 built-in User.full_name, which any
+// customer edits freely (Profile.jsx) with no validation — it is NOT trusted
+// system data. Every email body below is HTML, so it must be escaped before
+// interpolation or a customer could inject markup/links into an email sent to
+// themselves or (for the suspension notice) to ADMIN_NOTIFICATION_EMAIL.
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -53,7 +64,7 @@ Deno.serve(async (req) => {
               subject: '🚫 Usuario suspendido por falta de pago',
               body: `
                 <h2>Usuario Suspendido</h2>
-                <p><strong>Usuario:</strong> ${account.user_name} (${account.user_email})</p>
+                <p><strong>Usuario:</strong> ${escapeHtml(account.user_name)} (${escapeHtml(account.user_email)})</p>
                 <p><strong>Trial expiró:</strong> ${trialEnd.toLocaleDateString('es-MX')}</p>
                 <p><strong>Días transcurridos:</strong> ${daysSinceExpiration}</p>
                 <p>La cuenta ha sido suspendida automáticamente por falta de suscripción.</p>
@@ -77,7 +88,7 @@ Deno.serve(async (req) => {
             subject: '⚠️ ÚLTIMO RECORDATORIO - Tu cuenta será suspendida',
             body: `
               <h2>Último Recordatorio</h2>
-              <p>Hola ${account.user_name},</p>
+              <p>Hola ${escapeHtml(account.user_name)},</p>
               <p>Tu período de prueba expiró hace 5 días.</p>
               <p><strong>Tu cuenta será suspendida en 2 días</strong> si no activas tu suscripción.</p>
               <p>Para continuar usando Puntos+, por favor contacta con nosotros inmediatamente.</p>
@@ -104,7 +115,7 @@ Deno.serve(async (req) => {
               subject: 'Tu período de prueba ha finalizado',
               body: `
                 <h2>Período de prueba finalizado</h2>
-                <p>Hola ${account.user_name},</p>
+                <p>Hola ${escapeHtml(account.user_name)},</p>
                 <p>Tu período de prueba de 30 días ha finalizado hoy.</p>
                 <p>Para continuar usando Puntos+, por favor contacta con nosotros para activar tu suscripción.</p>
                 <p>Tienes <strong>7 días</strong> antes de que tu cuenta sea suspendida.</p>
@@ -126,7 +137,7 @@ Deno.serve(async (req) => {
             subject: '⏰ Tu prueba gratuita termina en 3 días',
             body: `
               <h2>Tu prueba gratuita termina en ${daysRemaining} días</h2>
-              <p>Hola ${account.user_name},</p>
+              <p>Hola ${escapeHtml(account.user_name)},</p>
               <p>Te recordamos que tu período de prueba de Puntos+ finaliza el <strong>${trialEnd.toLocaleDateString('es-MX')}</strong>.</p>
               <p>Para continuar disfrutando de todos los beneficios, por favor contacta con nosotros para activar tu suscripción.</p>
               ${SUPPORT_CONTACT_LINE}
@@ -148,7 +159,7 @@ Deno.serve(async (req) => {
             subject: '🔔 Tu prueba gratuita termina en 7 días',
             body: `
               <h2>Tu prueba gratuita termina en ${daysRemaining} días</h2>
-              <p>Hola ${account.user_name},</p>
+              <p>Hola ${escapeHtml(account.user_name)},</p>
               <p>Te recordamos que tu período de prueba de Puntos+ finaliza el <strong>${trialEnd.toLocaleDateString('es-MX')}</strong>.</p>
               <p>Si deseas continuar usando el programa, contacta con nosotros para gestionar tu suscripción.</p>
               ${SUPPORT_CONTACT_LINE}

@@ -41,10 +41,10 @@ Hola ${account.user_name || 'Usuario'},
 Hace tiempo que no te vemos por aquí. 
 
 💎 **Tu cuenta sigue activa:**
-• Puntos disponibles: ${account.current_balance.toLocaleString()}
-• Nivel: ${account.tier}
+• Puntos disponibles: ${(account.current_balance || 0).toLocaleString()}
+• Nivel: ${account.tier || 'bronze'}
 
-${account.current_balance > 0 ? '¡Aún tienes puntos disponibles para canjear por increíbles recompensas!' : '¡Comienza a acumular puntos en tu próxima compra!'}
+${(account.current_balance || 0) > 0 ? '¡Aún tienes puntos disponibles para canjear por increíbles recompensas!' : '¡Comienza a acumular puntos en tu próxima compra!'}
 
 No dejes que tus puntos se queden esperando. 
 
