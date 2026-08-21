@@ -136,25 +136,32 @@ export default function PlatformLicenses() {
   const renewMutation = useMutation({
     mutationFn: async ({ business, activate }) => {
       const expires = plus(365);
-      await base44.entities.Business.update(business.id, {
-        billing_status: 'active',
-        status: 'active',
-        license_expires_at: expires,
-        license_activated_at: business.license_activated_at || now(),
-        activated_by_admin: user?.email,
-      });
-      await base44.entities.LicenseEvent.create({
+      // Module 1: Business's license fields are rls.write:false, so even the
+      // owner console cannot write them from the client — licensesAdmin does it
+      // service-side, and writes the LicenseEvent in the same call so a license
+      // change can never land without its audit row.
+      const res = await base44.functions.invoke('licensesAdmin', {
+        action: 'patch',
         business_id: business.id,
-        business_name: business.name,
-        event_type: activate ? 'license_activated' : 'license_renewed',
-        from_status: business.billing_status,
-        to_status: 'active',
-        to_plan: business.license_plan,
-        expires_at: expires,
-        effective_at: now(),
-        actor_email: user?.email,
-        notes: activate ? 'Activación desde licencias' : 'Renovación +1 año',
+        patch: {
+          billing_status: 'active',
+          status: 'active',
+          license_expires_at: expires,
+          license_activated_at: business.license_activated_at || now(),
+          activated_by_admin: user?.email,
+        },
+        event: {
+          business_name: business.name,
+          event_type: activate ? 'license_activated' : 'license_renewed',
+          from_status: business.billing_status,
+          to_status: 'active',
+          to_plan: business.license_plan,
+          expires_at: expires,
+          effective_at: now(),
+          notes: activate ? 'Activación desde licencias' : 'Renovación +1 año',
+        },
       });
+      if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo actualizar la licencia');
     },
     onSuccess: () => {
       toast.success('Licencia actualizada');

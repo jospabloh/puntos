@@ -164,7 +164,15 @@ export default function PlatformTenants() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['platform'] });
 
-  const logEvent = (payload) => base44.entities.LicenseEvent.create({ actor_email: user?.email, effective_at: now(), ...payload });
+  // Module 1: Business's license fields are rls.write:false, so the owner
+  // console writes them through licensesAdmin (service role) instead of the
+  // entity SDK — see that function's header comment.
+  const licensesAdmin = async (payload) => {
+    const res = await base44.functions.invoke('licensesAdmin', payload);
+    if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo completar la operación');
+    return res.data;
+  };
+  const logEvent = (payload) => licensesAdmin({ action: 'log_event', event: { effective_at: now(), ...payload } });
 
   const openDetail = (b) => {
     setSelected(b);
@@ -194,17 +202,21 @@ export default function PlatformTenants() {
         activation_notes: form.activation_notes,
         auto_renewal: form.auto_renewal,
       };
-      await base44.entities.Business.update(selected.id, patch);
-      if (form.license_plan !== selected.license_plan) {
-        await logEvent({
-          business_id: selected.id,
-          business_name: selected.name,
-          event_type: 'plan_changed',
-          from_plan: selected.license_plan,
-          to_plan: form.license_plan,
-          notes: 'Cambio de plan desde consola',
-        });
-      }
+      await licensesAdmin({
+        action: 'patch',
+        business_id: selected.id,
+        patch,
+        event: form.license_plan !== selected.license_plan
+          ? {
+              business_name: selected.name,
+              event_type: 'plan_changed',
+              from_plan: selected.license_plan,
+              to_plan: form.license_plan,
+              effective_at: now(),
+              notes: 'Cambio de plan desde consola',
+            }
+          : undefined,
+      });
       return patch;
     },
     onSuccess: (patch) => {
@@ -243,12 +255,16 @@ export default function PlatformTenants() {
         patch = { billing_status: 'archived', status: 'suspended' };
         event = { event_type: 'archived', to_status: 'archived' };
       }
-      await base44.entities.Business.update(b.id, patch);
-      await logEvent({
+      await licensesAdmin({
+        action: 'patch',
         business_id: b.id,
-        business_name: b.name,
-        from_status: b.billing_status,
-        ...event,
+        patch,
+        event: {
+          business_name: b.name,
+          from_status: b.billing_status,
+          effective_at: now(),
+          ...event,
+        },
       });
       return patch;
     },
@@ -263,26 +279,29 @@ export default function PlatformTenants() {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const created = await base44.entities.Business.create({
-        name: newBiz.name.trim(),
-        owner_email: newBiz.owner_email.trim(),
-        contact_email: newBiz.owner_email.trim(),
-        license_plan: newBiz.license_plan,
-        license_cycle: 'monthly',
-        billing_status: 'trial',
-        status: 'active',
-        trial_start_at: now(),
-        trial_end_at: plus(30),
-        invite_code: randomCode(),
-      });
-      await logEvent({
-        business_id: created.id,
-        business_name: created.name,
-        event_type: 'trial_started',
-        to_status: 'trial',
-        to_plan: newBiz.license_plan,
-        expires_at: created.trial_end_at,
-        notes: 'Alta desde consola (prueba 30 días)',
+      const trialEnd = plus(30);
+      const { business: created } = await licensesAdmin({
+        action: 'create_tenant',
+        business: {
+          name: newBiz.name.trim(),
+          owner_email: newBiz.owner_email.trim(),
+          contact_email: newBiz.owner_email.trim(),
+          license_plan: newBiz.license_plan,
+          license_cycle: 'monthly',
+          billing_status: 'trial',
+          status: 'active',
+          trial_start_at: now(),
+          trial_end_at: trialEnd,
+          invite_code: randomCode(),
+        },
+        event: {
+          event_type: 'trial_started',
+          to_status: 'trial',
+          to_plan: newBiz.license_plan,
+          expires_at: trialEnd,
+          effective_at: now(),
+          notes: 'Alta desde consola (prueba 30 días)',
+        },
       });
       return created;
     },

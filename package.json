@@ -6,12 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint . --quiet",
+    "lint": "eslint . --quiet && npm run validate:rls && npm run validate:permissions",
     "lint:fix": "eslint . --fix",
     "validate:rls": "node scripts/validate-rls.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "validate:permissions": "node scripts/validate-permissions.mjs"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.43",

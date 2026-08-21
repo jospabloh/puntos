@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { guardedUpdate, guardedDelete } from '@/lib/guardedWrite';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
 import { getActiveBusinessId, getActiveBusinessName } from '@/lib/activeTenant';
@@ -36,24 +37,6 @@ const STATUS_LABEL = { active: 'Activa', inactive: 'Inactiva', suspended: 'Suspe
 // Client-side unique store-code generator — fallback for when the createStore
 // function isn't reachable yet (Builder sync lag). Server stays authoritative
 // when available.
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-function randPart(n) {
-  const b = new Uint8Array(n);
-  crypto.getRandomValues(b);
-  return Array.from(b, (x) => CODE_ALPHABET[x % CODE_ALPHABET.length]).join('');
-}
-function slugCode(name) {
-  return (name || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) || 'PP';
-}
-async function uniqueCodeClient(name) {
-  for (let i = 0; i < 10; i++) {
-    const code = i < 7 ? `${slugCode(name)}${randPart(3)}` : randPart(8);
-    const taken = await base44.entities.Store.filter({ code });
-    if (!taken || taken.length === 0) return code;
-  }
-  return `${slugCode(name)}${randPart(6)}`;
-}
-
 function StoreCard({ store, index, onEdit, onDelete, onCopyCode }) {
   return (
     <motion.div
@@ -133,28 +116,32 @@ export default function AdminStores() {
     mutationFn: async (data) => {
       if (editingStore) {
         const { code, ...rest } = data;  
-        return base44.entities.Store.update(editingStore.id, rest);
+        return guardedUpdate('Store', editingStore.id, rest);
       }
       const { code, ...rest } = data;  
-      // Prefer the service-role function (unique code, server-authoritative).
-      let store = null;
-      try {
-        const res = await base44.functions.invoke('createStore', { ...rest, business_id: activeBusinessId, business_name: getActiveBusinessName(user) });
-        if (res?.data?.success) store = res.data.store;
-      } catch { /* function not reachable yet → client fallback below */ }
-      if (!store) {
-        const genCode = await uniqueCodeClient(rest.name);
-        store = await base44.entities.Store.create({
-          ...rest,
-          code: genCode,
-          business_id: activeBusinessId,
-          business_name: getActiveBusinessName(user),
-          merchant_id: user.id,
-          merchant_email: user.email,
-          merchant_name: user.full_name || user.email?.split('@')[0],
-        });
+      // createStore is the ONLY create path: it assigns the unique, server-
+      // authoritative `code` and (since the Module 3 pass) re-checks
+      // `stores:create` and the billing gate. The old client-side fallback —
+      // which generated a code by racing a filter() and wrote the Store
+      // directly — was removed: it bypassed the capability check entirely, and
+      // it could not help anyway, since a browser that cannot reach one
+      // backend function cannot reach another.
+      const res = await base44.functions.invoke('createStore', {
+        ...rest,
+        business_id: activeBusinessId,
+        business_name: getActiveBusinessName(user),
+      });
+      const body = res?.data;
+      if (!body?.success) {
+        throw new Error(
+          body?.error === 'write_blocked'
+            ? 'Tu cuenta es de solo lectura. Regulariza tu licencia para crear tiendas.'
+            : body?.error === 'forbidden'
+              ? 'No tienes permiso para crear tiendas.'
+              : body?.error || 'No se pudo crear la tienda',
+        );
       }
-      return store;
+      return body.store;
     },
     onSuccess: (store) => {
       queryClient.invalidateQueries({ queryKey: ['allStores'] });
@@ -168,7 +155,7 @@ export default function AdminStores() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Store.delete(id),
+    mutationFn: (id) => guardedDelete('Store', id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allStores'] });
       setStoreToDelete(null);

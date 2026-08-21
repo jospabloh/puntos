@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { guardedCreate, guardedUpdate, guardedDelete } from '@/lib/guardedWrite';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
 import { getActiveBusinessId, getActiveBusinessName } from '@/lib/activeTenant';
@@ -245,11 +246,10 @@ export default function AdminCampaigns() {
   const saveCampaignMutation = useMutation({
     mutationFn: async (data) => {
       if (editingCampaign) {
-        return base44.entities.Campaign.update(editingCampaign.id, data);
+        return guardedUpdate('Campaign', editingCampaign.id, data);
       }
-      return base44.entities.Campaign.create({
+      return guardedCreate('Campaign', {
         ...data,
-        business_id: activeBusinessId,
         business_name: getActiveBusinessName(user),
       });
     },
@@ -265,7 +265,7 @@ export default function AdminCampaigns() {
   });
 
   const deleteCampaignMutation = useMutation({
-    mutationFn: (id) => base44.entities.Campaign.delete(id),
+    mutationFn: (id) => guardedDelete('Campaign', id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allCampaigns'] });
       toast.success('Campaña eliminada');
@@ -279,11 +279,10 @@ export default function AdminCampaigns() {
   const saveOfferMutation = useMutation({
     mutationFn: async (data) => {
       if (editingOffer) {
-        return base44.entities.Offer.update(editingOffer.id, data);
+        return guardedUpdate('Offer', editingOffer.id, data);
       }
-      return base44.entities.Offer.create({
+      return guardedCreate('Offer', {
         ...data,
-        business_id: activeBusinessId,
         business_name: getActiveBusinessName(user),
       });
     },
@@ -299,7 +298,7 @@ export default function AdminCampaigns() {
   });
 
   const deleteOfferMutation = useMutation({
-    mutationFn: (id) => base44.entities.Offer.delete(id),
+    mutationFn: (id) => guardedDelete('Offer', id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allOffers'] });
       toast.success('Oferta eliminada');

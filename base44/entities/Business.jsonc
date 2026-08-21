@@ -3,10 +3,12 @@
   "name": "Business",
   "properties": {
     "activated_by_admin": {
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "activation_notes": {
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "address": {
       "description": "Direcci\u00f3n",
@@ -14,11 +16,13 @@
     },
     "archived_at": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "auto_renewal": {
       "default": false,
-      "type": "boolean"
+      "type": "boolean",
+      "rls": { "write": false }
     },
     "billing_status": {
       "default": "trial",
@@ -29,7 +33,8 @@
         "suspended",
         "archived"
       ],
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "city": {
       "description": "Ciudad",
@@ -57,7 +62,8 @@
     },
     "license_activated_at": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "license_cycle": {
       "default": "monthly",
@@ -65,11 +71,13 @@
         "monthly",
         "annual"
       ],
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "license_expires_at": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "license_plan": {
       "default": "starter",
@@ -79,15 +87,18 @@
         "pro",
         "enterprise"
       ],
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "licensed_store_limit": {
       "default": 1,
-      "type": "number"
+      "type": "number",
+      "rls": { "write": false }
     },
     "licensed_user_limit": {
       "default": 2,
-      "type": "number"
+      "type": "number",
+      "rls": { "write": false }
     },
     "logo_url": {
       "description": "URL del logotipo",
@@ -109,7 +120,8 @@
       "type": "string"
     },
     "payment_reference": {
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "phone": {
       "description": "Tel\u00e9fono",
@@ -126,7 +138,8 @@
     },
     "scheduled_delete_at": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "state": {
       "description": "Estado",
@@ -138,7 +151,8 @@
         "active",
         "suspended"
       ],
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "support_contacted_at": {
       "format": "date-time",
@@ -146,15 +160,18 @@
     },
     "trial_end_at": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "trial_start_at": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     },
     "view_only_since": {
       "format": "date-time",
-      "type": "string"
+      "type": "string",
+      "rls": { "write": false }
     }
   },
   "required": [

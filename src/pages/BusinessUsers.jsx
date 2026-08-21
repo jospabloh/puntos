@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { guardedCreate, guardedUpdate } from '@/lib/guardedWrite';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -179,7 +180,7 @@ export default function BusinessUsers() {
   });
 
   const inviteMutation = useMutation({
-    mutationFn: (payload) => base44.entities.Invitation.create(payload),
+    mutationFn: (payload) => guardedCreate('Invitation', payload),
     onSuccess: () => {
       invalidate();
       setInviteOpen(false);
@@ -190,7 +191,7 @@ export default function BusinessUsers() {
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (id) => base44.entities.Invitation.update(id, { status: 'revoked' }),
+    mutationFn: (id) => guardedUpdate('Invitation', id, { status: 'revoked' }),
     onSuccess: () => { invalidate(); setRevokeTarget(null); toast.success('Invitación revocada'); },
     onError: () => toast.error('No se pudo revocar la invitación'),
   });
