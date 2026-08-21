@@ -12,14 +12,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Puntos+ · Lealtad para tu negocio</title>
     <script>
-      // Applies the dark class before React mounts to avoid a light-mode
-      // flash on load — mirrors the resolution logic in lib/ThemeContext.jsx
-      // (stored preference, else prefers-color-scheme). Keep both in sync.
+      // Applies the theme before React mounts so the first paint is already the
+      // right colour. Mirrors lib/ThemeContext.jsx exactly: same key, same
+      // 'light' | 'dark' | 'system' values, 'system' (and anything unreadable)
+      // resolving against the device. Keep both in sync.
       (function () {
         try {
-          var stored = localStorage.getItem('pp-theme');
-          var dark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (dark) document.documentElement.classList.add('dark');
+          var pref = localStorage.getItem('pp-theme');
+          if (pref !== 'light' && pref !== 'dark') pref = 'system';
+          var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         } catch (e) { /* localStorage/matchMedia unavailable — default to light */ }
       })();
     </script>
