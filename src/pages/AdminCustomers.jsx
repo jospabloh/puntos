@@ -4,7 +4,6 @@ import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRequirePage } from '@/lib/useCurrentUser';
 import { getActiveBusinessId } from '@/lib/activeTenant';
-import { ROLES } from '@/lib/rbac';
 import {
   Users,
   Search,
@@ -176,55 +175,26 @@ export default function AdminCustomers() {
       }
 
       const idempotencyKey = makeIdempotencyKey(`adjust_${selectedCustomer.id}`);
-      const newBalance = (selectedCustomer.current_balance || 0) + points;
 
-      // Stamp the customer's tenant (owner may adjust across tenants, so derive
-      // business_id from the account, not from the acting user).
-      const businessId = selectedCustomer.business_id || user.business_id;
-      const businessName = selectedCustomer.business_name || user.business_name;
-
-      // Create ledger entry
-      await base44.entities.PointsLedger.create({
-        business_id: businessId,
-        business_name: businessName,
+      // Server-authoritative (Module 3). Points are the app's unit of value:
+      // the capability, the tenant's PermissionProfile override, the billing
+      // gate, the resulting balance and the audit row are all computed inside
+      // adjustCustomerPoints from the stored account and the caller's own
+      // token — none of it is trusted from here. See its header comment.
+      const res = await base44.functions.invoke('adjustCustomerPoints', {
         account_id: selectedCustomer.id,
-        user_id: selectedCustomer.user_id,
-        type: 'ADJUST',
-        points: points,
-        balance_after: newBalance,
-        reference_type: 'manual',
-        idempotency_key: idempotencyKey,
-        description: `Ajuste manual: ${adjustData.reason}`,
+        points,
         reason: adjustData.reason,
-        operator_id: user.id,
-        operator_email: user.email,
-        status: 'completed',
+        idempotency_key: idempotencyKey,
       });
+      const body = res?.data;
+      if (!body?.success) {
+        throw new Error(body?.error === 'write_blocked'
+          ? 'Tu cuenta es de solo lectura. Regulariza tu licencia para ajustar puntos.'
+          : body?.error || 'No se pudo aplicar el ajuste');
+      }
 
-      // Update account
-      await base44.entities.LoyaltyAccount.update(selectedCustomer.id, {
-        current_balance: newBalance,
-        lifetime_earned: points > 0
-          ? (selectedCustomer.lifetime_earned || 0) + points
-          : selectedCustomer.lifetime_earned,
-        last_activity: new Date().toISOString(),
-      });
-
-      // Audit log
-      await base44.entities.AuditLog.create({
-        business_id: businessId,
-        business_name: businessName,
-        actor_id: user.id,
-        actor_email: user.email,
-        actor_role: role === ROLES.OWNER ? 'admin' : role,
-        action: 'adjust',
-        entity_type: 'PointsLedger',
-        target_user_id: selectedCustomer.user_id,
-        payload_summary: `${points > 0 ? '+' : ''}${points} pts: ${adjustData.reason}`,
-        status: 'success',
-      });
-
-      return { points, newBalance };
+      return { points: body.points, newBalance: body.new_balance };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });

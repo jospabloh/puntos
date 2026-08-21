@@ -38,6 +38,22 @@ async function uniqueStoreCode(sr: any, name: string) {
   return `${slug(name)}${randPart(6)}`; // astronomically unlikely fallback
 }
 
+// Mirror of the subset of PERMISSIONS (src/lib/rbac.js) this function gates.
+// scripts/validate-permissions.mjs fails the build if it drifts.
+const PERMISSIONS: Record<string, string[]> = {
+  'stores:create': ['owner', 'business_admin'],
+};
+
+// Same resolution as getAppRole() on the client.
+function getAppRole(user: Record<string, any>): string {
+  const role = user?.role;
+  if (role === 'admin') return 'owner';
+  if (role === 'business_admin') return 'business_admin';
+  if (role === 'merchant') return 'staff';
+  if (user?.data?.merchant_role === 'merchant' || user?.merchant_role === 'merchant') return 'staff';
+  return 'customer';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -69,6 +85,26 @@ Deno.serve(async (req) => {
     const sr = base44.asServiceRole;
 
     if (!isAdmin) {
+      // Module 3: the `stores:create` capability, re-checked server-side in the
+      // same precedence src/lib/rbac.js's can() uses — an explicit
+      // PermissionProfile override for this tenant + role wins over the default
+      // matrix. Without this, the billing gate below was the ONLY server-side
+      // check, so a `staff` account could create stores despite the capability
+      // being business_admin-only. Mirrors the same block in
+      // guardedEntityWrite; scripts/validate-permissions.mjs guards the drift.
+      const role = getAppRole(user);
+      const profiles = await sr.entities.PermissionProfile.filter({
+        business_id: businessId,
+        role_key: role,
+      });
+      const override = profiles?.[0]?.permissions?.['stores:create'];
+      const allowed = override === true || override === false
+        ? override
+        : PERMISSIONS['stores:create'].includes(role);
+      if (!allowed) {
+        return Response.json({ error: 'forbidden', permission: 'stores:create' }, { status: 403 });
+      }
+
       const business = await sr.entities.Business.get(businessId).catch(() => null);
       if (isBusinessWriteBlocked(business)) {
         return Response.json({ error: 'write_blocked', message: 'La licencia de tu negocio está suspendida o en modo solo lectura.' }, { status: 403 });

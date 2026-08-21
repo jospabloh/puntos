@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { guardedUpdate } from '@/lib/guardedWrite';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -103,7 +103,7 @@ export default function BusinessSettings() {
   }, [business]);
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => base44.entities.Business.update(business.id, payload),
+    mutationFn: (payload) => guardedUpdate('Business', business.id, payload),
     onSuccess: async () => {
       await refetch();
       toast.success('Cambios guardados');

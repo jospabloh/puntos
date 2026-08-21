@@ -265,3 +265,151 @@ achievable here; worth a spot-check on a live deploy.
 - `npm run build` — Vite production build (must pass).
 - `npm run lint` — ESLint (0 errors required).
 - `npm run validate:rls` — RLS static guard.
+
+## Module 3 — the permission matrix is finally enforced server-side (2026-08-21)
+
+`src/lib/rbac.js`'s `PERMISSIONS` matrix, the `PermissionProfile` override
+layer and the `Permissions.jsx` page all existed, but **nothing server-side
+ever read them**. `can()` hid a button; the entity was then written straight
+from the browser. RLS is not a substitute — it enforces tenant isolation and
+the coarse role branches, but it cannot see a `PermissionProfile` row or
+`Business.billing_status`, both of which live on a *different* row (Base44
+RLS templates have no join). So a tenant admin's override was decorative, and
+the billing gate only applied to the four POS/redemption functions fixed on
+2026-08-18.
+
+**New `base44/functions/guardedEntityWrite`** — the sanctioned write path for
+`Campaign`, `Offer`, `Store`, `Invitation`, `PermissionProfile`, and a
+Business's own *settings* fields. Tenant is re-derived from the caller's own
+user record, never the request body; on update/delete the **existing**
+record's tenant is what gets checked, so a foreign id can't sidestep the
+gates; fields are whitelisted. Precedence mirrors `can()`: owner → explicit
+override → default matrix, plus the `view_only`/`suspended`/`archived` gate.
+`src/lib/guardedWrite.js` is the client wrapper.
+
+**New `base44/functions/adjustCustomerPoints`** — the biggest hole. The manual
+adjustment in `AdminCustomers.jsx` was a three-write sequence
+(`PointsLedger.create` + `LoyaltyAccount.update` + `AuditLog.create`) run from
+the browser with `customers:adjust_points` checked only by `can()`. Points are
+the app's unit of value: a `staff` account could mint an arbitrary balance
+from devtools *and* write the audit row describing it. Now the capability, the
+billing gate, the resulting `balance_after`, the operator identity and the
+audit row are all computed server-side from the stored account and the
+caller's token, with an idempotency-key guard so a retry can't double an
+adjustment.
+
+**`createStore` gained the capability check it never had.** It had the billing
+gate (2026-08-18) but no `stores:create` check, so a `staff` account could
+create stores despite the capability being business_admin-only. Related:
+`AdminStores.jsx`'s client-side create fallback was **removed** — it generated
+a store code by racing a `filter()` and wrote the `Store` directly, bypassing
+every check. It could not have helped anyway: a browser that can't reach one
+backend function can't reach another.
+
+**Drift guard:** each function keeps its own copy of the subset of
+`PERMISSIONS` it enforces (Deno can't import from `src/`).
+`npm run validate:permissions`, wired into `npm run lint`, fails on any
+difference in either direction and on any `ENTITY_CONFIG` capability that
+isn't a real key. Confirmed not a no-op by flipping one role list and watching
+it fail.
+
+**Deliberately left on direct entity writes**, each already closed by a
+non-spoofable built-in in its own RLS — same test `jospabloh/stockflow`'s
+`AppSession` note applies: `AppSession` (`created_by_id`; and gating a
+heartbeat on billing would lock a suspended tenant out of the screen
+explaining why), a customer's own `LoyaltyAccount`/`NotificationPreference`
+(`user_id`; no capability finer than "your own row"), and
+`SupportTicket`/`SupportTicketMessage` (support must stay reachable for a
+suspended tenant — the same reason `updateSupportTicket` sits outside the
+billing gate elsewhere in this portfolio).
+
+## Module 1 — license self-escalation on `Business` (fixed 2026-08-21)
+
+Found while scoping the module-3 work. `Business`'s `update` rule granted
+**whole-record** write access to a tenant's own `business_admin`
+(`$and[role:business_admin, id:{{user.data.business_id}}]`) with **no
+field-level lock** on the license fields. Since the 2026-08-18 lifecycle
+consolidation the entire app derives `isSuspended`/`isTrial` from
+`Business.billing_status` — so a tenant admin could flip their own suspended
+tenant back to `active`, or extend their own `trial_end_at`, with one SDK
+call. That directly contradicts Module 1's "written ONLY by Mission Control's
+unified cron", and it is the same defect class `jospabloh/rumbo` found on
+`TenantLicense` (its CLAUDE.md, module 1, 2026-08-19).
+
+**Fixed:** 17 license/billing fields on `Business.jsonc` now carry
+`"rls": { "write": false }` — `billing_status`, `status`, `license_plan`,
+`license_cycle`, `license_expires_at`, `license_activated_at`,
+`licensed_user_limit`, `licensed_store_limit`, `trial_start_at`,
+`trial_end_at`, `auto_renewal`, `payment_reference`, `activation_notes`,
+`activated_by_admin`, `archived_at`, `scheduled_delete_at`,
+`view_only_since`.
+
+Field-level RLS blocks the **client** for every role, owner included, so the
+owner console had to move too: **new `base44/functions/licensesAdmin`**
+(`patch` / `create_tenant` / `log_event`, platform-tier only, `asServiceRole`
+— which bypasses field-level RLS the same way it bypasses entity-level rules)
+now backs `PlatformLicenses.jsx` and `PlatformTenants.jsx`. It writes the
+`LicenseEvent` in the same call as the patch, so a license change can no
+longer land without its audit row — the client used to make two independent
+requests and the second could simply not happen.
+
+Unaffected, because both already write as service role: `createBusiness`
+(tenant signup) and `acaciaControl`'s `license.set` (Mission Control's own
+channel). `support_contacted_at` was deliberately left unlocked — it is a
+tenant-side "I asked for an upgrade" marker read by nothing in Mission
+Control, and `BusinessBilling.jsx` must keep working for a suspended tenant,
+which is precisely the tenant that needs it.
+
+**Deploy note: this is a schema change.** `npx base44 entities push` (or the
+MCP `update_entity_schema`) is required — the repo `.jsonc` alone changes
+nothing at runtime, and until it is pushed the field locks do not exist in
+production. Push the entities BEFORE deploying the functions is not required,
+but the client migration and the field locks should land together, since
+`PlatformLicenses`/`PlatformTenants` now expect `licensesAdmin` to be live.
+
+**Verified:** `npm run lint` (eslint + `validate:rls` 18 entities +
+`validate:permissions` 11 mirrored keys) and `npm run build` both pass.
+`deno` isn't available in this sandbox — the three new functions get their
+first live check when deployed. **Not verified:** a browser session as a
+restricted `staff` or a suspended tenant. Risk is bounded the same way as
+every other module-3 fix in this portfolio: each migrated call site preserves
+identical behavior for anyone whose role/override already granted access —
+the only change is that a denied capability, a read-only tenant's write, or a
+tenant editing its own license now correctly fails server-side.
+
+## ACACIA Portfolio Standard
+
+This app is part of the ACACIA portfolio and must stay compliant with
+`jospabloh/acacia-app-standard`. Read `STANDARD.md` there before implementing
+any item below for the first time, and re-read the relevant section before
+touching a module that's already implemented.
+
+- [x] Module 1 — License lifecycle: `Business.billing_status`
+      (trial|active|view_only|suspended|archived), written ONLY by Mission
+      Control's unified cron; the native `checkTrialExpiration` was removed
+      2026-08-18 and the license fields are field-locked since 2026-08-21.
+- [x] Module 2 — Roles: `src/lib/rbac.js` (`owner`/`business_admin`/`staff`/
+      `customer`), mapped onto Base44's built-in `role`. Mission Control's
+      operator roles are a separate layer.
+- [x] Module 3 — Granular permissions: `PERMISSIONS` + `PermissionProfile`
+      overrides, re-checked server-side by `guardedEntityWrite`,
+      `adjustCustomerPoints`, `createStore`, `earnPoints`, `burnPoints` and
+      `redeemOffer`, all behind the billing gate. Drift-guarded in `lint`.
+- [x] Module 4 — RLS: four-op `$or` shape with the service-role admin branch
+      on every business-scoped entity, both halves verified by
+      `validate:rls` (18 entities).
+- [x] Module 5 — Health: Mission Control polls `acaciaControl`'s `ping`.
+- [x] Module 6 — `src/lib/appConfig.js` (`APP_VERSION`/`RELEASE_DATE`) +
+      in-app changelog.
+- [x] Module 7 — Profile: `exportMyData` + `deleteMyAccount` (customer-only,
+      by design — see that section above).
+- [x] Module 8 — Soporte writes `SupportTicket` here first, pushed to Mission
+      Control by `notifyTicketCreated` and pulled by `acaciaControl`.
+- [x] Module 9 — `apps/puntos-plus.html` on `jospabloh/acaciaco-site`.
+- [x] Module 10 — Login on-brand with real error states, dark theme wired
+      2026-08-19, suspended/view_only surfaced by `SuspendedAccountModal`/
+      `TrialBanner` post-login.
+
+Last audited against the standard: 2026-08-21 — module 3 had no server-side
+enforcement at all and module 1 allowed license self-escalation; both closed
+in this pass.

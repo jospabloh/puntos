@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
+import { guardedCreate, guardedUpdate } from '@/lib/guardedWrite';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ShieldCheck, Check, Minus, Info } from 'lucide-react';
 import { toast } from 'sonner';
@@ -131,13 +132,12 @@ export default function Permissions() {
       const existing = (profiles || []).find((p) => p.role_key === roleKey);
       const nextPermissions = { ...(existing?.permissions || {}), [permissionKey]: value };
       if (existing) {
-        return base44.entities.PermissionProfile.update(existing.id, {
+        return guardedUpdate('PermissionProfile', existing.id, {
           permissions: nextPermissions,
           updated_by: user.email,
         });
       }
-      return base44.entities.PermissionProfile.create({
-        business_id: user.business_id,
+      return guardedCreate('PermissionProfile', {
         role_key: roleKey,
         label: ROLE_LABELS[roleKey],
         permissions: nextPermissions,
