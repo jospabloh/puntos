@@ -6,33 +6,14 @@ import {
   Wallet, Gift, History as HistoryIcon, MessageCircle, User as UserIcon, Store,
   LayoutDashboard, LogOut, Menu, X, Sparkles, Building2, KeyRound, LifeBuoy,
   Users, Receipt, Settings, ShieldCheck, ScrollText, Megaphone, Crown, ChevronRight,
-  Sun, Moon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
-import { useTheme } from '@/lib/ThemeContext';
 
 const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding', 'ForgotPassword'];
-
-function ThemeToggle({ className }) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme === 'dark';
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggleTheme}
-      aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-      title={isDark ? 'Modo claro' : 'Modo oscuro'}
-      className={className}
-    >
-      {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
-    </Button>
-  );
-}
 
 // Back-office (sidebar) navigation per role
 const OWNER_NAV = [
@@ -159,7 +140,6 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
       <div className="md:hidden sticky top-0 z-40 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-4 py-3 backdrop-blur-xl">
         <Wordmark subtitle={subtitle} />
         <div className="flex items-center gap-1">
-          <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={() => setOpen(!open)} aria-label={open ? 'Cerrar menú' : 'Abrir menú'}>
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -180,7 +160,6 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
                 <div className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{user?.full_name || user?.email}</div>
                 <RoleChip role={role} />
               </div>
-              <ThemeToggle className="h-8 w-8 shrink-0" />
             </div>
             <button onClick={() => base44.auth.logout()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-rose-50 hover:text-rose-600">
               <LogOut className="h-3.5 w-3.5" /> Cerrar sesión

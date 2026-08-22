@@ -196,3 +196,13 @@
     transition-duration: 0.001ms !important;
   }
 }
+/* Corner theme switcher (src/components/ThemeSwitcher.jsx) — placement only.
+   Below `md` the consumer shell's bottom tab bar owns the bottom edge, so lift
+   the control clear of it. */
+:root {
+  --theme-switcher-bottom: 1rem;
+  --theme-switcher-right: 1rem;
+}
+@media (max-width: 767px) {
+  :root { --theme-switcher-bottom: 5.5rem; }
+}

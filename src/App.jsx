@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ContinueAs from '@/components/auth/ContinueAs';
 import { getRememberedIdentity } from '@/lib/lastIdentity';
@@ -93,6 +94,7 @@ function App() {
             <AuthenticatedApp />
           </Router>
           <Toaster />
+          <ThemeSwitcher />
         </QueryClientProvider>
       </AuthProvider>
     </ThemeProvider>
