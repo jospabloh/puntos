@@ -684,3 +684,70 @@ eso, `licensesAdmin` (que exige `role === 'admin'`) le responde 403, y
 ninguna fila. **La consola de dueño no es alcanzable por la única cuenta que
 existe.** No es un fallo de aislamiento, pero es la razón de fondo por la que
 nada de lo de arriba se pudo ejercitar contra datos reales.
+
+## Módulo 15 — el puente con Mission Control: una llave por app (2026-08-23)
+
+`INGEST_HMAC_SECRET` es **un solo valor compartido por todo el portafolio**, así
+que una firma hecha con él demuestra «alguien tiene el secreto compartido» y
+nunca «esto es Puntos+». Como el nombre de la app viaja en el cuerpo, cualquier
+app podía firmar una carga diciendo ser otra y Mission Control la escribía con
+esa atribución. Lo encontró la auditoría del módulo 14 de Mission Control.
+
+El arreglo es dejar de usar el maestro directamente:
+
+    appKey = HMAC-SHA256(maestro, "acacia.app.v1." + slug)
+
+El prefijo es separación de dominio: garantiza que una llave derivada no puede
+coincidir con una firma sobre un cuerpo, y el `v1` permite rotar el esquema sin
+rotar el maestro.
+
+`base44/functions/{acaciaControl,notifyTicketCreated}/_acaciaSign.ts`
+es **idéntico byte a byte en todas las apps del portafolio**. La fuente
+canónica vive en `jospabloh/acacia-app-standard` →
+`shared/bridge/acaciaSign.ts`: cámbialo allí y cópialo, no lo edites aquí.
+Deno aísla cada directorio de función, así que esta app lleva **dos** copias
+idénticas: `acaciaControl` **verifica** lo que llega y `notifyTicketCreated`
+**firma** el ticket que sale, con `signAs(secret, app, ts, 'ticket.ingest', …)`.
+
+**La migración tiene un orden y es el contrario del obvio.** La verificación
+acepta las dos llaves mientras `ACCEPT_LEGACY_MASTER` sea `true`, así que da
+igual quién despliegue primero. Pero Mission Control despliega al mergear y las
+apps a mano, así que MC siempre va primero — por eso MC sigue **firmando** con
+el maestro hasta que las nueve apps acepten derivada. Falta el paso que cierra
+el agujero de verdad: poner `ACCEPT_LEGACY_MASTER` en `false` en todas partes y
+cambiar la firma de salida de MC a `signFor`. Mientras tanto una firma con el
+maestro se sigue aceptando. `ACACIA_APP_SLUG` ya estaba puesto aquí, porque
+el push de tickets siempre lo necesitó.
+
+**Y ahora hay una prueba, que es lo que faltaba.** El helper no lo comprobaba
+nada: cada PR de este módulo decía que recibía su primer type-check al
+desplegar. `acaciaSign.test.ts` (canónico en el repo estándar) fija el vector
+que la mitad Node de Mission Control ya fijaba —dos implementaciones de HMAC en
+dos runtimes sólo siguen siendo iguales si algo lo afirma, y una divergencia se
+ve en runtime como `bad signature` en cada llamada, que parece un secreto mal
+puesto y no lo es— y afirma lo que este módulo promete: un cuerpo firmado por
+una app que dice ser otra **no** verifica. No tiene imports externos ni toca la
+red, así que corre en un sandbox donde `jsr.io` y `deno.land` están bloqueados.
+El test canónico está en el repo estándar; este repo no tiene paso de deno en CI.
+
+**La criptografía en línea que esto reemplaza ya no está.** Cada `acaciaControl`
+llevaba su propio `stableStringify` / `hmacHex` / `timingSafeEqual`, copiados a
+mano contra `api/_lib/ingestSign.js` de Mission Control. Dejarlos al lado del
+helper no es desorden: es una segunda implementación de la misma rutina en el
+mismo archivo, que es exactamente la deriva que este módulo quita.
+
+### `deno` SÍ se puede correr aquí — este archivo decía lo contrario
+
+Este CLAUDE.md repetía «deno no está disponible en este sandbox» y por eso
+varios cambios de `base44/functions/` se dieron por no verificables y se
+mandaron a que CI los mirara por primera vez. **Es falso.** El binario se baja
+de la release de GitHub —el mismo sitio de donde lo saca `setup-deno` en el
+runner— y GitHub sí pasa por el proxy:
+
+    curl -sSL -o deno.zip https://github.com/denoland/deno/releases/download/v2.9.5/deno-x86_64-unknown-linux-gnu.zip
+    unzip -q deno.zip && chmod +x deno && ./deno --version
+
+Lo que de verdad está bloqueado es `deno.land` y `jsr.io`, así que un test que
+importe de ahí no resuelve; uno que no importe nada corre igual que en CI. Es la
+misma lección que el `000` del proxy en Mission Control: **que una vía esté
+bloqueada no significa que la pregunta no tenga respuesta.**
