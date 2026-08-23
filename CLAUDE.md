@@ -545,3 +545,142 @@ portafolio llegó a desplegar eran **sintácticamente válidos**: la rama de rol
 motor descartaba la cláusula hermana de `user_condition`, los campos de licencia
 escribibles por el propio inquilino en puntos y rumbo, y el `PermissionProfile`
 que ningún RLS puede consultar porque vive en otra fila.
+
+### Resultado — 2026-08-23, contra el esquema desplegado
+
+Recorrido completo contra `list_entity_schemas` (appId `696e7fdd7889892fe40868b7`,
+18 entidades), no contra los `.jsonc` del repo. Las 23 funciones de
+`base44/functions/` se barrieron todas buscando el inquilino tomado del cuerpo
+de la petición; las que escriben, exportan o mandan correo se leyeron enteras.
+
+**No encontré ninguna lectura de un inquilino por otro.** Lo que sí encontré son
+tres huecos de escritura, ninguno explotable hoy y los tres reales.
+
+#### 1. `earnPoints` y `burnPoints` no miran el inquilino de la cuenta
+
+Las cuatro funciones que mueven puntos comprueban cosas distintas:
+
+| función | qué exige de la cuenta |
+|---|---|
+| `redeemOffer:63` | `account.business_id` **y** `offer.business_id` presentes **e** iguales |
+| `adjustCustomerPoints:77‑79` | el inquilino **es** el de la cuenta; sin él, 403 |
+| `earnPoints:107` | `if (account.store_id && account.store_id !== store.id)` |
+| `burnPoints:83` | idéntica |
+
+Las dos de abajo nunca leen `account.business_id`, y su comprobación de tienda
+está guardada tras un `&&`: **una cuenta con `store_id` vacío pasa**. Cualquier
+cajero de cualquier tienda de cualquier inquilino puede acreditarle o
+descontarle puntos. `redeemOffer` rechaza exactamente esa forma —"registro
+heredado sin inquilino, mejor negar"— y `adjustCustomerPoints` falla cerrada
+sola, porque `undefined` nunca iguala al inquilino del llamante. Dos estrictas,
+dos permisivas, y la diferencia es un `&&`.
+
+Hay **una fila en producción con esa forma**: la única `LoyaltyAccount` que
+existe (`696e817b950f5ea955dd0055`, la del dueño) tiene `business_id: null` y
+`store_id: null`. Nace así porque `createBusiness:112` sólo crea la cuenta si el
+usuario no tenía una, y ésta es anterior al inquilino.
+
+**Hoy es latente**, y conviene decir por qué y no sólo que lo es: hay un solo
+inquilino, esa cuenta tiene saldo 0 y no hay una segunda tienda a la que cruzar.
+Se vuelve real el día que exista un segundo inquilino y quede una cuenta sin
+tienda — que es justo lo que produce cualquier alta anterior a su asignación.
+El arreglo es alinear las dos con `redeemOffer`: exigir `account.business_id` y
+compararlo con `store.business_id`, negando cuando falte.
+
+#### 2. `qr_token` es escribible por el propio cliente y nadie exige que sea único
+
+No lleva `rls.write` a nivel de campo, y `LoyaltyAccount.update` incluye la rama
+`{"data.user_id":"{{user.id}}"}`. Un cliente puede ponerle a su token el valor
+que quiera, incluido el de otro.
+
+**El radio está acotado y vale medirlo antes de alarmarse:** la búsqueda del POS
+(`MerchantPOS.jsx:129‑135`) filtra por `qr_token` **y** `store_id`, y la rama
+`merchant` de la RLS de lectura exige tienda **y** negocio, así que una colisión
+sólo puede darse entre dos clientes de **la misma tienda**. No cruza inquilinos.
+Aun así el token lo generan `createLoyaltyAccount`, `regenerateExpiredQR` y
+`Wallet.jsx` — no hay razón para que el cliente pueda elegirlo, y un bloqueo de
+campo lo cierra sin costo.
+
+#### 3. Un cajero puede empujar una cuenta *fuera* de su inquilino
+
+`business_id` y `store_id` de `LoyaltyAccount` llevan
+`rls.write: {$or:[admin, merchant, business_admin]}` — **sin acotar al inquilino
+propio en la regla del campo**. La regla de entidad sí acota, pero sobre el
+registro *almacenado*: un cajero pasa el filtro por su propia tienda y entonces
+escribe un `business_id` ajeno. No puede alcanzar nada de fuera; puede sacar una
+fila propia hacia fuera. Ningún punto del cliente hace esto — es una ruta sólo
+por SDK — y `guardedEntityWrite` no cubre `LoyaltyAccount` (está en la lista de
+exclusiones deliberadas).
+
+### Lo que está bien, y por qué
+
+- **`guardedEntityWrite` es la pieza más sólida de este repo, y por una razón
+  que no es la habitual.** El inquilino se re-deriva del registro de usuario del
+  llamante (línea 200), y en update/delete se comprueba contra el registro
+  **almacenado** (207‑210). Pero donde liuma y rumbo hacen `delete
+  data.school_id` / `delete data.tenant_id`, aquí hay una **lista blanca de
+  campos** por entidad: `business_id` no aparece en la lista de ninguna de las
+  seis, así que no se borra del patch — nunca llega a estar en él. Una lista
+  blanca es más estricta que un borrado, porque tapa también el campo que nadie
+  se acordó de borrar.
+- **`acceptInvitation` ya defiende un cruce real.** El ancla de confianza es el
+  correo, no el cuerpo; y si la invitación trae `store_id`, la tienda se
+  re-lee y se exige que pertenezca al negocio de la invitación, descartándola si
+  no (líneas 45‑60). Nota al margen: el comentario que justifica esa defensa dice
+  que «varias ramas `merchant` de RLS se apoyan sólo en `store_id`». **En el
+  esquema desplegado ya no es cierto** — `PointsLedger`, `LoyaltyAccount`,
+  `Redemption` y `AuditLog` llevan hoy tienda **y** negocio en todas sus ramas
+  `merchant`. La defensa se queda igual: `Invitation.store_id` sigue sin
+  validarse a nivel de RLS, y una capa que ya está escrita no se quita porque la
+  de abajo mejoró.
+- **`manageTeamMember`**: el inquilino del objetivo sale del `User` almacenado,
+  la tienda se valida contra el inquilino de operación, `ASSIGNABLE_ROLES`
+  excluye `admin`, y `setRole` nunca escribe `business_id` — un gerente no puede
+  meter a un ajeno, sólo mover a alguien que ya está dentro.
+- **`exportMyData`**: cada filtro va contra `user.id` del token, y el ledger y
+  los canjes contra el `account_id` de la cuenta propia. Los tres campos existen
+  en el esquema desplegado.
+- **`sendWeeklySummary`** recorre todas las cuentas, pero cada correo va a
+  `account.user_email` con las cifras de esa misma cuenta. `notifyTicketCreated`
+  re-lee el ticket como service role y el único destinatario es Mission Control.
+- **`passkitWebService`**: el token es `HMAC(secreto, serial)` y se compara
+  contra el serial **pedido**, en tiempo constante. La rama que lista los pases
+  de un dispositivo va sin autenticar **a propósito**: así lo define la
+  especificación de PassKit (ese endpoint no lleva cabecera `ApplePass`), y sólo
+  devuelve los ids registrados a ese dispositivo.
+- **Bloqueos de campo confirmados en vivo**: los 17 de licencia en `Business`, y
+  en `User` los de `role` / `app_role` / `business_id` / `storeId` / `store_id` /
+  `merchant_role`, todos a `{"user_condition":{"role":"admin"}}`. No hay
+  auto‑escalada por `auth.updateMe`.
+- **`owner_email` de `Business` no está bloqueado, y aquí no importa.** En rumbo
+  ese mismo campo encadena con un `delete` que se apoya en él; en puntos
+  `Business.delete` es sólo `admin` y `owner_email` no autoriza nada — sólo se
+  pinta en `PlatformTenants.jsx`. Vale decirlo explícitamente para que nadie
+  copie el hallazgo de rumbo a este repo sin comprobarlo.
+- **No hay cambio de inquilino en esta app.** Un `business_id` por usuario y
+  ninguna entidad `Membership`: la pregunta «¿en qué inquilino estoy?» tiene una
+  sola respuesta y no hay dos sitios que puedan discrepar.
+
+### Dos cosas que aparecieron y no son del módulo 14
+
+- `manageTeamMember` se controla con `role === 'business_admin'` a secas, no con
+  la clave `users:update_role` que `guardedEntityWrite` sí exige para escribir
+  `PermissionProfile`. Un override que niegue esa clave se respeta en un sitio y
+  se ignora en el otro. Es módulo 3.
+- `manageTeamMember` tampoco lleva puerta de facturación: un inquilino suspendido
+  puede seguir cambiando roles. Puede ser deliberado (misma familia que dejar
+  soporte accesible), pero no está escrito en ningún sitio que lo sea.
+
+### Lo que no pude verificar
+
+Una sesión autenticada como usuario restringido de un **segundo** inquilino —
+porque no hay segundo inquilino. El estado vivo al 2026-08-23 es: **1
+`Business`** ("Owner Sandbox", `trial`), **1 `User`**, **1 `LoyaltyAccount`**.
+
+Y de paso, algo que sólo se ve mirando los datos y no el repo: ese único usuario
+es `h.josepablo@gmail.com` con `role: business_admin` y **sin `business_id`**. Con
+eso, `licensesAdmin` (que exige `role === 'admin'`) le responde 403, y
+`Business.read` —`id == {{user.data.business_id}}` o `admin`— no le empareja
+ninguna fila. **La consola de dueño no es alcanzable por la única cuenta que
+existe.** No es un fallo de aislamiento, pero es la razón de fondo por la que
+nada de lo de arriba se pudo ejercitar contra datos reales.

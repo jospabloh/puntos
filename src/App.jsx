@@ -4,7 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import SessionHeartbeat from '@/lib/SessionHeartbeat'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
@@ -47,9 +47,16 @@ const AuthenticatedApp = () => {
       if (getRememberedIdentity()) {
         return <ContinueAs />;
       }
-      // No remembered identity → behave exactly as before.
-      navigateToLogin();
-      return null;
+      // No remembered identity → this app's own login page, not Base44's.
+      //
+      // This used to call navigateToLogin() (base44.auth.redirectToLogin), which
+      // sends the browser to the platform-served lowercase `/login`. Base44 owns
+      // that path and answers it with its own generic login — so an anonymous
+      // visitor never reached Puntos+'s branded page at `/Login`, even though
+      // that page exists and authenticates for real (base44.auth.login +
+      // loginWithProvider('google')). Same bug jospabloh/ctrlhq had and fixed;
+      // see its CLAUDE.md.
+      return <Navigate to="/Login" replace />;
     }
   }
 
