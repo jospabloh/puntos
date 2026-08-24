@@ -80,6 +80,14 @@ Deno.serve(async (req) => {
     if (account.status && account.status !== 'active') {
       return Response.json({ error: 'La cuenta no está activa' }, { status: 403 });
     }
+    // Tenant isolation guard (module 14, 2026-08-23): the account must belong
+    // to the same tenant as the store being operated. Fail-closed — mirrors
+    // redeemOffer's account/offer check — because a legacy/unscoped account
+    // (business_id: null) previously slipped past the store_id check below,
+    // which only fires when store_id is already set.
+    if (!account.business_id || account.business_id !== store.business_id) {
+      return Response.json({ error: 'La cuenta no pertenece a este negocio' }, { status: 403 });
+    }
     if (account.store_id && account.store_id !== store.id) {
       return Response.json({ error: 'La cuenta no pertenece a esta tienda' }, { status: 403 });
     }

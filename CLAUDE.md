@@ -685,6 +685,28 @@ ninguna fila. **La consola de dueño no es alcanzable por la única cuenta que
 existe.** No es un fallo de aislamiento, pero es la razón de fondo por la que
 nada de lo de arriba se pudo ejercitar contra datos reales.
 
+### Cierre — 2026-08-24 (v2.0.15)
+
+Auditoría programada de portafolio re-corrió el módulo 14 sobre este mismo
+archivo y encontró los tres hallazgos de arriba **todavía presentes** en el
+código/esquema — la sección anterior los documentaba como reales pero no
+llegó a arreglarlos. Los tres se cerraron en esta pasada:
+
+1. `earnPoints`/`burnPoints` ganaron el mismo chequeo fail-closed que
+   `redeemOffer` ya tenía: `account.business_id` debe existir y coincidir con
+   `store.business_id`, antes del chequeo de `store_id` preexistente (que se
+   queda, como segunda restricción).
+2. `LoyaltyAccount.qr_token` pasó a `rls.write: false`.
+3. `LoyaltyAccount.business_id`/`store_id` ganaron el mismo `$and` de
+   `data.business_id == {{user.data.business_id}}` que la regla de entidad
+   `update` ya aplicaba, a nivel de campo.
+
+Ningún hallazgo nuevo. Sigue sin poderse verificar contra un segundo
+inquilino real — el estado vivo no cambió. Detalle completo en
+`CHANGELOG.md` (2.0.15). **Pendiente, como en el módulo 1**: desplegar el
+esquema (`npm run deploy:entities`) — los tres campos de `LoyaltyAccount`
+tocados aquí no toman efecto en producción hasta ese paso.
+
 ## Módulo 15 — el puente con Mission Control: una llave por app (2026-08-23)
 
 `INGEST_HMAC_SECRET` es **un solo valor compartido por todo el portafolio**, así

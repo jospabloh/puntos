@@ -100,6 +100,9 @@
     },
     "qr_token": {
       "description": "Token \u00fanico para QR (regenerable)",
+      "rls": {
+        "write": false
+      },
       "type": "string"
     },
     "qr_token_expires": {
@@ -174,14 +177,28 @@
               }
             },
             {
-              "user_condition": {
-                "role": "merchant"
-              }
+              "$and": [
+                {
+                  "user_condition": {
+                    "role": "merchant"
+                  }
+                },
+                {
+                  "data.business_id": "{{user.data.business_id}}"
+                }
+              ]
             },
             {
-              "user_condition": {
-                "role": "business_admin"
-              }
+              "$and": [
+                {
+                  "user_condition": {
+                    "role": "business_admin"
+                  }
+                },
+                {
+                  "data.business_id": "{{user.data.business_id}}"
+                }
+              ]
             }
           ]
         }
@@ -224,14 +241,28 @@
               }
             },
             {
-              "user_condition": {
-                "role": "merchant"
-              }
+              "$and": [
+                {
+                  "user_condition": {
+                    "role": "merchant"
+                  }
+                },
+                {
+                  "data.business_id": "{{user.data.business_id}}"
+                }
+              ]
             },
             {
-              "user_condition": {
-                "role": "business_admin"
-              }
+              "$and": [
+                {
+                  "user_condition": {
+                    "role": "business_admin"
+                  }
+                },
+                {
+                  "data.business_id": "{{user.data.business_id}}"
+                }
+              ]
             }
           ]
         }
