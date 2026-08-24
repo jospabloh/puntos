@@ -53,21 +53,18 @@ export default function Wallet() {
     enabled: !!account?.id,
   });
 
-  // Mutation to refresh QR token
+  // Mutation to refresh QR token — routed through a service-role function
+  // (module 14 follow-up, 2026-08-24) since qr_token/qr_token_expires are
+  // no longer client-writable at the field level. See refreshQrToken/entry.ts.
   const refreshTokenMutation = useMutation({
     mutationFn: async () => {
       if (!account?.id) throw new Error('Cuenta no disponible');
-      const array = new Uint8Array(9);
-      crypto.getRandomValues(array);
-      const newToken = Array.from(array, b => b.toString(36).padStart(2, '0')).join('').substring(0, 12).toUpperCase();
-      const tokenExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
-      
-      await base44.entities.LoyaltyAccount.update(account.id, {
-        qr_token: newToken,
-        qr_token_expires: tokenExpires
-      });
-      
-      return { qr_token: newToken, qr_token_expires: tokenExpires };
+      const response = await base44.functions.invoke('refreshQrToken', {});
+      const result = response?.data;
+      if (!result?.success) {
+        throw new Error(result?.error || 'No se pudo actualizar el código QR');
+      }
+      return { qr_token: result.qr_token, qr_token_expires: result.qr_token_expires };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyaltyAccount'] });

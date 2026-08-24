@@ -29,6 +29,15 @@ the deployed schema/code and are fixed here; no new findings surfaced.
   RLS, not a cross-tenant leak, but there was no reason to allow it — only
   `createLoyaltyAccount`/`regenerateExpiredQR` should ever set it). Now
   `rls.write: false`.
+  - **Caught in review (Codex, before merge):** locking the field broke
+    `Wallet.jsx`'s own QR refresh — it wrote `qr_token`/`qr_token_expires`
+    directly from the browser every 5 minutes on expiry (and QRWallet.jsx's
+    auto-refresh would have retried every second on failure, spamming the
+    error toast). New `base44/functions/refreshQrToken` is the service-role
+    replacement, scoped to the caller's own account (same shape as
+    `exportMyData`); `Wallet.jsx` now calls it instead of writing the field.
+    Not `regenerateExpiredQR` — that one's the unauthenticated cron sibling
+    that sweeps every account, wrong shape for a single on-demand refresh.
 - **LOW — `LoyaltyAccount.business_id`/`store_id` field-level write rules had
   no tenant scoping**, unlike the entity-level rule sitting right next to
   them. A cashier or business_admin could, via a direct SDK call, move one of

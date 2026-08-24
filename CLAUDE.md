@@ -707,6 +707,17 @@ inquilino real — el estado vivo no cambió. Detalle completo en
 esquema (`npm run deploy:entities`) — los tres campos de `LoyaltyAccount`
 tocados aquí no toman efecto en producción hasta ese paso.
 
+Una revisión automática (Codex) sobre el PR encontró, antes de mergear, que
+bloquear `qr_token` rompía el refresco propio de `Wallet.jsx` (escribía el
+campo directo desde el navegador cada 5 minutos). Nueva
+`base44/functions/refreshQrToken` — mismo patrón que `exportMyData`, service
+role acotado a la cuenta propia del llamante — reemplaza esa escritura
+directa; no es lo mismo que `regenerateExpiredQR` (ese es el cron sin sesión
+de usuario que barre todas las cuentas). Confirma otra vez el patrón: un
+bloqueo de campo puede romper a un escritor legítimo que nadie recordaba, y
+vale re-grepear los usos del campo antes de bloquearlo, no solo los de
+lectura.
+
 ## Módulo 15 — el puente con Mission Control: una llave por app (2026-08-23)
 
 `INGEST_HMAC_SECRET` es **un solo valor compartido por todo el portafolio**, así
