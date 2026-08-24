@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/scheduledGuard.ts';
 
 // Deno functions in this repo can't import across directories (see CLAUDE.md),
 // so the email template lives inline here — same convention as the duplicated
@@ -68,6 +69,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Only the platform's scheduled automation may invoke this — it passes the
+    // SCHEDULED_TASK_SECRET via function_args. Anonymous external callers get 403.
+    const guard = await verifyScheduledRequest(req);
+    if (!guard.ok) return unauthorizedResponse(guard.reason || 'Forbidden');
 
     // Scheduled automation — no user session; use service role directly.
 

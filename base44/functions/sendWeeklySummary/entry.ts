@@ -1,8 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/scheduledGuard.ts';
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    // Only the platform's scheduled automation may invoke this — it passes the
+    // SCHEDULED_TASK_SECRET via function_args. Anonymous external callers get 403.
+    const guard = await verifyScheduledRequest(req);
+    if (!guard.ok) return unauthorizedResponse(guard.reason || 'Forbidden');
     // Scheduled automations run without a user session — use service role directly.
 
     // Get all active accounts

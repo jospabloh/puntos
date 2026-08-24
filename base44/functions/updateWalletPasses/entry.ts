@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { SignJWT, importPKCS8 } from 'npm:jose@5.2.0';
+import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/scheduledGuard.ts';
 
 // updateWalletPasses — pushes the current points balance to issued wallet passes.
 //
@@ -94,6 +95,11 @@ async function patchGoogleObject(accessToken, objectId, balance) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Only the platform's scheduled automation may invoke this — it passes the
+    // SCHEDULED_TASK_SECRET via function_args. Anonymous external callers get 403.
+    const guard = await verifyScheduledRequest(req);
+    if (!guard.ok) return unauthorizedResponse(guard.reason || 'Forbidden');
 
     // Scheduled automation — no user session; use service role directly.
 
