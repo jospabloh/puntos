@@ -5,6 +5,63 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.15] — 2026-08-24 — Close out the three module-14 isolation findings
+
+Scheduled portfolio-standard audit re-ran module 14 (multi-tenant isolation)
+against this repo's own CLAUDE.md, which already documented three findings
+from the 2026-08-23 pass as real-but-unfixed. All three were still present in
+the deployed schema/code and are fixed here; no new findings surfaced.
+
+### Security — RLS / tenant isolation
+- **MEDIUM — `earnPoints`/`burnPoints` never checked the loyalty account's own
+  tenant against the store being operated.** Both only checked
+  `account.store_id && account.store_id !== store.id` — a legacy/unscoped
+  account (`business_id: null`, `store_id: null`, the shape any account
+  created before store assignment has) sailed past that `&&` entirely. A
+  cashier at any store of any tenant could accrue or deduct points on such an
+  account. Fixed by adding the same fail-closed tenant check `redeemOffer`
+  already used: reject unless `account.business_id` is set and equals
+  `store.business_id`, ahead of the pre-existing store_id check (left in place
+  as a secondary constraint).
+- **LOW — `LoyaltyAccount.qr_token` had no field-level RLS write lock**, so a
+  customer could set their own QR token to any value, including another
+  customer's (collision risk was already store-scoped by the POS lookup and
+  RLS, not a cross-tenant leak, but there was no reason to allow it — only
+  `createLoyaltyAccount`/`regenerateExpiredQR` should ever set it). Now
+  `rls.write: false`.
+  - **Caught in review (Codex, before merge):** locking the field broke
+    `Wallet.jsx`'s own QR refresh — it wrote `qr_token`/`qr_token_expires`
+    directly from the browser every 5 minutes on expiry (and QRWallet.jsx's
+    auto-refresh would have retried every second on failure, spamming the
+    error toast). New `base44/functions/refreshQrToken` is the service-role
+    replacement, scoped to the caller's own account (same shape as
+    `exportMyData`); `Wallet.jsx` now calls it instead of writing the field.
+    Not `regenerateExpiredQR` — that one's the unauthenticated cron sibling
+    that sweeps every account, wrong shape for a single on-demand refresh.
+- **LOW — `LoyaltyAccount.business_id`/`store_id` field-level write rules had
+  no tenant scoping**, unlike the entity-level rule sitting right next to
+  them. A cashier or business_admin could, via a direct SDK call, move one of
+  their own tenant's accounts to a foreign `business_id`/`store_id` (could not
+  reach anything outside their tenant, only push a record out of it). Both
+  fields now carry the same `data.business_id == {{user.data.business_id}}`
+  scoping the entity-level `update` rule already enforces.
+
+**Deploy note: the `LoyaltyAccount` schema change (`qr_token`,
+`business_id`, `store_id`) must be pushed via `npm run deploy:entities`
+(or `update_entity_schema`) — the repo `.jsonc` alone doesn't change the
+field locks in production.**
+
+**Verified:** `npm run lint` (eslint + `validate:rls` 18 entities +
+`validate:permissions` + `validate:functions`) and `npm run build` both pass.
+`deno check --node-modules-dir=auto` on both edited functions shows no new
+type errors near the changed lines (12 pre-existing errors elsewhere in
+`earnPoints`, all from the `@base44/sdk` types resolving `user`/`sr.entities`
+too loosely — unrelated to this change, present before it too). **Not
+verified:** a live suspended/cross-tenant POS session — this repo still has
+only the one tenant/account documented in module 14's "lo que no pude
+verificar", so the exact scenario these fixes close still can't be exercised
+against real data.
+
 ## [2.0.14] — 2026-08-18 — In-app version/changelog display
 
 Portfolio-standard audit flagged module 6 ("changelog & versioning") as
