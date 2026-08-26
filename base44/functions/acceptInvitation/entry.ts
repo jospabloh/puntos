@@ -9,6 +9,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // This function is the only sanctioned path: it verifies a real pending invite
 // addressed to THIS user's email and assigns exactly the role/tenant the invite
 // grants — with the service role, and never `admin` (an invite can't mint owners).
+//
+// Modulo 18 (jospabloh/acacia-app-standard -> STANDARD.md, 2026-08-26): accepting
+// an invitation used to overwrite business_id/role unconditionally, with no
+// record of whatever business the caller belonged to before. A business_admin
+// of Business A invited to join Business B as staff would silently and
+// irreversibly lose access to A the moment they accepted. Now, before moving
+// business_id away from the caller's current tenant role, that membership is
+// backfilled into Membership -- and a Membership row for the invitation's own
+// business is created (or reused, if one already exists) -- so joining a
+// second business is always safe and reversible via switchBusiness.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -57,6 +67,50 @@ Deno.serve(async (req) => {
       if (store && store.business_id === inv.business_id) {
         storeId = store.id;
         storeName = store.name;
+      }
+    }
+
+    // Backfill a Membership for whatever business the caller was already
+    // administering/staffing, BEFORE moving business_id away from it — a lazy,
+    // one-time migration for accounts that predate Membership. Only meaningful
+    // for a real tenant role; the platform owner (handled below) has none to
+    // preserve, and a brand-new user has no prior business_id at all.
+    if (user.business_id && (user.role === 'business_admin' || user.role === 'merchant')) {
+      const already = await sr.entities.Membership.filter(
+        { business_id: user.business_id, user_id: user.id }, undefined, 1,
+      );
+      if (!already?.length) {
+        await sr.entities.Membership.create({
+          business_id: user.business_id,
+          business_name: user.business_name || '',
+          user_id: user.id,
+          user_email: user.email,
+          role: user.role,
+          store_id: user.store_id || user.storeId || '',
+          store_name: user.store_name || '',
+        });
+      }
+    }
+
+    // Membership for the business this invitation grants — same skip for the
+    // platform owner as createBusiness (their tier isn't a Membership role,
+    // and they keep `admin` below regardless). Idempotent: accepting an
+    // invitation to a business already joined reuses the existing row rather
+    // than overwriting a role an admin may have since promoted by hand.
+    if (user.role !== 'admin') {
+      const existingHere = await sr.entities.Membership.filter(
+        { business_id: inv.business_id, user_id: user.id }, undefined, 1,
+      );
+      if (!existingHere?.length) {
+        await sr.entities.Membership.create({
+          business_id: inv.business_id,
+          business_name: inv.business_name || '',
+          user_id: user.id,
+          user_email: user.email,
+          role: grantsAdmin ? 'business_admin' : 'merchant',
+          store_id: storeId || '',
+          store_name: storeName || '',
+        });
       }
     }
 
