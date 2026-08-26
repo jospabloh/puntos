@@ -221,13 +221,25 @@ export default function Onboarding() {
         const u = raw?.data ? { ...raw.data, ...raw } : raw;
         setUser(u);
 
-        // Anyone already provisioned must NOT be trapped here: a tenant member
-        // (owner / business_admin / staff) or a customer with a completed account
-        // is sent to their proper home. Only a brand-new customer stays.
+        // Modulo 18 (jospabloh/acacia-app-standard -> STANDARD.md): an
+        // already-provisioned business_admin/staff must still be able to
+        // reach this screen to accept a NEW invitation or spin up ANOTHER
+        // business — that's what `?join=1` is for. Without it, someone
+        // invited to a second business while already belonging to one would
+        // never see the invitation at all (they'd be bounced to their
+        // current home below before this component ever checked for one).
+        const params = new URLSearchParams(window.location.search);
+        const joiningAnother = params.get('join') === '1';
+
+        // Anyone already provisioned must NOT be trapped here on a normal
+        // visit: a tenant member (owner / business_admin / staff) or a
+        // customer with a completed account is sent to their proper home.
+        // Only a brand-new customer, or anyone who explicitly asked to join
+        // another business, stays.
         const role = getAppRole(u);
         const accounts = await base44.entities.LoyaltyAccount.filter({ user_email: u.email });
         const hasAccount = accounts.length > 0 && accounts[0].onboarding_completed;
-        if (role !== ROLES.CUSTOMER || u?.business_id || hasAccount) {
+        if (!joiningAnother && (role !== ROLES.CUSTOMER || u?.business_id || hasAccount)) {
           window.location.href = createPageUrl(homePageForRole(u));
           return;
         }

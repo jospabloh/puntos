@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
+import BusinessSwitcher from '@/components/BusinessSwitcher';
 
 const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding', 'ForgotPassword'];
 
@@ -161,6 +162,14 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
                 <RoleChip role={role} />
               </div>
             </div>
+            {role === ROLES.BUSINESS_ADMIN && (
+              <div className="mt-2 space-y-1">
+                <BusinessSwitcher user={user} />
+                <Link to={`${createPageUrl('Onboarding')}?join=1`} className="block text-xs font-medium text-violet-600 hover:underline">
+                  Crear o unirme a otro negocio
+                </Link>
+              </div>
+            )}
             <button onClick={() => base44.auth.logout()} className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-rose-50 hover:text-rose-600">
               <LogOut className="h-3.5 w-3.5" /> Cerrar sesión
             </button>
@@ -174,6 +183,14 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
             <aside className="absolute left-0 top-0 h-full w-72 bg-white dark:bg-slate-900 p-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="px-2 pb-4"><Wordmark subtitle={subtitle} /></div>
               <BackOfficeNav groups={groups} role={role} currentPageName={currentPageName} onNavigate={() => setOpen(false)} />
+              {role === ROLES.BUSINESS_ADMIN && (
+                <div className="mt-3 space-y-1 px-1">
+                  <BusinessSwitcher user={user} />
+                  <Link to={`${createPageUrl('Onboarding')}?join=1`} onClick={() => setOpen(false)} className="block text-xs font-medium text-violet-600 hover:underline">
+                    Crear o unirme a otro negocio
+                  </Link>
+                </div>
+              )}
               <button onClick={() => base44.auth.logout()} className="mt-4 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50">
                 <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
               </button>
@@ -234,6 +251,11 @@ function ConsumerShell({ user, role, currentPageName, children }) {
                 <Button variant="ghost" size="sm" className="text-xs">POS</Button>
               </Link>
             )}
+            {(role === ROLES.STAFF || role === ROLES.BUSINESS_ADMIN) && (
+              <Link to={`${createPageUrl('Onboarding')}?join=1`} className="hidden md:block">
+                <Button variant="ghost" size="sm" className="text-xs">Unirme a otro negocio</Button>
+              </Link>
+            )}
             {user ? (
               <Link to={createPageUrl('Profile')}>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -274,6 +296,11 @@ function ConsumerShell({ user, role, currentPageName, children }) {
               {canPOS && (
                 <Link to={createPageUrl('MerchantPOS')} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900">
                   <Store className="h-5 w-5" /><span className="font-medium">Punto de venta</span>
+                </Link>
+              )}
+              {(role === ROLES.STAFF || role === ROLES.BUSINESS_ADMIN) && (
+                <Link to={`${createPageUrl('Onboarding')}?join=1`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900">
+                  <Building2 className="h-5 w-5" /><span className="font-medium">Unirme a otro negocio</span>
                 </Link>
               )}
               {user && (

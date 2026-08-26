@@ -13,6 +13,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // the client must NOT set its own `role`/`business_id` (that path let any user
 // self-escalate to business_admin/admin). The client just refreshes its session
 // afterwards so the new role lands in its token.
+//
+// Modulo 18 (jospabloh/acacia-app-standard -> STANDARD.md, 2026-08-26): ya no
+// rechaza a un caller que ya administra otro negocio -- crear un negocio
+// adicional es legitimo (el mismo email dueno de dos programas de lealtad).
+// Antes de mover el business_id activo al negocio recien creado, si el caller
+// ya tenia uno, se le respalda una fila Membership para el -- sin esto, un
+// business_admin/staff existente que usara este flujo por primera vez
+// perderia sin darse cuenta el acceso a su negocio original, porque
+// Membership no existia todavia cuando ese negocio se creo.
 
 const TRIAL_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -57,12 +66,6 @@ Deno.serve(async (req) => {
 
     if (!businessName || !storeName) {
       return Response.json({ error: 'businessName and storeName are required' }, { status: 400 });
-    }
-
-    // One business per owner — prevents duplicate provisioning on re-submit.
-    const owned = await base44.asServiceRole.entities.Business.filter({ owner_user_id: user.id });
-    if (owned.length > 0) {
-      return Response.json({ error: 'Business already exists for this user', business: owned[0] }, { status: 409 });
     }
 
     // Store code is generated server-side and guaranteed unique — never trusted
@@ -142,7 +145,50 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3b) Promote the caller to business_admin of the new tenant (service role,
+    // 3b) Backfill a Membership for whatever business the caller was already
+    // administering/staffing, BEFORE we move business_id away from it -- a
+    // lazy, one-time migration for accounts onboarded before Membership
+    // existed. Only meaningful for a real tenant role (business_admin/
+    // merchant); the platform owner has no tenant membership to preserve.
+    // Best-effort idempotent (checks for an existing row first) so a retry
+    // can't double it.
+    if (user.business_id && (user.role === 'business_admin' || user.role === 'merchant')) {
+      const already = await base44.asServiceRole.entities.Membership.filter(
+        { business_id: user.business_id, user_id: user.id },
+        undefined,
+        1,
+      );
+      if (!already?.length) {
+        await base44.asServiceRole.entities.Membership.create({
+          business_id: user.business_id,
+          business_name: user.business_name || '',
+          user_id: user.id,
+          user_email: user.email,
+          role: user.role,
+          store_id: user.store_id || user.storeId || '',
+          store_name: user.store_name || '',
+        });
+      }
+    }
+
+    // The platform owner (role: admin) deliberately gets no Membership row for
+    // the new business: they stay cross-tenant `admin` (never demoted, see
+    // 3c below), and Membership's role enum only holds business_admin/
+    // merchant. A Membership here would let switchBusiness "switch" them into
+    // a plain business_admin of their own business, losing platform access.
+    if (user.role !== 'admin') {
+      await base44.asServiceRole.entities.Membership.create({
+        business_id: business.id,
+        business_name: business.name,
+        user_id: user.id,
+        user_email: user.email,
+        role: 'business_admin',
+        store_id: store.id,
+        store_name: store.name,
+      });
+    }
+
+    // 3c) Promote the caller to business_admin of the new tenant (service role,
     // so it works even once User.role is locked to admin-only writes). An existing
     // platform owner (admin) stays admin.
     const promotedRole = user.role === 'admin' ? 'admin' : 'business_admin';
