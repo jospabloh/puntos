@@ -5,6 +5,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.16] — 2026-08-31 — Module 14 reaudit after Module 18 (account switching)
+
+Scheduled portfolio-standard audit. Module 18 (multi-tenant account
+switching/joining — `Membership` entity, `switchBusiness`, and the
+`acceptInvitation`/`createBusiness` changes that back it) shipped 2026-08-26
+without a module-14 (tenant isolation) re-audit, even though switching the
+active tenant is exactly the scenario the 2026-08-23 audit had flagged as
+absent from this app. This pass closes that gap in the record.
+
+### Security — RLS / tenant isolation
+- **No new isolation findings.** Audited `Membership`'s deployed RLS
+  (`read` scoped by `data.user_id`, not `data.business_id` — required so a
+  user can list memberships in businesses that aren't their currently active
+  one; `create`/`update`/`delete` are service-role only) and the three
+  functions that touch it. `switchBusiness` re-derives the caller's
+  `Membership` set from the server, never the request body, and returns an
+  identical 404 for a foreign or nonexistent `business_id` (no existence
+  oracle). Neither it nor `createBusiness`/`acceptInvitation` can grant
+  `role: admin`, and the platform owner deliberately gets no `Membership`
+  row (so the switcher can never demote them to a tenant `business_admin`).
+
+### Dependencies — documented, not fixed
+- **MODERATE, deferred — `react-router`/`react-router-dom@6.30.4`** carries
+  two advisories (open-redirect via backslash in `<Link>`/`useNavigate`;
+  arbitrary constructor injection via `deserializeErrors()` on SSR hydration
+  — the second doesn't apply, this app is a client-only Vite SPA). The fix
+  needs `react-router-dom>=7.18`, a major-version jump; `npm audit fix`
+  without `--force` only reaches 6.30.6, still inside the vulnerable range.
+  Not applied in this pass — a v6→v7 migration touching every route needs
+  manual regression testing this automated run can't provide, not a
+  same-PR fix alongside a routine reaudit. Tracked as follow-up work.
+
+**Verified:** `npm run lint` (eslint + `validate:rls` 19 entities +
+`validate:permissions` + `validate:functions`) and `npm run build` both
+pass. `npm run check:secrets` clean. **Not verified:** a second real tenant
+with two active `Membership` rows — the live state is still the single
+business/account module 14 has documented since 2026-08-23.
+
 ## [2.0.15] — 2026-08-24 — Close out the three module-14 isolation findings
 
 Scheduled portfolio-standard audit re-ran module 14 (multi-tenant isolation)
