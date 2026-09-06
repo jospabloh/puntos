@@ -1,0 +1,46 @@
+{
+  "name": "Actualizar Wallet Passes Diariamente",
+  "description": "Actualiza los pases de Apple y Google Wallet con el balance actual de puntos",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 8 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "actualizar_wallet_passes_diariamente",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "updateWalletPasses",
+            "args": {
+              "scheduled_token": "re_QaaBRstQ_G5kqCtmg4XJwoU6iVpE3oK3C"
+            }
+          },
+          "then": "end"
+        }
+      }
+    ]
+  },
+  "x-base44-migrated-from-automation": {
+    "legacy_payload_function": "updateWalletPasses"
+  }
+}
