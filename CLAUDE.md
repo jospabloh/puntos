@@ -806,7 +806,7 @@ importe de ahí no resuelve; uno que no importe nada corre igual que en CI. Es l
 misma lección que el `000` del proxy en Mission Control: **que una vía esté
 bloqueada no significa que la pregunta no tenga respuesta.**
 
-## Auditoría programada — producción no sirve lo desplegado (2026-09-07, v2.0.16)
+## Auditoría programada — deploy gap, y un revocado que se auto-restauraba acceso (2026-09-07, v2.0.16)
 
 `npm run test:smoke` lleva **al menos 7 días corriendo en rojo a diario**
 (runs de Actions #12 al #18, 2026-08-31 a hoy) contra
@@ -840,6 +840,37 @@ mismo criterio: no forzarlo dentro de una pasada desatendida). `docs/USER_MANUAL
 no mencionaba el selector de tema en absoluto (su fecha era anterior al
 módulo 12) — se le agregó una sección **Appearance** breve.
 
+### Módulo 14 — hallazgo real en `manageTeamMember`, encontrado por revisión de Codex sobre PR #66
+
+Un review automático de Codex sobre PR #66 marcó, sobre la propia
+reauditoría del módulo 14 de esa PR, que `manageTeamMember` nunca tocaba
+`Membership` al remover o degradar a un miembro del equipo — y
+`switchBusiness` (módulo 18) lee `Membership` en solitario, nunca el `User`
+en vivo. Se comprobó leyendo el código: cierto. `remove`/`setRole` sólo
+escribían el `User`; la fila `Membership` de ese negocio se quedaba con el
+rol viejo. La persona removida o degradada podía llamar a `switchBusiness`
+con ese mismo `business_id` y recuperar exactamente el rol, tienda y acceso
+al negocio que se le acababa de quitar — una revocación de acceso reversible
+por quien la sufría.
+
+**Arreglado en `base44/functions/manageTeamMember/entry.ts`** (esta pasada,
+no en PR #66): cada operación ahora sincroniza la fila `Membership` del
+objetivo para el negocio en el que opera — `remove` y un `setRole` a
+`customer` la borran (no queda rol de inquilino que preservar);
+`setRole` a `business_admin`/`merchant` y `assignStore` actualizan su
+rol/tienda en el sitio. Nunca crea una fila que no existiera ya — a alguien
+sin `Membership` no se le puede devolver el acceso por definición, así que no
+hace falta sincronizarle nada.
+
+**Verificado con `deno check`** (el binario se puede bajar en este sandbox,
+ver la nota de más abajo) sobre el archivo tocado y, para comparar,
+sobre `switchBusiness` sin tocar: los mismos errores de tipos genéricos del
+`@base44/sdk` (`Property 'X' does not exist on type '{}'`) aparecen en los
+dos, confirmando que no son un problema introducido por este cambio sino un
+hueco de tipos preexistente en todo `base44/functions/` — este repo no corre
+`deno check` en CI, así que ninguno de los dos archivos había tenido nunca
+una comprobación de tipos real hasta ahora.
+
 PR #66 (`claude/sleepy-cray-wio3k2`) llevaba una semana con su check
 `lint-and-build` en rojo por dos intentos idénticos de 3-4 segundos, muertos
 antes de que `actions/checkout` corriera — reproducción local en verde y el
@@ -849,7 +880,11 @@ aprovisionamiento del runner, no del código. Se re-disparó desde esta sesión
 
 **Verificado:** `npm ci`, `npm run lint` (eslint + `validate:rls` 19 entidades
 + `validate:permissions` + `validate:functions` 25/40), `npm run build`,
-`npm run check:secrets`, `npm audit --omit=dev`. **No verificado:** el deploy
-del sitio en sí (sin credenciales aquí) ni una sesión de navegador contra
-producción — el hallazgo se apoya en 7 corridas idénticas del propio smoke
-test del portafolio, no en una inspección visual directa.
+`npm run check:secrets`, `npm audit --omit=dev`, `deno check` sobre
+`manageTeamMember` y `switchBusiness`. **No verificado:** el deploy del sitio
+en sí (sin credenciales aquí) ni una sesión de navegador contra producción —
+el hallazgo del deploy se apoya en 7 corridas idénticas del propio smoke test
+del portafolio, no en una inspección visual directa; el fix de
+`manageTeamMember` no se ejercitó contra un `manageTeamMember` → `Membership`
+→ `switchBusiness` real end-to-end (necesita una función Deno desplegada y
+una sesión de dos usuarios), sólo revisado por lectura y tipado.

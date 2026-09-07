@@ -7,6 +7,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [2.0.16] — 2026-09-07 — Scheduled full audit: production deploy gap, dependency patches
 
+### Security — fixed while this PR was open: revoked/demoted team members could self-restore access
+
+A Codex review on PR #66 caught this during this same audit run: `manageTeamMember`
+(`remove` / `setRole` / `assignStore`) only ever updated the target's live `User`
+record. It never touched their `Membership` row for that tenant — and
+`switchBusiness` (module 18) reads Membership alone, never the live `User`
+record, to decide what business/role/store a switch restores. Net effect: a
+tenant admin removes a staff member, or demotes a `business_admin` to
+`merchant` — the `User` record changes, but the old `Membership` row for that
+business still says `business_admin` (or whatever they had). The
+removed/demoted person calls `switchBusiness` with that same `business_id` and
+gets their old role, store, and business access back, no invitation needed.
+Access revocation was reversible by the person it was revoked from.
+
+Fixed: `manageTeamMember` now mirrors every op into the target's Membership row
+for the tenant it's operating in — `remove` and a `setRole` down to `customer`
+delete it (no tenant role left to preserve); `setRole` to `business_admin`/
+`merchant` and `assignStore` update its role/store in place. Never creates a
+row that didn't already exist — a member with no Membership can't be switched
+back into regardless. Verified with a `deno check` type-check of both the
+touched file and the untouched `switchBusiness` (to confirm the pre-existing
+`@base44/sdk` typing gaps it also reports are not something this change
+introduced — this repo has no deno step in CI, so this was the first type
+check either file has ever gotten).
+
 **Note for whoever merges second:** PR #66 (`claude/sleepy-cray-wio3k2`, the
 module-14/Membership reaudit) independently also bumps to `2.0.16`. Whichever
 of these two PRs merges last needs a trivial rebase to `2.0.17` on this line

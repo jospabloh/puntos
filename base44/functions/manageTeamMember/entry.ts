@@ -5,11 +5,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // (with no User write-RLS) let anyone self-escalate. Here the service role makes
 // the change ONLY after verifying the actor manages the target's tenant, and the
 // requested role is never `admin`.
+//
+// Every op also mirrors its effect into the target's Membership row for this
+// tenant (Modulo 14 reaudit, 2026-09-07 -- Codex review on PR #66 caught this
+// missing). switchBusiness (Modulo 18) trusts Membership alone and never reads
+// the live User record, so a removed or demoted member whose Membership row
+// was left untouched here could call switchBusiness on this same business_id
+// and get their old role/store back -- access this function had just revoked.
 function pick(u: any, key: string) {
   return u?.[key] ?? u?.data?.[key];
 }
 
 const ASSIGNABLE_ROLES = ['business_admin', 'merchant', 'customer'];
+// Membership.role enum only holds these two -- 'customer' has no Membership
+// row (same reason the platform owner never gets one; see createBusiness).
+const MEMBERSHIP_ROLES = ['business_admin', 'merchant'];
 
 Deno.serve(async (req) => {
   try {
@@ -62,6 +72,32 @@ Deno.serve(async (req) => {
       return { storeId: store.id, store_id: store.id, store_name: store.name };
     }
 
+    // Keep the target's Membership row for `scopeBusinessId` in step with
+    // whatever this call just did to their User record. `next: null` means
+    // the target no longer holds a tenant role here (removed, or demoted to
+    // customer) -- delete the row so switchBusiness has nothing left to
+    // restore from. Otherwise update the existing row's role/store in place.
+    // Never creates a row: a member with no Membership yet can't be switched
+    // back into by definition, so there is nothing to keep in sync.
+    async function syncMembership(next: { role: string; storeId?: string; storeName?: string } | null) {
+      if (!scopeBusinessId) return;
+      const rows = await sr.entities.Membership.filter(
+        { business_id: scopeBusinessId, user_id: userId }, undefined, 5,
+      );
+      if (!rows?.length) return;
+      for (const row of rows) {
+        if (next) {
+          await sr.entities.Membership.update(row.id, {
+            role: next.role,
+            store_id: next.storeId || '',
+            store_name: next.storeName || '',
+          });
+        } else {
+          await sr.entities.Membership.delete(row.id);
+        }
+      }
+    }
+
     try {
       if (op === 'remove') {
         const updated = await sr.entities.User.update(userId, {
@@ -69,11 +105,17 @@ Deno.serve(async (req) => {
           business_id: '', business_name: '',
           storeId: '', store_id: '', store_name: '', merchant_role: '',
         });
+        await syncMembership(null);
         return Response.json({ ok: true, updated });
       }
 
       if (op === 'assignStore') {
-        const updated = await sr.entities.User.update(userId, await storeFields(body?.storeId));
+        const fields = await storeFields(body?.storeId);
+        const updated = await sr.entities.User.update(userId, fields);
+        const targetRole = pick(target, 'role');
+        if (MEMBERSHIP_ROLES.includes(targetRole)) {
+          await syncMembership({ role: targetRole, storeId: fields.storeId, storeName: fields.store_name });
+        }
         return Response.json({ ok: true, updated });
       }
 
@@ -92,6 +134,11 @@ Deno.serve(async (req) => {
         Object.assign(patch, { storeId: '', store_id: '', store_name: '', merchant_role: '' });
       }
       const updated = await sr.entities.User.update(userId, patch);
+      await syncMembership(
+        MEMBERSHIP_ROLES.includes(role)
+          ? { role, storeId: patch.storeId as string, storeName: patch.store_name as string }
+          : null,
+      );
       return Response.json({ ok: true, updated });
     } catch (e) {
       // storeFields throws a Response on validation failure.
