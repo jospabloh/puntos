@@ -5,6 +5,72 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.16] — 2026-09-07 — Scheduled full audit: production deploy gap, dependency patches
+
+**Note for whoever merges second:** PR #66 (`claude/sleepy-cray-wio3k2`, the
+module-14/Membership reaudit) independently also bumps to `2.0.16`. Whichever
+of these two PRs merges last needs a trivial rebase to `2.0.17` on this line
+and its own `package.json`/`appConfig.js` — no code in either PR depends on
+the number itself.
+
+### Found — production is not serving the deployed code (not fixed here — needs a manual deploy)
+
+`npm run test:smoke`'s daily scheduled run has failed identically for at
+least 7 consecutive days (GitHub Actions runs #12–#18, 2026-08-31 through
+today) against `https://puntosplus.acaciaco.com.mx`: the site answers 200
+with the right `<title>`, throws no console errors, and paints a resolved
+theme before mount, but `[data-theme-switcher]` — the corner control shipped
+in module 12 (2026-08-21) — is never found. `ThemeSwitcher` is mounted
+unconditionally at the top of `src/App.jsx` (no auth/route gate that could
+explain it being absent for a logged-out visitor on `/`), so this reads as
+exactly the failure mode this repo's own CLAUDE.md has documented since
+module 11: **merging to `main` does not deploy the site** —
+`npm run deploy:site` is a separate, manual step. This sandbox has no Base44
+CLI credentials (`npx base44 whoami` fails outright, no `BASE44_*` env is
+set) and the Base44 MCP connector isn't authorized in this session either, so
+the deploy itself could not be run or confirmed from here.
+
+**Action needed from a human with Base44 access:** run `npm run deploy:site`,
+then re-run the `Production smoke test` workflow (`workflow_dispatch`) to
+confirm the corner switcher shows up. If it still doesn't after a real
+deploy, that changes this from a deploy gap into a real product bug and
+needs its own follow-up.
+
+### Fixed — dependency vulnerabilities (transitive, non-breaking)
+
+`npm audit` had climbed to 6 advisories (1 low, 4 moderate, 1 high) since the
+2.0.15 audit: `fflate`, `postcss-selector-parser`, `@humanfs/node`, and
+`browserslist` all had newer non-breaking patches available. `npm audit fix`
+(no `--force`) resolved all four; only `package-lock.json` changed, no
+direct dependency version in `package.json` moved. `npm run lint` and
+`npm run build` both still pass.
+
+**Left deferred, as before:** the `react-router`/`react-router-dom` moderate
+advisory (open redirect via backslash in `<Link>`/`useNavigate`) still needs
+a major v6→v7 bump (`react-router-dom@7.18.3`) that `npm audit fix --force`
+would apply blindly. Per the 2.0.16-in-#66 decision, this isn't something an
+unattended audit run should force through without manual route regression
+testing — still tracked as its own follow-up, not done here either.
+
+### Docs
+
+- `docs/USER_MANUAL.md` had no mention of the module-12 theme switcher at
+  all (last updated 2026-08-17, four days before that feature shipped) —
+  added a short **Appearance** section and bumped its version/date header.
+- This entry.
+
+### Verified this pass
+
+`npm ci`, `npm run lint` (eslint + `validate:rls` 19 entities +
+`validate:permissions` + `validate:functions` 25/40), `npm run build`,
+`npm run check:secrets`, `npm audit --omit=dev` (down to the one deferred
+finding above). PR #66 (open since 2026-08-31) had its `lint-and-build` check
+failing identically on both of its original attempts — 3-4 second runs that
+died before `actions/checkout` could even start. Re-triggered it now that a
+week of green `CI` runs on `main` argues against a real regression; it came
+back green on this re-run, confirming the prior diagnosis (runner-
+provisioning flake, not this repo's code).
+
 ## [2.0.15] — 2026-08-24 — Close out the three module-14 isolation findings
 
 Scheduled portfolio-standard audit re-ran module 14 (multi-tenant isolation)

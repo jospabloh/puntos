@@ -805,3 +805,51 @@ Lo que de verdad está bloqueado es `deno.land` y `jsr.io`, así que un test que
 importe de ahí no resuelve; uno que no importe nada corre igual que en CI. Es la
 misma lección que el `000` del proxy en Mission Control: **que una vía esté
 bloqueada no significa que la pregunta no tenga respuesta.**
+
+## Auditoría programada — producción no sirve lo desplegado (2026-09-07, v2.0.16)
+
+`npm run test:smoke` lleva **al menos 7 días corriendo en rojo a diario**
+(runs de Actions #12 al #18, 2026-08-31 a hoy) contra
+`https://puntosplus.acaciaco.com.mx`, siempre en la misma forma: responde 200
+con el `<title>` correcto, no lanza excepciones, el tema llega resuelto antes
+del montaje — pero `[data-theme-switcher]` (el control del módulo 12,
+2026-08-21) nunca aparece. `ThemeSwitcher` se monta sin condición ninguna en
+`src/App.jsx` (fuera del `Router`, junto a `Toaster`, no depende de auth ni de
+ruta), así que no hay una razón de código para que falte en un visitante
+anónimo en `/`. Esto encaja exactamente con lo que el módulo 11 ya documentó:
+**mergear a `main` no deploya el sitio** — falta correr `npm run deploy:site`
+a mano desde que se envió el módulo 12, o algo posterior lo revirtió sin
+volver a desplegar.
+
+**No se pudo correr el deploy desde este entorno** para confirmarlo o
+arreglarlo: `npx base44 whoami` falla (403 al bajar una dependencia del CLI,
+sin red a `jsr.io`), no hay ninguna variable `BASE44_*` en este sandbox, y el
+conector MCP de Base44 no está autorizado en esta sesión. Queda como acción
+pendiente para quien tenga acceso: correr `npm run deploy:site` y confirmar
+con un `workflow_dispatch` de `Production smoke test` que el selector aparece.
+Si sigue sin aparecer después de un deploy real, deja de ser un hueco de
+despliegue y pasa a ser un bug de producto — con su propio seguimiento.
+
+De paso: `npm audit` había subido a 6 avisos desde el cierre de la 2.0.15;
+`npm audit fix` (sin `--force`) resolvió los cuatro que tenían parche no
+disruptivo (`fflate`, `postcss-selector-parser`, `@humanfs/node`,
+`browserslist` — solo cambió `package-lock.json`). El de `react-router` sigue
+diferido a propósito (necesita el salto mayor v6→v7, documentado ya en la
+reauditoría del módulo 14 que PR #66 tiene abierta desde el 2026-08-31 —
+mismo criterio: no forzarlo dentro de una pasada desatendida). `docs/USER_MANUAL.md`
+no mencionaba el selector de tema en absoluto (su fecha era anterior al
+módulo 12) — se le agregó una sección **Appearance** breve.
+
+PR #66 (`claude/sleepy-cray-wio3k2`) llevaba una semana con su check
+`lint-and-build` en rojo por dos intentos idénticos de 3-4 segundos, muertos
+antes de que `actions/checkout` corriera — reproducción local en verde y el
+`CI` de `main` en verde en cada push desde entonces apuntaban a un fallo de
+aprovisionamiento del runner, no del código. Se re-disparó desde esta sesión
+(sin tocar el branch) y salió verde, confirmando el diagnóstico.
+
+**Verificado:** `npm ci`, `npm run lint` (eslint + `validate:rls` 19 entidades
++ `validate:permissions` + `validate:functions` 25/40), `npm run build`,
+`npm run check:secrets`, `npm audit --omit=dev`. **No verificado:** el deploy
+del sitio en sí (sin credenciales aquí) ni una sesión de navegador contra
+producción — el hallazgo se apoya en 7 corridas idénticas del propio smoke
+test del portafolio, no en una inspección visual directa.
