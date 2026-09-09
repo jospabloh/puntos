@@ -805,3 +805,86 @@ Lo que de verdad está bloqueado es `deno.land` y `jsr.io`, así que un test que
 importe de ahí no resuelve; uno que no importe nada corre igual que en CI. Es la
 misma lección que el `000` del proxy en Mission Control: **que una vía esté
 bloqueada no significa que la pregunta no tenga respuesta.**
+
+## Auditoría programada — deploy gap, y un revocado que se auto-restauraba acceso (2026-09-07, v2.0.16)
+
+`npm run test:smoke` lleva **al menos 7 días corriendo en rojo a diario**
+(runs de Actions #12 al #18, 2026-08-31 a hoy) contra
+`https://puntosplus.acaciaco.com.mx`, siempre en la misma forma: responde 200
+con el `<title>` correcto, no lanza excepciones, el tema llega resuelto antes
+del montaje — pero `[data-theme-switcher]` (el control del módulo 12,
+2026-08-21) nunca aparece. `ThemeSwitcher` se monta sin condición ninguna en
+`src/App.jsx` (fuera del `Router`, junto a `Toaster`, no depende de auth ni de
+ruta), así que no hay una razón de código para que falte en un visitante
+anónimo en `/`. Esto encaja exactamente con lo que el módulo 11 ya documentó:
+**mergear a `main` no deploya el sitio** — falta correr `npm run deploy:site`
+a mano desde que se envió el módulo 12, o algo posterior lo revirtió sin
+volver a desplegar.
+
+**No se pudo correr el deploy desde este entorno** para confirmarlo o
+arreglarlo: `npx base44 whoami` falla (403 al bajar una dependencia del CLI,
+sin red a `jsr.io`), no hay ninguna variable `BASE44_*` en este sandbox, y el
+conector MCP de Base44 no está autorizado en esta sesión. Queda como acción
+pendiente para quien tenga acceso: correr `npm run deploy:site` y confirmar
+con un `workflow_dispatch` de `Production smoke test` que el selector aparece.
+Si sigue sin aparecer después de un deploy real, deja de ser un hueco de
+despliegue y pasa a ser un bug de producto — con su propio seguimiento.
+
+De paso: `npm audit` había subido a 6 avisos desde el cierre de la 2.0.15;
+`npm audit fix` (sin `--force`) resolvió los cuatro que tenían parche no
+disruptivo (`fflate`, `postcss-selector-parser`, `@humanfs/node`,
+`browserslist` — solo cambió `package-lock.json`). El de `react-router` sigue
+diferido a propósito (necesita el salto mayor v6→v7, documentado ya en la
+reauditoría del módulo 14 que PR #66 tiene abierta desde el 2026-08-31 —
+mismo criterio: no forzarlo dentro de una pasada desatendida). `docs/USER_MANUAL.md`
+no mencionaba el selector de tema en absoluto (su fecha era anterior al
+módulo 12) — se le agregó una sección **Appearance** breve.
+
+### Módulo 14 — hallazgo real en `manageTeamMember`, encontrado por revisión de Codex sobre PR #66
+
+Un review automático de Codex sobre PR #66 marcó, sobre la propia
+reauditoría del módulo 14 de esa PR, que `manageTeamMember` nunca tocaba
+`Membership` al remover o degradar a un miembro del equipo — y
+`switchBusiness` (módulo 18) lee `Membership` en solitario, nunca el `User`
+en vivo. Se comprobó leyendo el código: cierto. `remove`/`setRole` sólo
+escribían el `User`; la fila `Membership` de ese negocio se quedaba con el
+rol viejo. La persona removida o degradada podía llamar a `switchBusiness`
+con ese mismo `business_id` y recuperar exactamente el rol, tienda y acceso
+al negocio que se le acababa de quitar — una revocación de acceso reversible
+por quien la sufría.
+
+**Arreglado en `base44/functions/manageTeamMember/entry.ts`** (esta pasada,
+no en PR #66): cada operación ahora sincroniza la fila `Membership` del
+objetivo para el negocio en el que opera — `remove` y un `setRole` a
+`customer` la borran (no queda rol de inquilino que preservar);
+`setRole` a `business_admin`/`merchant` y `assignStore` actualizan su
+rol/tienda en el sitio. Nunca crea una fila que no existiera ya — a alguien
+sin `Membership` no se le puede devolver el acceso por definición, así que no
+hace falta sincronizarle nada.
+
+**Verificado con `deno check`** (el binario se puede bajar en este sandbox,
+ver la nota de más abajo) sobre el archivo tocado y, para comparar,
+sobre `switchBusiness` sin tocar: los mismos errores de tipos genéricos del
+`@base44/sdk` (`Property 'X' does not exist on type '{}'`) aparecen en los
+dos, confirmando que no son un problema introducido por este cambio sino un
+hueco de tipos preexistente en todo `base44/functions/` — este repo no corre
+`deno check` en CI, así que ninguno de los dos archivos había tenido nunca
+una comprobación de tipos real hasta ahora.
+
+PR #66 (`claude/sleepy-cray-wio3k2`) llevaba una semana con su check
+`lint-and-build` en rojo por dos intentos idénticos de 3-4 segundos, muertos
+antes de que `actions/checkout` corriera — reproducción local en verde y el
+`CI` de `main` en verde en cada push desde entonces apuntaban a un fallo de
+aprovisionamiento del runner, no del código. Se re-disparó desde esta sesión
+(sin tocar el branch) y salió verde, confirmando el diagnóstico.
+
+**Verificado:** `npm ci`, `npm run lint` (eslint + `validate:rls` 19 entidades
++ `validate:permissions` + `validate:functions` 25/40), `npm run build`,
+`npm run check:secrets`, `npm audit --omit=dev`, `deno check` sobre
+`manageTeamMember` y `switchBusiness`. **No verificado:** el deploy del sitio
+en sí (sin credenciales aquí) ni una sesión de navegador contra producción —
+el hallazgo del deploy se apoya en 7 corridas idénticas del propio smoke test
+del portafolio, no en una inspección visual directa; el fix de
+`manageTeamMember` no se ejercitó contra un `manageTeamMember` → `Membership`
+→ `switchBusiness` real end-to-end (necesita una función Deno desplegada y
+una sesión de dos usuarios), sólo revisado por lectura y tipado.
