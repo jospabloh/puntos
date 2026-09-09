@@ -1,6 +1,6 @@
 # Puntos+ — User Manual
 
-Version: 2.0.13 | Updated: 2026-08-17
+Version: 2.0.15 | Updated: 2026-09-07
 
 ---
 
@@ -18,7 +18,8 @@ Version: 2.0.13 | Updated: 2026-08-17
 10. [Team Management](#team-management)
 11. [Trial and Subscription](#trial-and-subscription)
 12. [Notifications](#notifications)
-13. [FAQ](#faq)
+13. [Appearance](#appearance)
+14. [FAQ](#faq)
 
 ---
 
@@ -364,6 +365,17 @@ The weekly summary email is sent automatically to active customers who had
 transactions in the previous 7 days. Customers inactive for 30+ days now also
 receive a win-back reminder (fixed in v2.0.11 — a stale permission check had
 silently kept this email from ever sending).
+
+---
+
+## Appearance
+
+A small circular control sits in the bottom-right corner of every screen. Tap
+it to expand a three-slot track — **Claro** (light) · **Oscuro** (dark) ·
+**Sistema** (follow device) — and tap a slot to switch. With **Sistema**
+selected, the app follows your device's light/dark setting automatically,
+even if you change it later without reopening the app. Your choice is saved
+to this device and applied instantly, with no page reload.
 
 ---
 
