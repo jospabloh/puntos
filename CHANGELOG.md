@@ -12,10 +12,57 @@ cumplimiento de este repo llegaba al módulo 10; el estándar va por el 23. De
 los trece que faltaban por revisar, nueve ya estaban hechos y documentados en
 prosa (11-18); los cinco últimos no existían. Están en esta versión.
 
-> **Número de versión:** se salta el 2.0.17 a propósito. PR #66
-> (`claude/sleepy-cray-wio3k2`) lleva abierto ese número desde el 2026-09-09,
-> después de que 2.0.16 ya colisionara una vez entre dos PRs de auditoría. Un
-> número saltado no le cuesta nada a nadie; uno duplicado sí.
+> **Número de versión:** el 2.0.17 **no existe**, y ya está resuelto. Se
+> reservó para PR #66 (`claude/sleepy-cray-wio3k2`), que llevaba abierto desde
+> el 2026-08-31; al mergear esa rama —después de ésta— se dejó caer su bump y
+> su contenido entró aquí como documentación (ver la sección de más abajo). Es
+> la tercera colisión de versión seguida entre PRs de auditoría en este repo, y
+> la lección es la misma cada vez: **el número de versión se elige al mergear,
+> no al abrir el PR.**
+
+### Módulo 14 — la reauditoría del 2026-08-31, que se quedó en una rama
+
+Contenido de PR #66, mergeado aquí sin su bump de versión (ver la nota de
+arriba). Registra una pasada real que se hizo el **2026-08-31** y que nunca
+llegó a `main`: el módulo 18 (cambio de negocio — entidad `Membership`,
+`switchBusiness`, y los cambios de `acceptInvitation`/`createBusiness` que lo
+sostienen) se envió el 2026-08-26 **sin** la reauditoría del módulo 14 que
+este mismo archivo exige al añadir una entidad o una función. Y cambiar de
+inquilino es exactamente el escenario que la pasada del 2026-08-23 había dado
+por inexistente en esta app.
+
+Lo que esa pasada encontró, contra el esquema desplegado:
+
+- `Membership.read` va acotado por `data.user_id`, **no** por negocio — y eso
+  es correcto y necesario: es lo que permite listar las membresías de negocios
+  en los que el usuario no tiene activo su `business_id`. `create` / `update` /
+  `delete` son sólo servicio, igual que el resto de campos que cruzan
+  inquilino en este repo.
+- `switchBusiness` re-deriva el conjunto de membresías del llamante en el
+  servidor, nunca del cuerpo, y responde el **mismo 404 genérico** para un
+  `business_id` ajeno que para uno inexistente — no funciona como oráculo de
+  existencia. Nunca escribe `role: admin`, y el dueño de plataforma no recibe
+  fila `Membership` al crear un negocio, para que el selector no pueda
+  degradarlo a `business_admin` de su propio negocio.
+
+**Y su conclusión de "sin hallazgos nuevos" era falsa**, lo cual es la parte
+que vale la pena conservar. Una revisión de Codex sobre ese mismo PR encontró
+que `manageTeamMember` nunca tocaba la fila `Membership` al remover o degradar
+a alguien — y como `switchBusiness` lee `Membership` en solitario, la persona
+recién removida recuperaba su acceso con una sola llamada. Arreglado en la
+2.0.16, ya mergeada. Es el segundo caso seguido en este repo en que una
+auditoría automatizada firma "sin hallazgos" sobre algo que sí los tenía, y el
+que los encontró fue un revisor distinto mirando el mismo diff.
+
+**Dependencias — `react-router` sigue diferido, y por escrito.**
+`react-router-dom@6.30.4` arrastra un aviso moderado (open-redirect por
+backslash en `<Link>`/`useNavigate`; el segundo aviso, de hidratación SSR, no
+aplica: esta app es un SPA de Vite). El arreglo real exige `>=7.18`, un salto
+mayor v6→v7; `npm audit fix` sin `--force` sólo llega a 6.30.6, todavía dentro
+del rango vulnerable. No se cierra en una pasada desatendida: una migración de
+enrutado que toca todas las rutas necesita regresión manual, que es justo lo
+que este archivo lleva quince módulos pidiendo. Sigue pendiente, con su propio
+seguimiento.
 
 ### Módulo 22 — ninguna decisión de escritura se toma con la vista cacheada de `auth.me()` (seguridad)
 
@@ -213,11 +260,11 @@ touched file and the untouched `switchBusiness` (to confirm the pre-existing
 introduced — this repo has no deno step in CI, so this was the first type
 check either file has ever gotten).
 
-**Note for whoever merges second:** PR #66 (`claude/sleepy-cray-wio3k2`, the
-module-14/Membership reaudit) independently also bumps to `2.0.16`. Whichever
-of these two PRs merges last needs a trivial rebase to `2.0.17` on this line
-and its own `package.json`/`appConfig.js` — no code in either PR depends on
-the number itself.
+**Resolved 2026-09-09:** PR #66 (`claude/sleepy-cray-wio3k2`, the
+module-14/Membership reaudit) independently also bumped to `2.0.16`. It was
+briefly renumbered to `2.0.17`, then merged third — after `2.0.18` — so its
+bump was dropped entirely and its content folded into the `2.0.18` entry
+above as documentation. `2.0.17` never shipped and does not exist.
 
 ### Found — production is not serving the deployed code (not fixed here — needs a manual deploy)
 

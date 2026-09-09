@@ -397,7 +397,7 @@ touching a module that's already implemented.
       `redeemOffer`, all behind the billing gate. Drift-guarded in `lint`.
 - [x] Module 4 — RLS: four-op `$or` shape with the service-role admin branch
       on every business-scoped entity, both halves verified by
-      `validate:rls` (18 entities).
+      `validate:rls` (19 entities as of 2026-08-31, `Membership` included).
 - [x] Module 5 — Health: Mission Control polls `acaciaControl`'s `ping`.
 - [x] Module 6 — `src/lib/appConfig.js` (`APP_VERSION`/`RELEASE_DATE`) +
       in-app changelog.
@@ -756,6 +756,67 @@ de usuario que barre todas las cuentas). Confirma otra vez el patrón: un
 bloqueo de campo puede romper a un escritor legítimo que nadie recordaba, y
 vale re-grepear los usos del campo antes de bloquearlo, no solo los de
 lectura.
+
+### Reaudit — 2026-08-31 (tras Módulo 18)
+
+> **Sobre el número de versión:** esta pasada se registró en su momento como
+> `v2.0.17`, pero esa versión **nunca existió**. La rama que la llevaba se
+> quedó abierta mientras `main` avanzaba 2.0.16 → 2.0.18, así que al mergear
+> se dejó caer el bump y este contenido entró como documentación dentro de la
+> 2.0.18. Es la tercera colisión de versión seguida entre PRs de auditoría en
+> este repo: **el número se elige al mergear, no al abrir el PR.**
+
+Auditoría programada de portafolio. Módulo 18 (switching/joining entre
+negocios, `jospabloh/acacia-app-standard` → STANDARD.md) se añadió el
+2026-08-26 sin que este archivo registrara el re-recorrido que el propio
+módulo 14 exige al agregar una entidad o función nueva — y switching entre
+inquilinos es exactamente el escenario que la pasada del 2026-08-23 marcó
+como inexistente en esta app («No hay cambio de inquilino en esta app»,
+arriba). Se hizo aquí, contra el código y el esquema desplegado
+(`Membership` ya en `list_entity_schemas`, 19 entidades).
+
+**Sin hallazgos nuevos de aislamiento.** `Membership.read` está acotado por
+`data.user_id`, nunca por negocio — es justo lo que permite listar
+membresías de negocios en los que el usuario no tiene activo su
+`business_id`. `create`/`update`/`delete` son `role: admin` en exclusiva,
+igual que el resto de entidades que cruzan inquilino en este repo
+(`User.role`/`business_id`, los campos de licencia de `Business`).
+`createBusiness`, `acceptInvitation` y la función nueva `switchBusiness`
+re-derivan siempre desde el `Membership` almacenado del llamante — nunca del
+cuerpo de la petición — y un `business_id` fuera de ese conjunto responde el
+mismo 404 genérico que uno inexistente (sin oráculo de existencia).
+`switchBusiness` nunca escribe `role: admin`, y el dueño de plataforma no
+recibe fila `Membership` al crear un negocio (evita que el selector lo
+"cambie" a `business_admin` de su propio negocio, perdiendo el nivel
+plataforma).
+
+**Corrección, agregada 2026-09-09 al resolver el conflicto de esta pasada
+con la del 2026-09-07:** «sin hallazgos nuevos» era falso. Un review de
+Codex sobre el PR que registraba esta reauditoría marcó que
+`manageTeamMember` nunca tocaba `Membership` al remover o degradar a un
+miembro — y `switchBusiness` lee `Membership` en solitario, nunca el `User`
+en vivo, así que la persona removida podía recuperar su acceso viejo con una
+sola llamada. Ver la sección "Módulo 14 — hallazgo real en `manageTeamMember`"
+más abajo para el detalle completo y el arreglo (ya aplicado, en
+`base44/functions/manageTeamMember/entry.ts`).
+
+**Un hallazgo de dependencias, documentado y NO cerrado en esta pasada.**
+`npm audit` reporta `react-router`/`react-router-dom` 6.30.4 (severidad
+moderada, dos avisos: open-redirect vía backslash en `<Link>`/`useNavigate`,
+y constructor injection en hidratación SSR — este segundo no aplica, esta
+app es un SPA de Vite sin SSR). El arreglo real exige `react-router-dom`
+>=7.18, un salto de versión mayor (v6→v7); `npm audit fix` sin `--force`
+sólo ofrece 6.30.4→6.30.6, que sigue dentro del rango vulnerable (no cierra
+nada). No se aplicó aquí: mergear un salto mayor sin cobertura de regresión
+manual sobre cada ruta, dentro de una corrida automatizada, es exactamente
+el tipo de cambio que este archivo lleva quince módulos advirtiendo que no
+se apruebe a ciegas (ver el incidente de FlowFin/Radar en el módulo de
+deploy, arriba). Queda pendiente como tarea propia, con navegación manual
+por las rutas de consumidor y back-office antes de mergear.
+
+No pude verificar, otra vez, contra un segundo inquilino real con dos
+membresías activas — el estado vivo sigue siendo el mismo único negocio que
+la pasada de 2026-08-23 ya documentaba.
 
 ## Módulo 15 — el puente con Mission Control: una llave por app (2026-08-23)
 
