@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // manageTeamMember — a tenant manager changes a team member's role/store, or
 // removes them. This replaces the client writing User.role/store directly, which
@@ -27,7 +28,16 @@ Deno.serve(async (req) => {
     const actor = await base44.auth.me();
     if (!actor) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const actorRole = actor.role;
+    // Modulo 22: el rol y el inquilino del actor salen de una lectura FRESCA de
+    // su registro User como servicio. Esta funcion ESCRIBE el role/business_id
+    // de otras personas, asi que decidir quien puede hacerlo con la vista
+    // cacheada de auth.me() es exactamente el patron que el modulo prohibe: si
+    // a este mismo actor le acaban de quitar business_admin, su sesion todavia
+    // lo dice.
+    const callerId = await resolveCaller(base44, actor);
+    if (!callerId) return unresolvedCallerResponse();
+
+    const actorRole = callerId.role;
     const isOwner = actorRole === 'admin';
     const isTenantAdmin = actorRole === 'business_admin';
     if (!isOwner && !isTenantAdmin) return Response.json({ error: 'No autorizado' }, { status: 403 });
@@ -41,7 +51,7 @@ Deno.serve(async (req) => {
     }
 
     const sr = base44.asServiceRole;
-    const actorBusinessId = pick(actor, 'business_id');
+    const actorBusinessId = callerId.businessId;
 
     // Load the target and confirm the actor may manage them.
     let target;

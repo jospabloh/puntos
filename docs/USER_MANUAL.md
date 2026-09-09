@@ -19,7 +19,9 @@ Version: 2.0.15 | Updated: 2026-09-07
 11. [Trial and Subscription](#trial-and-subscription)
 12. [Notifications](#notifications)
 13. [Appearance](#appearance)
-14. [FAQ](#faq)
+14. [Sessions and Devices](#sessions-and-devices)
+15. [About Screen](#about-screen)
+16. [FAQ](#faq)
 
 ---
 
@@ -376,6 +378,45 @@ it to expand a three-slot track — **Claro** (light) · **Oscuro** (dark) ·
 selected, the app follows your device's light/dark setting automatically,
 even if you change it later without reopening the app. Your choice is saved
 to this device and applied instantly, with no page reload.
+
+---
+
+## Sessions and Devices
+
+**Idle timeout.** After 20 minutes with no activity, a dialog appears with a
+2-minute countdown. Click *Continuar trabajando* to stay signed in; if nobody
+responds, the session closes and you are asked to sign in again. The same
+thresholds apply across every ACACIA app.
+
+**Your other devices.** *Profile → Dispositivos con tu sesión abierta* lists
+every browser your account is currently signed in on, with when each was last
+active and which one you are using right now. Press *Cerrar* on any device you
+do not recognize — that session ends the next time that device checks in — and
+then change your password. Every role sees this list, not just customers.
+
+**Stale sessions.** A scheduled job revokes any session with no activity for
+48 hours, so a device that died mid-session (battery, closed laptop, a browser
+the OS killed) does not stay signed in indefinitely. The next time that device
+wakes up it is asked to sign in again.
+
+---
+
+## About Screen
+
+*Profile → Acerca de Puntos+*, or *Acerca de* in the back-office sidebar. One
+screen with four things:
+
+- **User manual** — searchable, grouped by area, showing only the sections that
+  apply to your role. Search ignores accents and case, so "codigo qr" finds
+  "código QR".
+- **What's new** — the summary for the version you are running, with the full
+  version history behind *Ver historial de versiones*.
+- **Version** — the same number as `package.json` and the Profile footer.
+- **Contact** — the support email and a direct link into the app's own support
+  screen.
+
+This screen is the in-app twin of this document. When a feature changes, both
+get updated.
 
 ---
 

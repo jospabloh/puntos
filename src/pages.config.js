@@ -4,6 +4,7 @@
  * This file is AUTO-GENERATED in spirit. Pages are registered here and routed by
  * src/App.jsx. THE ONLY HAND-TUNED VALUE is `mainPage` (the landing page).
  */
+import About from './pages/About';
 import AdminAudit from './pages/AdminAudit';
 import AdminCampaigns from './pages/AdminCampaigns';
 import AdminCustomers from './pages/AdminCustomers';
@@ -39,6 +40,7 @@ export const PAGES = {
     "History": History,
     "Chat": Chat,
     "Profile": Profile,
+    "About": About,
     "Onboarding": Onboarding,
     "Permissions": Permissions,
     "MerchantPOS": MerchantPOS,

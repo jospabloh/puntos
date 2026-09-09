@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // createStore — adds a store to the caller's tenant with a server-generated,
 // globally-unique code. The code is never accepted from the client, so two
@@ -21,8 +22,15 @@ function slug(name: string) {
 }
 
 // Mirrors src/lib/useTenant.js's canTenantWrite() — see earnPoints/entry.ts
-// for the full rationale (duplicated inline, Deno can't import across
-// function directories; keep in sync).
+// for the full rationale.
+// duplicated inline. NOTA (2026-09-09): la razón que este comentario daba
+// —«Deno no puede importar entre directorios de función»— es FALSA, y lo
+// era ya cuando se escribió: `base44/shared/` sí se importa desde
+// cualquier función y cuatro crons llevan meses haciéndolo con
+// `scheduledGuard.ts` (y ahora `callerIdentity.ts`). Lo que de verdad no
+// se puede es importar desde `src/`, que no viaja en el bundle. La copia
+// sigue aquí porque consolidarla toca las cuatro funciones que mueven
+// puntos y merece su propio cambio; mantenlas en sync mientras tanto.
 function isBusinessWriteBlocked(business: any): boolean {
   if (!business) return false;
   const status = business.billing_status || 'trial';
@@ -44,16 +52,6 @@ const PERMISSIONS: Record<string, string[]> = {
   'stores:create': ['owner', 'business_admin'],
 };
 
-// Same resolution as getAppRole() on the client.
-function getAppRole(user: Record<string, any>): string {
-  const role = user?.role;
-  if (role === 'admin') return 'owner';
-  if (role === 'business_admin') return 'business_admin';
-  if (role === 'merchant') return 'staff';
-  if (user?.data?.merchant_role === 'merchant' || user?.merchant_role === 'merchant') return 'staff';
-  return 'customer';
-}
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -61,12 +59,21 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
-    const ownBusinessId = user.business_id || user.data?.business_id;
-    const ownBusinessName = user.business_name || user.data?.business_name;
+
+    // Módulo 22: el inquilino y el rol del llamante salen de una lectura FRESCA
+    // de su registro User como servicio. auth.me() es la vista de sesión y está
+    // cacheada; en cuanto switchBusiness o manageTeamMember escriben business_id
+    // o role, esa vista miente — y aquí decide EN QUÉ inquilino se crea la
+    // tienda, que es justo el caso que el módulo 22 nombra como el peor.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
+    const ownBusinessId = caller.businessId;
+    const ownBusinessName = caller.businessName;
     // The platform owner (role admin) may create a store inside ANY tenant they
     // are administering — honor the explicit business_id override. Everyone else
     // is pinned to their own business.
-    const isAdmin = user.role === 'admin';
+    const isAdmin = caller.role === 'admin';
     const businessId = (isAdmin && body?.business_id) ? body.business_id : ownBusinessId;
     if (!businessId) return Response.json({ error: 'No tienes un negocio asignado' }, { status: 403 });
 
@@ -92,7 +99,7 @@ Deno.serve(async (req) => {
       // check, so a `staff` account could create stores despite the capability
       // being business_admin-only. Mirrors the same block in
       // guardedEntityWrite; scripts/validate-permissions.mjs guards the drift.
-      const role = getAppRole(user);
+      const role = caller.appRole;
       const profiles = await sr.entities.PermissionProfile.filter({
         business_id: businessId,
         role_key: role,

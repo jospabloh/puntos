@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // acceptInvitation — a user accepts a pending team invitation.
 //
@@ -25,6 +26,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Módulo 22: business_id / role / store del llamante salen de una lectura
+    // FRESCA de su registro User como servicio. El backfill de abajo ESCRIBE
+    // una fila Membership con esos valores, y switchBusiness (módulo 18) confía
+    // en Membership sin releer nunca el User — una vista de sesión vieja aquí
+    // graba una pertenencia al inquilino equivocado y le abre esa puerta.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
     const body = await req.json().catch(() => ({}));
     const invitationId = body?.invitationId;
 
@@ -49,8 +58,8 @@ Deno.serve(async (req) => {
     // An invitation can only grant business_admin or staff (merchant) — never the
     // platform-owner tier. An existing platform owner keeps admin.
     const grantsAdmin = inv.role === 'business_admin';
-    const role = user.role === 'admin' ? 'admin' : (grantsAdmin ? 'business_admin' : 'merchant');
-    const appRole = user.role === 'admin' ? 'owner' : (grantsAdmin ? 'business_admin' : 'staff');
+    const role = caller.role === 'admin' ? 'admin' : (grantsAdmin ? 'business_admin' : 'merchant');
+    const appRole = caller.role === 'admin' ? 'owner' : (grantsAdmin ? 'business_admin' : 'staff');
 
     // A store assignment is only trusted after re-fetching the Store server-side
     // and confirming it actually belongs to the invitation's business. Invitation
@@ -75,19 +84,19 @@ Deno.serve(async (req) => {
     // one-time migration for accounts that predate Membership. Only meaningful
     // for a real tenant role; the platform owner (handled below) has none to
     // preserve, and a brand-new user has no prior business_id at all.
-    if (user.business_id && (user.role === 'business_admin' || user.role === 'merchant')) {
+    if (caller.businessId && (caller.role === 'business_admin' || caller.role === 'merchant')) {
       const already = await sr.entities.Membership.filter(
-        { business_id: user.business_id, user_id: user.id }, undefined, 1,
+        { business_id: caller.businessId, user_id: user.id }, undefined, 1,
       );
       if (!already?.length) {
         await sr.entities.Membership.create({
-          business_id: user.business_id,
-          business_name: user.business_name || '',
+          business_id: caller.businessId,
+          business_name: caller.businessName,
           user_id: user.id,
-          user_email: user.email,
-          role: user.role,
-          store_id: user.store_id || user.storeId || '',
-          store_name: user.store_name || '',
+          user_email: caller.email,
+          role: caller.role,
+          store_id: caller.storeId || '',
+          store_name: caller.data?.store_name || '',
         });
       }
     }
@@ -97,7 +106,7 @@ Deno.serve(async (req) => {
     // and they keep `admin` below regardless). Idempotent: accepting an
     // invitation to a business already joined reuses the existing row rather
     // than overwriting a role an admin may have since promoted by hand.
-    if (user.role !== 'admin') {
+    if (caller.role !== 'admin') {
       const existingHere = await sr.entities.Membership.filter(
         { business_id: inv.business_id, user_id: user.id }, undefined, 1,
       );

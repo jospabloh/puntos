@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // earnPoints — POS "accumulate" operation, run entirely with the service role.
 //
@@ -23,10 +24,19 @@ function pick(user: any, key: string) {
 // Mirrors src/lib/useTenant.js's canTenantWrite() — the client already hides
 // the POS behind this same posture (SuspendedAccountModal/TrialBanner via
 // useTenant), but nothing server-side enforced it: a suspended/view_only
-// tenant's operator could still call earnPoints directly. Deno functions
-// can't import across directories, so this is duplicated inline in
-// earnPoints/burnPoints/redeemOffer/createStore — keep them all in sync if
-// the write-gate logic changes.
+// tenant's operator could still call earnPoints directly. Está
+// duplicada en earnPoints/burnPoints/redeemOffer/createStore — mantenlas en
+// sync si cambia la lógica de la puerta.
+//
+// NOTA (2026-09-09): la razón que este comentario daba —«Deno no puede
+// importar entre directorios de función»— es FALSA, y lo era ya cuando se
+// escribió: `base44/shared/` sí se importa desde cualquier función, y cuatro
+// crons llevan meses haciéndolo con `scheduledGuard.ts` (y ahora todas las
+// funciones con sesión, con `callerIdentity.ts`). Lo que de verdad no se
+// puede es importar desde `src/`, que no viaja en el bundle desplegado.
+// Consolidar esta copia toca las cuatro funciones que mueven puntos y merece
+// su propio cambio; el motivo por el que sigue duplicada es ése, no el que
+// decía antes.
 function isBusinessWriteBlocked(business: any): boolean {
   if (!business) return false;
   const status = business.billing_status || 'trial';
@@ -39,12 +49,18 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const role = user.role;
+    // Módulo 22: el rol del operador sale de una lectura FRESCA del registro
+    // User. Esta función mueve puntos, que son la unidad de valor de la app; un
+    // cajero al que acaban de quitarle el rol sigue viéndolo en su sesión.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
+    const role = caller.role;
     const isOperator =
       role === 'admin' ||
       role === 'business_admin' ||
       role === 'merchant' ||
-      pick(user, 'merchant_role') === 'merchant';
+      caller.appRole === 'staff';
     if (!isOperator) return Response.json({ error: 'No autorizado' }, { status: 403 });
 
     const body = await req.json().catch(() => ({}));
