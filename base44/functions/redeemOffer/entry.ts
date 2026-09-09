@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // Customer-facing offer redemption.
 //
@@ -8,8 +9,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // direct LoyaltyAccount update.
 
 // Mirrors src/lib/useTenant.js's canTenantWrite() — see earnPoints/entry.ts
-// for the full rationale (duplicated inline, Deno can't import across
-// function directories; keep in sync).
+// for the full rationale.
+// duplicated inline. NOTA (2026-09-09): la razón que este comentario daba
+// —«Deno no puede importar entre directorios de función»— es FALSA, y lo
+// era ya cuando se escribió: `base44/shared/` sí se importa desde
+// cualquier función y cuatro crons llevan meses haciéndolo con
+// `scheduledGuard.ts` (y ahora `callerIdentity.ts`). Lo que de verdad no
+// se puede es importar desde `src/`, que no viaja en el bundle. La copia
+// sigue aquí porque consolidarla toca las cuatro funciones que mueven
+// puntos y merece su propio cambio; mantenlas en sync mientras tanto.
 function isBusinessWriteBlocked(business: any): boolean {
   if (!business) return false;
   const status = business.billing_status || 'trial';
@@ -64,7 +72,12 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Offer does not belong to your program' }, { status: 403 });
     }
 
-    if (user.role !== 'admin') {
+    // Módulo 22: el rol que decide saltarse la puerta de facturación sale de
+    // una lectura FRESCA del registro User, no de auth.me().
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
+    if (caller.role !== 'admin') {
       const business = await base44.asServiceRole.entities.Business.get(account.business_id).catch(() => null);
       if (isBusinessWriteBlocked(business)) {
         return Response.json({ error: 'write_blocked', message: 'Este programa de lealtad está suspendido o en modo solo lectura.' }, { status: 403 });

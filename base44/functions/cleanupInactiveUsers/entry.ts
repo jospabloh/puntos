@@ -1,9 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/scheduledGuard.ts';
 
-// Deno functions in this repo can't import across directories (see CLAUDE.md),
-// so the email template lives inline here — same convention as the duplicated
+// The email template lives inline here — same convention as the duplicated
 // isBusinessWriteBlocked() guards in earnPoints/burnPoints/redeemOffer/createStore.
+//
+// NOTA (2026-09-09): este comentario decía que era porque «Deno no puede
+// importar entre directorios de función». Es falso, y este archivo mismo lo
+// desmiente dos líneas más arriba, donde importa `../../shared/scheduledGuard.ts`.
+// Lo que no se puede es importar desde `src/`.
 
 function esc(s: unknown): string {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as Record<string, string>)[c]);

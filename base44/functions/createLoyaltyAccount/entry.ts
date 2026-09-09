@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // Creates the LoyaltyAccount for the authenticated user during onboarding.
 //
@@ -98,8 +99,16 @@ Deno.serve(async (req) => {
     // longer needs to self-assign role/business_id via auth.updateMe — that path
     // let any user escalate. A customer joining a store becomes role `customer`
     // scoped to that store's tenant. An existing platform owner stays admin.
-    const role = user.role === 'admin' ? 'admin' : 'customer';
-    const appRole = user.role === 'admin' ? 'owner' : 'customer';
+    // Módulo 22: el rol sale de una lectura FRESCA del registro User. Este
+    // ternario ESCRIBE el rol del llamante: si la vista cacheada de auth.me()
+    // dijera 'customer' de alguien que ya es 'admin' —por ejemplo justo después
+    // de que getAppContext lo promoviera en otra petición— esta línea degrada
+    // al dueño de la plataforma a cliente.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
+    const role = caller.role === 'admin' ? 'admin' : 'customer';
+    const appRole = caller.role === 'admin' ? 'owner' : 'customer';
     try {
       await base44.asServiceRole.entities.User.update(user.id, {
         role,

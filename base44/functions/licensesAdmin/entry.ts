@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 /**
  * Module 1 — the owner console's only write path into a tenant's license
@@ -92,7 +93,14 @@ Deno.serve(async (req) => {
     if (!user) return fail(401, 'unauthorized');
     // Platform tier only. `role: admin` is the ACACIA owner — never a tenant's
     // own business_admin, however much of their own tenant they otherwise run.
-    if (user.role !== 'admin') return fail(403, 'forbidden');
+    //
+    // Módulo 22: el rol sale de una lectura FRESCA del registro User, no de la
+    // vista cacheada de auth.me(). Esta función escribe campos de licencia con
+    // rls.write:false; si a alguien le acaban de quitar `admin`, su sesión aún
+    // lo dice y ese es el peor momento para creerle.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+    if (caller.role !== 'admin') return fail(403, 'forbidden');
 
     const body = await req.json().catch(() => ({}));
     const { action } = body ?? {};

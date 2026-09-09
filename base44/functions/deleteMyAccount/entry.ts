@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // Self-service account deletion — module 7 (cuenta y zona de peligro).
 //
@@ -20,11 +21,18 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // Módulo 22: el rol sale de una lectura FRESCA del registro User. Aquí
+    // decide si corre un borrado IRREVERSIBLE, así que una vista de sesión
+    // vieja —alguien recién promovido a business_admin cuya sesión todavía dice
+    // customer— borraría la cuenta que este chequeo existe para proteger.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
     const isPrivileged =
-      user.role === 'admin' ||
-      user.role === 'business_admin' ||
-      user.role === 'merchant' ||
-      (user.data?.merchant_role ?? user.merchant_role) === 'merchant';
+      caller.role === 'admin' ||
+      caller.role === 'business_admin' ||
+      caller.role === 'merchant' ||
+      caller.appRole === 'staff';
     if (isPrivileged) {
       return Response.json({
         error: 'contact_support',

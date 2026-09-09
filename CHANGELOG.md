@@ -5,54 +5,233 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [2.0.17] — 2026-09-09 — Module 14 reaudit after Module 18 (account switching)
+## [2.0.18] — 2026-09-09 — Módulos 19-23 del estándar ACACIA
 
-Renumbered from 2.0.16 while resolving this PR's merge conflict with the
-independent 2.0.16 below (both bumped the same number; see that entry's own
-note, written in advance for exactly this collision).
+Auditoría programada contra `jospabloh/acacia-app-standard`. La lista de
+cumplimiento de este repo llegaba al módulo 10; el estándar va por el 23. De
+los trece que faltaban por revisar, nueve ya estaban hechos y documentados en
+prosa (11-18); los cinco últimos no existían. Están en esta versión.
 
-Scheduled portfolio-standard audit. Module 18 (multi-tenant account
-switching/joining — `Membership` entity, `switchBusiness`, and the
-`acceptInvitation`/`createBusiness` changes that back it) shipped 2026-08-26
-without a module-14 (tenant isolation) re-audit, even though switching the
-active tenant is exactly the scenario the 2026-08-23 audit had flagged as
-absent from this app. This pass closes that gap in the record.
+> **Número de versión:** el 2.0.17 **no existe**, y ya está resuelto. Se
+> reservó para PR #66 (`claude/sleepy-cray-wio3k2`), que llevaba abierto desde
+> el 2026-08-31; al mergear esa rama —después de ésta— se dejó caer su bump y
+> su contenido entró aquí como documentación (ver la sección de más abajo). Es
+> la tercera colisión de versión seguida entre PRs de auditoría en este repo, y
+> la lección es la misma cada vez: **el número de versión se elige al mergear,
+> no al abrir el PR.**
 
-### Security — RLS / tenant isolation
-- **No new isolation findings.** Audited `Membership`'s deployed RLS
-  (`read` scoped by `data.user_id`, not `data.business_id` — required so a
-  user can list memberships in businesses that aren't their currently active
-  one; `create`/`update`/`delete` are service-role only) and the three
-  functions that touch it. `switchBusiness` re-derives the caller's
-  `Membership` set from the server, never the request body, and returns an
-  identical 404 for a foreign or nonexistent `business_id` (no existence
-  oracle). Neither it nor `createBusiness`/`acceptInvitation` can grant
-  `role: admin`, and the platform owner deliberately gets no `Membership`
-  row (so the switcher can never demote them to a tenant `business_admin`).
+### Módulo 14 — la reauditoría del 2026-08-31, que se quedó en una rama
 
-### Dependencies — documented, not fixed
-- **MODERATE, deferred — `react-router`/`react-router-dom@6.30.4`** carries
-  two advisories (open-redirect via backslash in `<Link>`/`useNavigate`;
-  arbitrary constructor injection via `deserializeErrors()` on SSR hydration
-  — the second doesn't apply, this app is a client-only Vite SPA). The fix
-  needs `react-router-dom>=7.18`, a major-version jump; `npm audit fix`
-  without `--force` only reaches 6.30.6, still inside the vulnerable range.
-  Not applied in this pass — a v6→v7 migration touching every route needs
-  manual regression testing this automated run can't provide, not a
-  same-PR fix alongside a routine reaudit. Tracked as follow-up work.
+Contenido de PR #66, mergeado aquí sin su bump de versión (ver la nota de
+arriba). Registra una pasada real que se hizo el **2026-08-31** y que nunca
+llegó a `main`: el módulo 18 (cambio de negocio — entidad `Membership`,
+`switchBusiness`, y los cambios de `acceptInvitation`/`createBusiness` que lo
+sostienen) se envió el 2026-08-26 **sin** la reauditoría del módulo 14 que
+este mismo archivo exige al añadir una entidad o una función. Y cambiar de
+inquilino es exactamente el escenario que la pasada del 2026-08-23 había dado
+por inexistente en esta app.
 
-**Verified:** `npm run lint` (eslint + `validate:rls` 19 entities +
-`validate:permissions` + `validate:functions`) and `npm run build` both
-pass. `npm run check:secrets` clean. **Not verified:** a second real tenant
-with two active `Membership` rows — the live state is still the single
-business/account module 14 has documented since 2026-08-23.
+Lo que esa pasada encontró, contra el esquema desplegado:
 
-**Correction, added while resolving the merge with 2.0.16 below:** this
-pass's "no new isolation findings" was wrong. A Codex review caught a real
-one — `manageTeamMember` never revoked a target's `Membership` row on
-removal/demotion, letting them `switchBusiness` straight back into access
-just taken away. See the 2.0.16 entry below for the fix; that entry's own
-`CLAUDE.md` writeup has the full detail.
+- `Membership.read` va acotado por `data.user_id`, **no** por negocio — y eso
+  es correcto y necesario: es lo que permite listar las membresías de negocios
+  en los que el usuario no tiene activo su `business_id`. `create` / `update` /
+  `delete` son sólo servicio, igual que el resto de campos que cruzan
+  inquilino en este repo.
+- `switchBusiness` re-deriva el conjunto de membresías del llamante en el
+  servidor, nunca del cuerpo, y responde el **mismo 404 genérico** para un
+  `business_id` ajeno que para uno inexistente — no funciona como oráculo de
+  existencia. Nunca escribe `role: admin`, y el dueño de plataforma no recibe
+  fila `Membership` al crear un negocio, para que el selector no pueda
+  degradarlo a `business_admin` de su propio negocio.
+
+**Y su conclusión de "sin hallazgos nuevos" era falsa**, lo cual es la parte
+que vale la pena conservar. Una revisión de Codex sobre ese mismo PR encontró
+que `manageTeamMember` nunca tocaba la fila `Membership` al remover o degradar
+a alguien — y como `switchBusiness` lee `Membership` en solitario, la persona
+recién removida recuperaba su acceso con una sola llamada. Arreglado en la
+2.0.16, ya mergeada. Es el segundo caso seguido en este repo en que una
+auditoría automatizada firma "sin hallazgos" sobre algo que sí los tenía, y el
+que los encontró fue un revisor distinto mirando el mismo diff.
+
+**Dependencias — `react-router` sigue diferido, y por escrito.**
+`react-router-dom@6.30.4` arrastra un aviso moderado (open-redirect por
+backslash en `<Link>`/`useNavigate`; el segundo aviso, de hidratación SSR, no
+aplica: esta app es un SPA de Vite). El arreglo real exige `>=7.18`, un salto
+mayor v6→v7; `npm audit fix` sin `--force` sólo llega a 6.30.6, todavía dentro
+del rango vulnerable. No se cierra en una pasada desatendida: una migración de
+enrutado que toca todas las rutas necesita regresión manual, que es justo lo
+que este archivo lleva quince módulos pidiendo. Sigue pendiente, con su propio
+seguimiento.
+
+### Módulo 22 — ninguna decisión de escritura se toma con la vista cacheada de `auth.me()` (seguridad)
+
+`base44.auth.me()` es la vista de SESIÓN del usuario y está cacheada — es
+barata justo porque no vuelve a la base. Trece funciones de backend la usaban
+para decidir **si** escribían o **en qué inquilino** escribían: `user.role`,
+`user.data.business_id`, `user.storeId`. Todos esos campos los escribe otra
+función de servicio (`switchBusiness`, `manageTeamMember`, `acceptInvitation`,
+`createBusiness`), así que la vista queda vieja en cuanto una de ellas corre.
+
+Los tres casos peores que había, y no son teóricos:
+
+- **`createBusiness` / `acceptInvitation`** escribían una fila `Membership` con
+  el `business_id` y el `role` cacheados. `switchBusiness` (módulo 18) confía
+  en `Membership` sin releer nunca el `User`, así que una vista vieja aquí
+  graba una pertenencia al inquilino equivocado — y le abre esa puerta de forma
+  permanente.
+- **`createLoyaltyAccount`** decidía `role = user.role === 'admin' ? 'admin' :
+  'customer'` y lo **escribía**: una vista que dijera `customer` de quien ya es
+  `admin` degrada al dueño de la plataforma a cliente.
+- **`getAppContext`** es el "diff y me lo salto" exacto que el módulo describe:
+  `if (isOwner && user.role !== 'admin')` → promover. Si el cacheado dice
+  `admin` pero el registro almacenado no lo es, la promoción no corre, la
+  respuesta sale igual de contenta, y el dueño se queda sin consola sin que
+  nada lo delate. Es la forma en que Rumbo perdió dos rondas de diagnóstico.
+
+Nuevo `base44/shared/callerIdentity.ts` (`resolveCaller` /
+`unresolvedCallerResponse` / `resolveAppRole`): relee el registro `User` del
+llamante como servicio y devuelve su identidad autoritativa. Falla **cerrado**
+— si el registro no se puede leer, 403, nunca la vista cacheada. `auth.me()`
+se queda para lo que sí sirve: `user.id` y `user.email`.
+
+Migradas: `guardedEntityWrite`, `adjustCustomerPoints`, `createStore`,
+`manageTeamMember`, `createBusiness`, `acceptInvitation`, `earnPoints`,
+`burnPoints`, `redeemOffer`, `licensesAdmin`, `deleteMyAccount`,
+`createLoyaltyAccount` y `getAppContext`. `switchBusiness` ya estaba bien (sólo
+usa `user.id` y relee `Membership`).
+
+**Y de paso, una afirmación falsa que costaba código:** cinco archivos repetían
+que «Deno no puede importar entre directorios de función», y por eso
+`isBusinessWriteBlocked()` y `getAppRole()` están copiados a mano en media
+docena de sitios. Es falso — `base44/shared/scheduledGuard.ts` lleva meses
+importándose desde cuatro crons, y `cleanupInactiveUsers` lo desmentía en su
+propia línea 2 mientras lo afirmaba en la línea 4. Lo que de verdad no se puede
+es importar desde `src/`. Los comentarios están corregidos; consolidar las
+copias toca las cuatro funciones que mueven puntos y merece su propio cambio.
+
+### Módulo 20 — control de sesión, las tres capas
+
+Sólo existía media capa 2: `AppSession` con un latido de cliente. No había
+temporizador de inactividad ni forma de que una sesión muerta se cerrara.
+
+- **Capa 1 — inactividad.** A los 20 min aparece `IdleWarningDialog` con 2 min
+  de cuenta regresiva; sin respuesta, la sesión se cierra y sale
+  `SessionExpiredDialog`. Los dos diálogos son **idénticos byte a byte** a los
+  canónicos del repo estándar, salvo **una línea** documentada en el propio
+  archivo: el canónico llama a `base44.auth.redirectToLogin()`, que manda al
+  `/login` genérico de Base44 — precisamente lo que el módulo 10 de esta app
+  arregló. Aquí el botón va a `/Login`, la pantalla propia.
+- **Capa 2 — otros dispositivos, a la vista.** Nuevo `ActiveSessions` en
+  Perfil: cada navegador con la sesión abierta, cuándo estuvo activo, y un
+  botón para cerrarlo. Se muestra a **todos los roles**, no sólo a clientes: un
+  dispositivo desconocido es una señal de cuenta comprometida igual para un
+  cajero que para un consumidor.
+- **Capa 3 — cosecha de sesiones rancias.** Nueva
+  `base44/functions/purgeStaleSessions`: revoca toda sesión con más de **48 h**
+  sin actividad, detrás del mismo guardia fail-closed (`scheduledGuard.ts`) que
+  las otras cuatro tareas programadas. Sin `SCHEDULED_TASK_SECRET` responde
+  403, nunca "corrió igual".
+
+`src/lib/SessionHeartbeat.jsx` se fusionó en `src/hooks/useSessionManager.js`
+(un solo dueño del estado de sesión). El único cambio de comportamiento: una
+sesión revocada ahora levanta el diálogo —volver a entrar, o salir del todo—
+en vez de rebotar a logout sin explicación.
+
+**Desviación deliberada del contrato canónico:** el `useSessionManager.js` del
+estándar habla con un router `session` sobre una entidad `Session` con
+`device_id` y `status: active|passive|revoked`. Puntos+ tiene `AppSession`, ya
+desplegada y leída por el puente de Mission Control, cuya marca de revocación
+es `revoked_at`. Adoptar el contrato canónico exigiría campos nuevos en una
+entidad viva — y un campo no desplegado en Base44 se **descarta en silencio**
+al escribir, así que un `status: 'revoked'` escrito antes de desplegar el
+esquema desaparecería y la capa 3 parecería funcionar sin cosechar nada. Esta
+versión usa sólo campos ya desplegados: funciona el día que se mergea.
+
+### Módulo 21 — pantalla "Acerca de"
+
+No existía: sólo un número de versión en el pie de Perfil, y el arreglo
+`CHANGELOG` de `appConfig.js` era código muerto que nadie leía. Nueva
+`src/pages/About.jsx`, enlazada desde Perfil y desde la barra lateral:
+
+- **Manual de usuario buscable** (`src/lib/manual.js`), por área y filtrado por
+  rol, en lenguaje llano. La búsqueda ignora acentos y mayúsculas: quien
+  escribe "codigo qr" encuentra "código QR".
+- **Novedades de esta versión** leídas del mismo arreglo `CHANGELOG` del módulo
+  6 —no una segunda lista que alguien tenga que acordarse de actualizar— con el
+  historial completo detrás de un desplegable.
+- **Versión sin ambigüedad**: `About`, `package.json` y el pie de Perfil son la
+  misma línea.
+- **Contacto**: correo de soporte y acceso directo a la pantalla de soporte de
+  la app, más la línea de ACACIA.
+
+Cada entrada del changelog lleva ahora **dos** resúmenes: `resumen` (español
+llano, lo que cambió para la persona) es lo que se muestra, y `summary` sigue
+siendo el registro técnico. Quien lee "closed the three module-14 isolation
+findings" no aprende nada; quien lee "revisión de mantenimiento" pierde el
+rastro. `About` cae a `summary` si falta `resumen`, así que olvidarse de uno
+degrada en vez de dejar la tarjeta en blanco.
+
+**Sin número de WhatsApp**, y a propósito: el módulo lo sugiere pero no hay
+ninguno en este repo, y un canal de contacto inventado es peor que ninguno.
+Cuando exista, va en esta pantalla.
+
+### Módulo 19 — el porqué de cada bloqueo, dentro del propio esquema
+
+Los **17** campos de licencia de `Business` tenían `rls.write: false` y
+**ninguna descripción**. Un agente inspeccionando el esquema desplegado en
+aislamiento —que es exactamente lo que le pasó a FlowFin, donde una sesión
+ajena quitó el bloqueo de `User.family_id` razonando al revés sobre el
+mecanismo— no tenía forma de saber qué protegían. Los 17, más los 3 de
+`LoyaltyAccount` y los 8 de `User`, llevan ahora una descripción que dice qué
+es el campo, **qué se rompe si se quita el bloqueo**, y —lo crítico— que
+gobierna la **ESCRITURA y no la lectura**: una regla de escritura no puede
+producir un síntoma de lectura, y decirlo en el sitio donde alguien va a mirar
+es lo que corta ese diagnóstico al revés.
+
+### Módulo 23 — la navegación sobrevive a una recarga
+
+El elemento activo ya se derivaba de la ruta en cada render (`currentPageName`
+sale del `<Route>`), así que sale bien desde el primer frame. Lo que no se
+derivaba de nada era el scroll dentro del menú lateral, y este repo **recarga a
+propósito** (el cambio de negocio del módulo 18 llama a
+`window.location.reload()`). Nuevo `useStickyScroll`: guarda la posición en
+`sessionStorage` —no `localStorage`: sobrevive a la recarga sin filtrarse a
+otras pestañas— y la restaura en `useLayoutEffect`, antes de pintar, para que
+no se vea un frame en la posición por defecto. No hay grupos plegables en esta
+nav, así que el scroll es el único estado no derivable que había.
+
+### Verificado
+
+`npm ci`, `npm run lint` (eslint + `validate:rls` 19 entidades +
+`validate:permissions` + `validate:functions` 26/40), `npm run build`,
+`npm run check:secrets`. `deno check` sobre las 14 funciones tocadas **contra
+una línea base de `HEAD`**: el conteo de errores bajó o quedó igual en todas
+(p.ej. `acceptInvitation` 29→15, `createBusiness` 45→31), ninguna subió — los
+que quedan son el hueco de tipos genéricos del `@base44/sdk`
+(`Property 'X' does not exist on type '{}'`) que `switchBusiness`, sin tocar,
+también reporta. La búsqueda del manual se ejercitó con casos reales
+(acentos, varios términos).
+
+### No verificado — dilo, no lo insinúes
+
+- **Ninguna pantalla autenticada se abrió en un navegador.** No hay sesión de
+  Base44 en este entorno. Eso incluye `About`, los dos diálogos de sesión y la
+  lista de dispositivos.
+- **Nada de esto está desplegado.** El conector MCP de Base44 no está
+  autorizado en esta sesión, así que no se pudo correr `npm run deploy:site`,
+  `npm run deploy` ni `npm run deploy:entities`. Ver la sección de acciones
+  pendientes en `CLAUDE.md`: mergear no despliega nada, y las descripciones del
+  módulo 19 no llegan a producción hasta un `deploy:entities`.
+- **`purgeStaleSessions` no tiene todavía su entrada en el panel de tareas
+  programadas de Base44.** Desplegar la función no la agenda; hay que darla de
+  alta a mano, como las otras cuatro.
+- **El hueco de despliegue del 2026-09-07 sigue abierto.** `Production smoke
+  test` cumple hoy **9 días seguidos en rojo** (runs #12 a #21), siempre porque
+  `[data-theme-switcher]` no aparece en producción aunque `ThemeSwitcher` se
+  monte sin condición en `src/App.jsx`.
+
+---
 
 ## [2.0.16] — 2026-09-07 — Scheduled full audit: production deploy gap, dependency patches
 
@@ -82,9 +261,10 @@ introduced — this repo has no deno step in CI, so this was the first type
 check either file has ever gotten).
 
 **Resolved 2026-09-09:** PR #66 (`claude/sleepy-cray-wio3k2`, the
-module-14/Membership reaudit) independently also bumped to `2.0.16`. It
-merged second and was renumbered to `2.0.17` above, per this note written in
-advance for exactly this collision.
+module-14/Membership reaudit) independently also bumped to `2.0.16`. It was
+briefly renumbered to `2.0.17`, then merged third — after `2.0.18` — so its
+bump was dropped entirely and its content folded into the `2.0.18` entry
+above as documentation. `2.0.17` never shipped and does not exist.
 
 ### Found — production is not serving the deployed code (not fixed here — needs a manual deploy)
 
