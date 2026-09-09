@@ -99,7 +99,7 @@
       "type": "string"
     },
     "qr_token": {
-      "description": "Token \u00fanico para QR (regenerable)",
+      "description": "Token único del QR del cliente; el POS busca la cuenta por él (MerchantPOS.jsx). BLOQUEO DE ESCRITURA — módulo 14 del estándar ACACIA, hallazgo cerrado en la v2.0.15 (2026-08-24). Gobierna la ESCRITURA, no la lectura: quitarlo no cambia lo que devuelve una consulta. rls.write:false porque el token lo generan createLoyaltyAccount, regenerateExpiredQR y refreshQrToken (función de servicio acotada a la cuenta propia del llamante), nunca el navegador. Sin el bloqueo, un cliente se pone como token el de otro cliente de su misma tienda y cobra sus puntos. OJO: Wallet.jsx escribía este campo directo cada 5 minutos; esa escritura se reemplazó por refreshQrToken — si vuelves a abrir el bloqueo por un fallo de refresco del QR, el error está en refreshQrToken, no aquí.",
       "rls": {
         "write": false
       },
@@ -167,7 +167,7 @@
       "type": "string"
     },
     "store_id": {
-      "description": "ID de la tienda a la que pertenece (solo para clientes)",
+      "description": "ID de la tienda a la que pertenece la cuenta (solo clientes). BLOQUEO DE ESCRITURA — módulo 14 del estándar ACACIA, hallazgo cerrado en la v2.0.15 (2026-08-24). Gobierna la ESCRITURA, no la lectura: quitarlo no cambia lo que devuelve una consulta. Misma razón que business_id: la regla de entidad valida el registro almacenado, así que sin el $and a nivel de campo un cajero mueve una cuenta a una tienda de otro inquilino. earnPoints/burnPoints comparan este campo contra la tienda que cobra.",
       "rls": {
         "write": {
           "$or": [
@@ -231,7 +231,7 @@
       "type": "string"
     },
     "business_id": {
-      "description": "ID del negocio (tenant) due\u00f1o del programa",
+      "description": "ID del negocio (inquilino) dueño del programa al que pertenece esta cuenta. BLOQUEO DE ESCRITURA — módulo 14 del estándar ACACIA, hallazgo cerrado en la v2.0.15 (2026-08-24). Gobierna la ESCRITURA, no la lectura: quitarlo no cambia lo que devuelve una consulta. La regla de campo repite el $and de data.business_id == {{user.data.business_id}} que la regla de entidad ya aplica, porque la de entidad se evalúa sobre el registro ALMACENADO: sin el $and a nivel de campo, un cajero pasa el filtro por su propia tienda y entonces escribe aquí un negocio ajeno, empujando una cuenta propia fuera de su inquilino.",
       "rls": {
         "write": {
           "$or": [

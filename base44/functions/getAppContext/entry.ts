@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller } from '../../shared/callerIdentity.ts';
 
 // getAppContext — server-side resolution of platform context that the client
 // cannot read directly (the owner/support emails are server-only secrets).
@@ -28,7 +29,14 @@ Deno.serve(async (req) => {
     const isOwner = Boolean(ownerEmail) && (user.email || '').trim().toLowerCase() === ownerEmail;
     let promoted = false;
 
-    if (isOwner && user.role !== 'admin') {
+    // Módulo 22 — este es exactamente el "diff y me lo salto" que el módulo
+    // nombra: si auth.me() dice 'admin' pero el registro almacenado NO lo es,
+    // la promoción no corre, la respuesta sale igual de contenta y el dueño se
+    // queda sin consola sin que nada lo delate. El rol se relee del registro.
+    const caller = await resolveCaller(base44, user);
+    const storedRole = caller ? caller.role : null;
+
+    if (isOwner && storedRole !== 'admin') {
       // Server-gated promotion of the configured owner to the admin (owner) tier.
       try {
         await base44.asServiceRole.entities.User.update(user.id, { role: 'admin' });

@@ -199,6 +199,7 @@ export const PAGE_ACCESS = {
   History: ['owner', 'business_admin', 'staff', 'customer'],
   Chat: ['owner', 'business_admin', 'staff', 'customer'],
   Profile: ['owner', 'business_admin', 'staff', 'customer'],
+  About: ['owner', 'business_admin', 'staff', 'customer'],
 };
 
 export function canAccessPage(user, pageName) {

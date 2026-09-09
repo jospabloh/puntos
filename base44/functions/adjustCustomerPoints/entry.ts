@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 /**
  * Manual points adjustment (AdminCustomers.jsx), gated on
@@ -35,15 +36,6 @@ function isBusinessWriteBlocked(business: Record<string, unknown> | null | undef
   return business.status === 'suspended';
 }
 
-function getAppRole(user: Record<string, any>): string {
-  const role = user?.role;
-  if (role === 'admin') return 'owner';
-  if (role === 'business_admin') return 'business_admin';
-  if (role === 'merchant') return 'staff';
-  if (user?.data?.merchant_role === 'merchant' || user?.merchant_role === 'merchant') return 'staff';
-  return 'customer';
-}
-
 function fail(status: number, error: string, extra: Record<string, unknown> = {}) {
   return Response.json({ success: false, error, ...extra }, { status });
 }
@@ -69,9 +61,16 @@ Deno.serve(async (req) => {
     const account = await base44.asServiceRole.entities.LoyaltyAccount.get(accountId).catch(() => null);
     if (!account) return fail(404, 'Cuenta no encontrada.');
 
-    const role = getAppRole(user);
+    // Módulo 22: el rol y el inquilino del llamante salen de una lectura FRESCA
+    // de su registro User como servicio, nunca de la vista cacheada de
+    // auth.me() — que queda vieja en cuanto switchBusiness o manageTeamMember
+    // escriben esos mismos campos.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
+    const role = caller.appRole;
     const isOwner = role === 'owner';
-    const callerBusinessId = user?.data?.business_id ?? user?.business_id ?? null;
+    const callerBusinessId = caller.businessId;
 
     // The tenant is the ACCOUNT's, and a non-owner must belong to it.
     const businessId = account.business_id;

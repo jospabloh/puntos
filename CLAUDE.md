@@ -409,10 +409,49 @@ touching a module that's already implemented.
 - [x] Module 10 — Login on-brand with real error states, dark theme wired
       2026-08-19, suspended/view_only surfaced by `SuspendedAccountModal`/
       `TrialBanner` post-login.
+- [x] Module 11 — Deploy discipline: `base44.app.json` + `npm run deploy` /
+      `deploy:site` / `deploy:entities`, `validate:functions` in lint
+      (26/40). See "Deploy: el id de la app vive en el repo" below.
+- [x] Module 12 — Theme control (claro/oscuro/dispositivo), 2026-08-21.
+      **Shipped in the repo but NOT live** — see the deploy gap below.
+- [x] Module 13 — `npm run test:smoke` against production, in Actions.
+      **Currently red, 9 days running** — that is the module doing its job.
+- [x] Module 14 — Multi-tenant isolation audit, dated and written down;
+      last full pass 2026-08-23, findings closed 2026-08-24 (v2.0.15) and a
+      `manageTeamMember`/`Membership` revocation hole closed 2026-09-07.
+- [x] Module 15 — Bridge: one derived key per app, `_acaciaSign.ts`,
+      `ACACIA_APP_SLUG=puntos` verified against a real sync 2026-08-24.
+- [x] Module 16 — Secrets: `npm run check:secrets` in CI;
+      `scheduledGuard.ts` fails closed on an unset `SCHEDULED_TASK_SECRET`,
+      and `purgeStaleSessions` (module 20) went behind that same guard.
+- [x] Module 17 — Mission Control knows this app: row in `apps`, base44
+      adapter, licence capabilities, ticket control, catalogue mirror.
+- [x] Module 18 — `Membership` + `switchBusiness` + join-by-invite; the
+      switch deliberately reloads the page.
+- [x] Module 19 — Every field lock carries its own rationale in the schema
+      description: what the field is for, what breaks without the lock, and
+      that it governs **write, not read**. 17 fields on `Business`, 3 on
+      `LoyaltyAccount`, 8 on `User` (2026-09-09).
+- [x] Module 20 — Session control, three layers: `useSessionManager`
+      (20 min idle → warning → close), `ActiveSessions` in Profile (other
+      devices, revocable), and `purgeStaleSessions` (48 h, fail-closed cron
+      guard). 2026-09-09 — see its section below for the one deliberate
+      deviation from the canonical contract.
+- [x] Module 21 — `src/pages/About.jsx`: searchable in-app manual
+      (`src/lib/manual.js`), the module-6 changelog surfaced, the version,
+      contact, and the ACACIA line. 2026-09-09.
+- [x] Module 22 — No write decision is taken from `auth.me()`'s cached
+      view: `base44/shared/callerIdentity.ts`, 13 functions migrated
+      (2026-09-09).
+- [x] Module 23 — Nav active item is route-derived on every render;
+      sidebar scroll persists across a reload via `sessionStorage`
+      (`useStickyScroll`, 2026-09-09).
 
-Last audited against the standard: 2026-08-21 — module 3 had no server-side
-enforcement at all and module 1 allowed license self-escalation; both closed
-in this pass.
+Last audited against the standard: 2026-09-09 — the checklist above stopped
+at module 10 while the standard had reached 23. Modules 11-18 turned out to
+be done already (documented in prose further down this file, just never
+checked off); **modules 19-23 did not exist and were built in that pass**.
+Details in `CHANGELOG.md` (2.0.18) and in the sections below.
 
 ## Deploy: el id de la app vive en el repo (módulo 11, 2026-08-21)
 
@@ -888,3 +927,156 @@ del portafolio, no en una inspección visual directa; el fix de
 `manageTeamMember` no se ejercitó contra un `manageTeamMember` → `Membership`
 → `switchBusiness` real end-to-end (necesita una función Deno desplegada y
 una sesión de dos usuarios), sólo revisado por lectura y tipado.
+
+
+## Auditoría programada — módulos 19 a 23 (2026-09-09, v2.0.18)
+
+La lista de cumplimiento de este archivo llegaba al módulo 10; el estándar va
+por el 23. De los trece sin revisar, **ocho ya estaban hechos** —documentados
+en prosa aquí abajo, sólo que nunca marcados— y **cinco no existían**. Los
+cinco están en esta versión. Lo que sigue es lo que conviene saber antes de
+tocarlos.
+
+### `base44/shared/` SÍ se puede importar, y este repo llevaba meses diciendo que no
+
+Cinco archivos repetían que «Deno no puede importar entre directorios de
+función», y ése era el motivo declarado de que `isBusinessWriteBlocked()` y
+`getAppRole()` estén copiados a mano en media docena de sitios.
+
+**Es falso.** `base44/shared/scheduledGuard.ts` se importa desde cuatro crons
+desplegados y funcionando. `cleanupInactiveUsers` llegaba a desmentirlo dentro
+del mismo archivo: lo importa en la línea 2 y afirma que no se puede en la
+línea 4. Lo que de verdad no se puede es importar desde `src/`, que no viaja en
+el bundle desplegado.
+
+Los cinco comentarios están corregidos. Las copias siguen ahí: consolidarlas
+toca las cuatro funciones que mueven puntos y merece su propio cambio, no un
+apéndice de éste. Pero el motivo por el que siguen duplicadas es ahora "nadie
+lo ha hecho todavía", no una limitación inventada del runtime.
+
+Y la lección de fondo, que es la del módulo 16 con otra ropa: **una restricción
+técnica que nadie ha vuelto a comprobar no es una restricción, es un recuerdo.**
+
+### Módulo 22 — `auth.me()` sirve para saber QUIÉN eres, no para decidir si se escribe
+
+`base44.auth.me()` es la vista de sesión y está cacheada — es barata justo
+porque no vuelve a la base. Trece funciones la usaban para decidir **si**
+escribían o **en qué inquilino** escribían.
+
+`base44/shared/callerIdentity.ts` (`resolveCaller`) relee el registro `User`
+como servicio y devuelve la identidad autoritativa. **Falla cerrado**: si el
+registro no se puede leer, 403, nunca la vista cacheada.
+
+La regla, corta: **`user.id` y `user.email` de `auth.me()`; todo lo demás que
+decida una escritura, de `resolveCaller()`.** Y un patch parcial se construye
+sobre el objeto recién leído (`{ ...caller.data, ...patch }`), nunca sobre el
+cacheado.
+
+Tres casos que había aquí y que no son teóricos:
+
+- `createBusiness` / `acceptInvitation` escribían una fila `Membership` con el
+  inquilino y el rol cacheados. `switchBusiness` (módulo 18) confía en
+  `Membership` sin releer nunca el `User` — una vista vieja aquí graba una
+  pertenencia al inquilino equivocado y le abre esa puerta para siempre.
+- `createLoyaltyAccount` **escribía** `role = user.role === 'admin' ? 'admin' :
+  'customer'`. Una vista que dijera `customer` de quien ya es `admin` degrada
+  al dueño de la plataforma.
+- `getAppContext` es el "diff y me lo salto" literal: si el cacheado dice
+  `admin` y el almacenado no, la promoción no corre y la respuesta sale igual
+  de contenta. Nada en ella lo delata. Así perdió Rumbo dos rondas de
+  diagnóstico.
+
+`switchBusiness` ya estaba bien y no se tocó: sólo usa `user.id` y relee
+`Membership`.
+
+### Módulo 20 — control de sesión, y la desviación que hay que entender antes de "arreglarla"
+
+Tres capas: `src/hooks/useSessionManager.js` (inactividad 20 min → aviso de 2
+min → cierre, más el latido y la comprobación de revocación),
+`src/components/ActiveSessions.jsx` en Perfil (los otros dispositivos, con
+botón para cerrarlos) y `base44/functions/purgeStaleSessions` (revoca a las
+48 h, detrás de `scheduledGuard.ts`, que falla cerrado).
+
+`IdleWarningDialog.jsx` y `SessionExpiredDialog.jsx` son los canónicos del repo
+estándar. **Una sola línea diverge**, y está comentada en el propio archivo: el
+canónico llama a `base44.auth.redirectToLogin()`, que manda al `/login`
+genérico que sirve Base44 — exactamente lo que el módulo 10 de esta app
+arregló. Aquí el botón va a `/Login`. Si algún día se unifica, que sea
+añadiendo un prop arriba, no revirtiendo esto.
+
+**`useSessionManager.js` NO es byte a byte el canónico, y es a propósito.** El
+canónico habla con un router `session` sobre una entidad `Session` con
+`device_id` y `status: active|passive|revoked`. Aquí existe `AppSession`, ya
+desplegada y leída por `sessions.list` / `sessions.revoke` del puente de
+Mission Control, y su marca de revocación es `revoked_at`. Adoptar el contrato
+canónico exige campos nuevos en una entidad viva, y **un campo no desplegado se
+descarta en silencio al escribir** (ver "Base44 schema-as-code" arriba): un
+`status: 'revoked'` escrito antes de desplegar el esquema desaparecería, y la
+capa 3 parecería funcionar sin cosechar nada. Esta versión usa sólo campos ya
+desplegados, así que funciona el día que se mergea. Migrar al contrato canónico
+es posible; se hace desplegando el esquema **primero**.
+
+`src/lib/SessionHeartbeat.jsx` se fusionó aquí — un solo dueño del estado de
+sesión. Único cambio de comportamiento: una sesión revocada levanta el diálogo
+en vez de rebotar a logout sin explicación.
+
+### Módulo 21 — "Acerca de", y por qué el changelog lleva dos resúmenes
+
+`src/pages/About.jsx`, enlazada desde Perfil y desde la barra lateral. El
+manual vive en `src/lib/manual.js` (por área, filtrado por rol, buscando sin
+acentos ni mayúsculas); `docs/USER_MANUAL.md` es el mismo material en largo y
+en inglés — **al cambiar una función, actualiza los dos**.
+
+El arreglo `CHANGELOG` de `appConfig.js` existía desde la 2.0.14 y **no lo leía
+nadie**: Perfil sólo importaba `APP_VERSION` y `RELEASE_DATE`. Ahora lo lee
+About, que es el consumidor que el módulo 6 siempre supuso.
+
+Cada entrada lleva `resumen` (español llano, lo que cambió para la persona) y
+`summary` (el registro técnico que espeja `CHANGELOG.md`). About muestra
+`resumen` y cae a `summary` si falta. Los dos porque quien usa la app no
+aprende nada de "closed the three module-14 isolation findings", y quien
+mantiene el repo pierde el rastro con "revisión de mantenimiento".
+
+**No hay número de WhatsApp** aunque el módulo lo sugiera: no existe ninguno en
+este repo y un canal de contacto inventado es peor que ninguno. Cuando exista,
+va en esta pantalla.
+
+### Módulo 23 — recargar es rutina en esta app, no una señal de reinicio
+
+El elemento activo del menú ya salía de la ruta en cada render
+(`currentPageName` viene del `<Route>` en `App.jsx`), así que sale bien desde el
+primer frame. Lo que no se derivaba de nada era el scroll del menú lateral — y
+este repo **recarga a propósito**: el cambio de negocio del módulo 18 llama a
+`window.location.reload()`. `src/hooks/useStickyScroll.js` lo guarda en
+`sessionStorage` (no `localStorage`: sobrevive a la recarga sin filtrarse a
+otras pestañas ni dispositivos) y lo restaura en `useLayoutEffect`, antes de
+pintar. No hay grupos plegables en esta nav; el scroll era el único estado no
+derivable.
+
+### Pendiente, y no se pudo hacer desde aquí
+
+El conector MCP de Base44 **no está autorizado en esta sesión**, así que no se
+pudo desplegar nada. Por orden de importancia:
+
+1. **`npm run deploy:site`** — el hueco del 2026-09-07 sigue abierto y ya son
+   **9 días** de `Production smoke test` en rojo (runs #12 a #21), siempre
+   porque `[data-theme-switcher]` no aparece en producción aunque
+   `ThemeSwitcher` se monte sin condición en `src/App.jsx`. Confirma con un
+   `workflow_dispatch` de la suite. Si tras un deploy real sigue faltando, deja
+   de ser un hueco de despliegue y pasa a ser un bug de producto.
+2. **`npm run deploy`** — las 14 funciones tocadas y la nueva
+   `purgeStaleSessions`. Hasta entonces el módulo 22 está en el repo y no en
+   producción.
+3. **`npm run deploy:entities`** — las descripciones del módulo 19 son metadata
+   de esquema: viven en el `.jsonc` y no llegan a producción sin esto. Ojo, es
+   el comando destructivo; pide escribir "Puntos+".
+4. **Dar de alta `purgeStaleSessions` en el panel de tareas programadas de
+   Base44.** Desplegar la función no la agenda. Diaria basta. Y comprueba que
+   `SCHEDULED_TASK_SECRET` esté puesto: sin él responde 403 y no corre — que es
+   la dirección segura del fallo, pero sigue siendo no correr.
+
+**Nada de lo de esta versión se abrió en un navegador**: no hay sesión de
+Base44 en este entorno. Eso incluye `About`, los dos diálogos de sesión y la
+lista de dispositivos. Lo que sí se comprobó está en `CHANGELOG.md` (2.0.18),
+incluido un `deno check` de las 14 funciones **contra una línea base de
+`HEAD`** — el conteo de errores bajó o quedó igual en todas, ninguna subió.

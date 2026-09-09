@@ -25,7 +25,7 @@
         "customer",
         "user"
       ],
-      "description": "Rol de plataforma: admin (dueño ACACIA), business_admin (admin del negocio), merchant (equipo/cajero), customer (cliente). 'user' es heredado y se trata como customer.",
+      "description": "Rol de plataforma: admin (dueño ACACIA), business_admin (admin del negocio), merchant (equipo/cajero), customer (cliente). 'user' es heredado y se trata como customer. BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Sin él, cualquiera se hace 'admin' y con eso entra por la rama de servicio de TODAS las reglas de RLS del portafolio.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "app_role": {
@@ -36,37 +36,37 @@
         "staff",
         "customer"
       ],
-      "description": "Rol de aplicación (espejo legible del rol)",
+      "description": "Rol de aplicación (espejo legible del rol). BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Se mueve siempre junto a 'role'; dejarlo abierto deja los dos espejos en desacuerdo.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "business_id": {
       "type": "string",
-      "description": "ID del negocio (tenant) al que pertenece el usuario",
+      "description": "ID del negocio (inquilino) al que pertenece el usuario. Es el puntero de inquilino: todas las reglas de RLS de este repo comparan contra {{user.data.business_id}}. BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Sin él, un usuario apunta su cuenta al inquilino que quiera y lee sus datos — la misma clase de fallo que FlowFin sufrió en User.family_id (módulo 19).",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "business_name": {
       "type": "string",
-      "description": "Nombre del negocio (denormalizado)",
+      "description": "Nombre del negocio (denormalizado). BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Va con business_id; abierto por su cuenta, deja el nombre mintiendo sobre el inquilino real.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "storeId": {
       "type": "string",
-      "description": "ID de la tienda asignada al cajero (usado por RLS)",
+      "description": "ID de la tienda asignada al cajero — camelCase a propósito: es el nombre que leen las reglas de RLS ({{user.data.storeId}}). BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Sin él, un cajero se reasigna a otra tienda y ve sus cuentas y su caja.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "store_id": {
       "type": "string",
-      "description": "ID de la tienda asignada (alias)",
+      "description": "ID de la tienda asignada (alias snake_case de storeId, conservado por ramas heredadas de RLS). BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Mismo riesgo que storeId; los dos se bloquean o no se bloquea ninguno.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "store_name": {
       "type": "string",
-      "description": "Nombre de la tienda asignada",
+      "description": "Nombre de la tienda asignada (denormalizado). BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Va con storeId.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "merchant_role": {
       "type": "string",
-      "description": "Marca heredada de cajero ('merchant')",
+      "description": "Marca heredada de cajero ('merchant'), aún leída por ramas antiguas de RLS y por deleteMyAccount. BLOQUEO DE ESCRITURA (solo role:admin, es decir servicio/dueño de plataforma). Gobierna la ESCRITURA, no la lectura. Si se abre, cualquier usuario se auto-escala llamando a base44.auth.updateMe({...}) desde el navegador: ese es exactamente el agujero que este bloqueo cierra, y ninguna regla de RLS de otra entidad puede taparlo, porque todas confían en estos campos. Sin él, un cliente se marca como cajero y entra por esas ramas heredadas.",
       "rls": { "write": { "user_condition": { "role": "admin" } } }
     },
     "phone": {

@@ -23,7 +23,8 @@ import {
   Sparkles,
   Download,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import ActiveSessions from '@/components/ActiveSessions';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
 
@@ -483,6 +485,17 @@ export default function Profile() {
           </Card>
         </motion.div>
 
+        {/* Module 20, Layer 2 — every role, not just customers: an
+            unrecognized device is an account-compromise signal for a cashier
+            and a tenant admin just as much as for a consumer. */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.26 }}
+        >
+          <ActiveSessions user={user} />
+        </motion.div>
+
         {/* Danger zone — customer accounts only */}
         {isCustomer(user) && (
           <motion.div
@@ -549,6 +562,20 @@ export default function Profile() {
             </div>
             <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500" />
           </button>
+
+          {/* Módulo 21 — el manual, las novedades, la versión y el contacto. */}
+          <Link to={createPageUrl('About')}>
+            <button className="w-full flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all">
+              <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <Info className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-slate-900 dark:text-slate-50">Acerca de Puntos+</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Manual, novedades y contacto</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+            </button>
+          </Link>
 
           <Link to={createPageUrl('Chat')}>
             <button className="w-full flex items-center gap-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 hover:shadow-md transition-all">

@@ -5,12 +5,13 @@ import { base44 } from '@/api/base44Client';
 import {
   Wallet, Gift, History as HistoryIcon, MessageCircle, User as UserIcon, Store,
   LayoutDashboard, LogOut, Menu, X, Sparkles, Building2, KeyRound, LifeBuoy,
-  Users, Receipt, Settings, ShieldCheck, ScrollText, Megaphone, Crown, ChevronRight,
+  Users, Receipt, Settings, ShieldCheck, ScrollText, Megaphone, Crown, ChevronRight, Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
+import { useStickyScroll } from '@/hooks/useStickyScroll';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
 import BusinessSwitcher from '@/components/BusinessSwitcher';
 
@@ -121,6 +122,8 @@ function BackOfficeNav({ groups, role, currentPageName, onNavigate }) {
       <NavLink item={{ name: 'Punto de venta', page: 'MerchantPOS', icon: Store }} currentPageName={currentPageName} onNavigate={onNavigate} />
       <NavLink item={{ name: 'Permisos', page: 'Permissions', icon: ShieldCheck }} currentPageName={currentPageName} onNavigate={onNavigate} />
       <NavLink item={{ name: 'Mi cuenta', page: 'Home', icon: Wallet }} currentPageName={currentPageName} onNavigate={onNavigate} />
+      {/* Módulo 21: manual, novedades, versión y contacto — al alcance, no enterrado. */}
+      <NavLink item={{ name: 'Acerca de', page: 'About', icon: Info }} currentPageName={currentPageName} onNavigate={onNavigate} />
     </nav>
   );
 }
@@ -128,6 +131,9 @@ function BackOfficeNav({ groups, role, currentPageName, onNavigate }) {
 /* ── Back-office sidebar shell (owner + business admin) ─────────────────── */
 function BackOfficeShell({ user, role, currentPageName, children }) {
   const [open, setOpen] = useState(false);
+  // Módulo 23: el elemento activo ya sale de la ruta en cada render, pero la
+  // posición del scroll dentro del menú no se deriva de nada — se recuerda.
+  const navScrollRef = useStickyScroll('pp-sidebar-scroll');
   // The owner runs the whole platform AND can administer any tenant, so they get
   // both nav groups; a business admin gets only their tenant's administration.
   const groups = role === ROLES.OWNER
@@ -151,7 +157,7 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
         {/* Desktop sidebar */}
         <aside className="hidden md:flex sticky top-0 h-screen w-64 shrink-0 flex-col border-r border-slate-200/60 bg-violet-50/40 px-4 py-5">
           <div className="px-2"><Wordmark subtitle={subtitle} /></div>
-          <div className="mt-6 flex-1 overflow-y-auto"><BackOfficeNav groups={groups} role={role} currentPageName={currentPageName} /></div>
+          <div ref={navScrollRef} className="mt-6 flex-1 overflow-y-auto"><BackOfficeNav groups={groups} role={role} currentPageName={currentPageName} /></div>
           <div className="mt-4 rounded-2xl bg-white/70 p-3 ring-1 ring-slate-100">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-pink-500 text-sm font-semibold text-white">

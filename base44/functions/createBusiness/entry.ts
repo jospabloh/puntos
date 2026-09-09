@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // createBusiness — provisions a new tenant during onboarding.
 //
@@ -58,6 +59,15 @@ Deno.serve(async (req) => {
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Módulo 22: business_id / role / store del llamante salen de una lectura
+    // FRESCA de su registro User como servicio. Los bloques de abajo ESCRIBEN
+    // una fila Membership con esos valores, y switchBusiness (módulo 18) confía
+    // en Membership sin releer nunca el User — así que una vista de sesión
+    // vieja aquí graba una pertenencia al inquilino equivocado y le abre esa
+    // puerta de forma permanente.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
 
     const body = await req.json().catch(() => ({}));
     const businessName = (body?.businessName || '').trim();
@@ -152,21 +162,21 @@ Deno.serve(async (req) => {
     // merchant); the platform owner has no tenant membership to preserve.
     // Best-effort idempotent (checks for an existing row first) so a retry
     // can't double it.
-    if (user.business_id && (user.role === 'business_admin' || user.role === 'merchant')) {
+    if (caller.businessId && (caller.role === 'business_admin' || caller.role === 'merchant')) {
       const already = await base44.asServiceRole.entities.Membership.filter(
-        { business_id: user.business_id, user_id: user.id },
+        { business_id: caller.businessId, user_id: user.id },
         undefined,
         1,
       );
       if (!already?.length) {
         await base44.asServiceRole.entities.Membership.create({
-          business_id: user.business_id,
-          business_name: user.business_name || '',
+          business_id: caller.businessId,
+          business_name: caller.businessName,
           user_id: user.id,
-          user_email: user.email,
-          role: user.role,
-          store_id: user.store_id || user.storeId || '',
-          store_name: user.store_name || '',
+          user_email: caller.email,
+          role: caller.role,
+          store_id: caller.storeId || '',
+          store_name: caller.data?.store_name || '',
         });
       }
     }
@@ -176,7 +186,7 @@ Deno.serve(async (req) => {
     // 3c below), and Membership's role enum only holds business_admin/
     // merchant. A Membership here would let switchBusiness "switch" them into
     // a plain business_admin of their own business, losing platform access.
-    if (user.role !== 'admin') {
+    if (caller.role !== 'admin') {
       await base44.asServiceRole.entities.Membership.create({
         business_id: business.id,
         business_name: business.name,
@@ -191,8 +201,8 @@ Deno.serve(async (req) => {
     // 3c) Promote the caller to business_admin of the new tenant (service role,
     // so it works even once User.role is locked to admin-only writes). An existing
     // platform owner (admin) stays admin.
-    const promotedRole = user.role === 'admin' ? 'admin' : 'business_admin';
-    const promotedAppRole = user.role === 'admin' ? 'owner' : 'business_admin';
+    const promotedRole = caller.role === 'admin' ? 'admin' : 'business_admin';
+    const promotedAppRole = caller.role === 'admin' ? 'owner' : 'business_admin';
     try {
       await base44.asServiceRole.entities.User.update(user.id, {
         role: promotedRole,

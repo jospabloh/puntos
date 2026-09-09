@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 /**
  * Module 3's server-side half for Puntos+.
@@ -159,17 +160,6 @@ function isBusinessWriteBlocked(business: Record<string, unknown> | null | undef
   return business.status === 'suspended';
 }
 
-// The app role, resolved the same way getAppRole() does on the client: the
-// built-in `role` first, with the legacy merchant_role fallback.
-function getAppRole(user: Record<string, any>): string {
-  const role = user?.role;
-  if (role === 'admin') return 'owner';
-  if (role === 'business_admin') return 'business_admin';
-  if (role === 'merchant') return 'staff';
-  if (user?.data?.merchant_role === 'merchant' || user?.merchant_role === 'merchant') return 'staff';
-  return 'customer';
-}
-
 function fail(status: number, error: string, extra: Record<string, unknown> = {}) {
   return Response.json({ success: false, error, ...extra }, { status });
 }
@@ -192,12 +182,16 @@ Deno.serve(async (req) => {
     const key = config[operation as 'create' | 'update' | 'delete'];
     if (!key) return fail(400, `Operación no disponible para ${entity}: ${operation}`);
 
-    const role = getAppRole(user);
-    const isOwner = role === 'owner';
+    // Tenant and role are ALWAYS the caller's own, re-derived from a FRESH
+    // service-role read of their user record (module 22) — never from the
+    // request body, and never from auth.me()'s cached session view, which goes
+    // stale the moment switchBusiness/manageTeamMember writes those fields.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
 
-    // Tenant is ALWAYS the caller's own, re-derived from their own user record
-    // — never read from the request body.
-    const businessId = user?.data?.business_id ?? user?.business_id ?? null;
+    const role = caller.appRole;
+    const isOwner = role === 'owner';
+    const businessId = caller.businessId;
     if (!isOwner && !businessId) return fail(403, 'No perteneces a ningún negocio.');
 
     // For update/delete, the EXISTING record's tenant is what gets checked, so

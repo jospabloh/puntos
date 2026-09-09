@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
 // burnPoints — POS "redeem" operation, run entirely with the service role.
 //
@@ -13,8 +14,15 @@ function pick(user: any, key: string) {
 }
 
 // Mirrors src/lib/useTenant.js's canTenantWrite() — see earnPoints/entry.ts
-// for the full rationale (duplicated inline, Deno can't import across
-// function directories; keep in sync).
+// for the full rationale.
+// duplicated inline. NOTA (2026-09-09): la razón que este comentario daba
+// —«Deno no puede importar entre directorios de función»— es FALSA, y lo
+// era ya cuando se escribió: `base44/shared/` sí se importa desde
+// cualquier función y cuatro crons llevan meses haciéndolo con
+// `scheduledGuard.ts` (y ahora `callerIdentity.ts`). Lo que de verdad no
+// se puede es importar desde `src/`, que no viaja en el bundle. La copia
+// sigue aquí porque consolidarla toca las cuatro funciones que mueven
+// puntos y merece su propio cambio; mantenlas en sync mientras tanto.
 function isBusinessWriteBlocked(business: any): boolean {
   if (!business) return false;
   const status = business.billing_status || 'trial';
@@ -27,12 +35,18 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const role = user.role;
+    // Módulo 22: el rol del operador sale de una lectura FRESCA del registro
+    // User. Esta función mueve puntos, que son la unidad de valor de la app; un
+    // cajero al que acaban de quitarle el rol sigue viéndolo en su sesión.
+    const caller = await resolveCaller(base44, user);
+    if (!caller) return unresolvedCallerResponse();
+
+    const role = caller.role;
     const isOperator =
       role === 'admin' ||
       role === 'business_admin' ||
       role === 'merchant' ||
-      pick(user, 'merchant_role') === 'merchant';
+      caller.appRole === 'staff';
     if (!isOperator) return Response.json({ error: 'No autorizado' }, { status: 403 });
 
     const body = await req.json().catch(() => ({}));
