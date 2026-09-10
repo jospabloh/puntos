@@ -7,8 +7,7 @@
 // Todos los campos que este repo trata como autoritativos del servidor
 // (`role`, `app_role`, `business_id`, `storeId`, `store_id`, `merchant_role`)
 // llevan `rls.write` restringido a `role:admin` — sólo los escribe una función
-// de servicio: `switchBusiness`, `manageTeamMember`, `acceptInvitation`,
-// `createBusiness`. En cuanto una de ellas escribe, el `auth.me()` que otra
+// de servicio: `manageTeamMember`, `acceptInvitation`, `createBusiness`. En cuanto una de ellas escribe, el `auth.me()` que otra
 // petición ya tenía en mano queda viejo. Rumbo perdió dos rondas de
 // diagnóstico por exactamente esto: `switchTenant` comparó contra el
 // `auth.me()` cacheado, vio que "ya estaba" en el inquilino destino, se saltó

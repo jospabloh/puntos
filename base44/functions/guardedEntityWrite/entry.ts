@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
     // Tenant and role are ALWAYS the caller's own, re-derived from a FRESH
     // service-role read of their user record (module 22) — never from the
     // request body, and never from auth.me()'s cached session view, which goes
-    // stale the moment switchBusiness/manageTeamMember writes those fields.
+    // stale the moment manageTeamMember writes those fields.
     const caller = await resolveCaller(base44, user);
     if (!caller) return unresolvedCallerResponse();
 

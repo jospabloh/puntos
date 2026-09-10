@@ -397,7 +397,7 @@ touching a module that's already implemented.
       `redeemOffer`, all behind the billing gate. Drift-guarded in `lint`.
 - [x] Module 4 — RLS: four-op `$or` shape with the service-role admin branch
       on every business-scoped entity, both halves verified by
-      `validate:rls` (19 entities as of 2026-08-31, `Membership` included).
+      `validate:rls` (18 entities as of 2026-09-10 — `Membership` retired).
 - [x] Module 5 — Health: Mission Control polls `acaciaControl`'s `ping`.
 - [x] Module 6 — `src/lib/appConfig.js` (`APP_VERSION`/`RELEASE_DATE`) +
       in-app changelog.
@@ -426,8 +426,9 @@ touching a module that's already implemented.
       and `purgeStaleSessions` (module 20) went behind that same guard.
 - [x] Module 17 — Mission Control knows this app: row in `apps`, base44
       adapter, licence capabilities, ticket control, catalogue mirror.
-- [x] Module 18 — `Membership` + `switchBusiness` + join-by-invite; the
-      switch deliberately reloads the page.
+- [ ] Module 18 — **RETIRADO 2026-09-10.** `Membership`, `switchBusiness` y
+      el selector se quitaron: un usuario pertenece a un solo negocio. Ver la
+      sección al final de este archivo.
 - [x] Module 19 — Every field lock carries its own rationale in the schema
       description: what the field is for, what breaks without the lock, and
       that it governs **write, not read**. 17 fields on `Business`, 3 on
@@ -1141,3 +1142,50 @@ Base44 en este entorno. Eso incluye `About`, los dos diálogos de sesión y la
 lista de dispositivos. Lo que sí se comprobó está en `CHANGELOG.md` (2.0.18),
 incluido un `deno check` de las 14 funciones **contra una línea base de
 `HEAD`** — el conteo de errores bajó o quedó igual en todas, ninguna subió.
+
+## Retirado: el selector de negocio (módulo 18) — 2026-09-10
+
+**Un usuario pertenece a un solo negocio.** El `User` ES la pertenencia: su
+`business_id`, `role` y tienda, todos bloqueados a `role:admin` en RLS y
+escritos sólo por funciones de servicio. La entidad `Membership` que duplicaba
+esa información y la función `switchBusiness` que la leía se retiraron — el
+feature nunca llegó a producción.
+
+Lo que se fue: `base44/functions/switchBusiness/`,
+`base44/entities/Membership.jsonc`, `src/components/BusinessSwitcher.jsx`,
+`src/lib/useMemberships.js`, los dos bloques del selector en `src/Layout.jsx` y
+el enlace "Crear o unirme a otro negocio", y el `?join=1` de `Onboarding.jsx`.
+
+**Tres puertas que hubo que volver a poner o que se simplificaron, y el porqué
+de cada una:**
+
+- **`createBusiness` responde 409** a quien ya pertenece a un negocio (el dueño
+  de plataforma, `role: admin`, es la excepción: es cross-tenant). Sin selector,
+  crear un segundo movería el `business_id` activo y el primero quedaría
+  inalcanzable.
+- **`acceptInvitation` responde 409** por lo mismo. Aceptar sobrescribe
+  `business_id`/`role`, así que sin selector es una puerta de un solo sentido —
+  justo el fallo que el módulo 18 existía para evitar, y que su propia cabecera
+  describía.
+- **`manageTeamMember` ya no sincroniza una fila espejo.** Ese `syncMembership`
+  se añadió el 2026-09-07 porque `switchBusiness` leía `Membership` en solitario
+  y devolvía el acceso recién revocado. Sin `switchBusiness` no hay segunda
+  copia que pueda quedar desincronizada: limpiar el `User` es toda la
+  revocación. El agujero que ese fix cerró no puede reabrirse — se le quitó el
+  suelo, no el parche.
+
+Los backfills perezosos de `createBusiness`/`acceptInvitation` (que creaban una
+`Membership` para el negocio anterior del llamante antes de moverlo) se fueron
+con ellos: sólo existían para no perder acceso al cambiar, y ya no se cambia.
+
+**Nada de esto llega a producción al mergear** (módulo 11): hacen falta
+`npm run deploy` (25 endpoints), `npm run deploy:site` y `npm run deploy:entities`
+para el borrado de la entidad. **`Membership` tiene 0 filas en producción**
+(consultado el 2026-09-10), así que en esta app el `deploy:entities` sí puede
+borrarla sin el freno que Base44 pone a una entidad con registros.
+
+**Verificado:** `npm run lint` (eslint + `validate:rls` 18 entidades +
+`validate:permissions` + `validate:functions` 25/40) y `npm run build`, ambos
+limpios. `deno check` sobre `createBusiness`, `acceptInvitation` y
+`manageTeamMember`: **54 errores preexistentes → 35**, ninguno nuevo.
+**No verificado:** el deploy ni una sesión de navegador.
