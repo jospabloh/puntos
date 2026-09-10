@@ -15,14 +15,12 @@ import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIden
 // self-escalate to business_admin/admin). The client just refreshes its session
 // afterwards so the new role lands in its token.
 //
-// Modulo 18 (jospabloh/acacia-app-standard -> STANDARD.md, 2026-08-26): ya no
-// rechaza a un caller que ya administra otro negocio -- crear un negocio
-// adicional es legitimo (el mismo email dueno de dos programas de lealtad).
-// Antes de mover el business_id activo al negocio recien creado, si el caller
-// ya tenia uno, se le respalda una fila Membership para el -- sin esto, un
-// business_admin/staff existente que usara este flujo por primera vez
-// perderia sin darse cuenta el acceso a su negocio original, porque
-// Membership no existia todavia cuando ese negocio se creo.
+// UN USUARIO, UN NEGOCIO (2026-09-10): rechaza a un caller que ya pertenece a
+// otro negocio. Durante un tiempo se permitio crear un segundo, apoyado en un
+// selector que dejaba volver al primero; ese selector se retiro (nunca funciono
+// en produccion), asi que sin este rechazo el negocio original quedaria
+// inalcanzable en cuanto business_id se moviera al nuevo. Darse de baja de un
+// negocio es cosa de su administrador (manageTeamMember).
 
 const TRIAL_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -61,13 +59,20 @@ Deno.serve(async (req) => {
     }
 
     // Módulo 22: business_id / role / store del llamante salen de una lectura
-    // FRESCA de su registro User como servicio. Los bloques de abajo ESCRIBEN
-    // una fila Membership con esos valores, y switchBusiness (módulo 18) confía
-    // en Membership sin releer nunca el User — así que una vista de sesión
-    // vieja aquí graba una pertenencia al inquilino equivocado y le abre esa
-    // puerta de forma permanente.
+    // FRESCA de su registro User como servicio. La puerta de abajo DECIDE con
+    // ese business_id, y una vista de sesión vieja de auth.me() la dejaría
+    // pasar cuando no debe (o al revés).
     const caller = await resolveCaller(base44, user);
     if (!caller) return unresolvedCallerResponse();
+
+    // El dueno de plataforma (role: admin) es la excepcion: es cross-tenant y
+    // su business_id activo no es una pertenencia, asi que puede seguir
+    // creando negocios.
+    if (caller.businessId && caller.role !== 'admin') {
+      return Response.json({
+        error: 'Ya perteneces a un negocio. Pide a un administrador que te dé de baja antes de crear otro.',
+      }, { status: 409 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const businessName = (body?.businessName || '').trim();
@@ -155,48 +160,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3b) Backfill a Membership for whatever business the caller was already
-    // administering/staffing, BEFORE we move business_id away from it -- a
-    // lazy, one-time migration for accounts onboarded before Membership
-    // existed. Only meaningful for a real tenant role (business_admin/
-    // merchant); the platform owner has no tenant membership to preserve.
-    // Best-effort idempotent (checks for an existing row first) so a retry
-    // can't double it.
-    if (caller.businessId && (caller.role === 'business_admin' || caller.role === 'merchant')) {
-      const already = await base44.asServiceRole.entities.Membership.filter(
-        { business_id: caller.businessId, user_id: user.id },
-        undefined,
-        1,
-      );
-      if (!already?.length) {
-        await base44.asServiceRole.entities.Membership.create({
-          business_id: caller.businessId,
-          business_name: caller.businessName,
-          user_id: user.id,
-          user_email: caller.email,
-          role: caller.role,
-          store_id: caller.storeId || '',
-          store_name: caller.data?.store_name || '',
-        });
-      }
-    }
-
-    // The platform owner (role: admin) deliberately gets no Membership row for
-    // the new business: they stay cross-tenant `admin` (never demoted, see
-    // 3c below), and Membership's role enum only holds business_admin/
-    // merchant. A Membership here would let switchBusiness "switch" them into
-    // a plain business_admin of their own business, losing platform access.
-    if (caller.role !== 'admin') {
-      await base44.asServiceRole.entities.Membership.create({
-        business_id: business.id,
-        business_name: business.name,
-        user_id: user.id,
-        user_email: user.email,
-        role: 'business_admin',
-        store_id: store.id,
-        store_name: store.name,
-      });
-    }
 
     // 3c) Promote the caller to business_admin of the new tenant (service role,
     // so it works even once User.role is locked to admin-only writes). An existing

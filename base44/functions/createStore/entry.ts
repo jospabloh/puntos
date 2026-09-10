@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
     // Módulo 22: el inquilino y el rol del llamante salen de una lectura FRESCA
     // de su registro User como servicio. auth.me() es la vista de sesión y está
-    // cacheada; en cuanto switchBusiness o manageTeamMember escriben business_id
+    // cacheada; en cuanto manageTeamMember escribe business_id
     // o role, esa vista miente — y aquí decide EN QUÉ inquilino se crea la
     // tienda, que es justo el caso que el módulo 22 nombra como el peor.
     const caller = await resolveCaller(base44, user);
