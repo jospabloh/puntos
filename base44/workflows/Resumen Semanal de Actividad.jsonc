@@ -32,7 +32,7 @@
           "with": {
             "function_name": "sendWeeklySummary",
             "args": {
-              "scheduled_token": "re_QaaBRstQ_G5kqCtmg4XJwoU6iVpE3oK3C"
+              "scheduled_token": "<SCHEDULED_TASK_SECRET — el valor real vive SOLO en el panel de Base44>"
             }
           },
           "then": "end"
