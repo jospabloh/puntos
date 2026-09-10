@@ -43,6 +43,60 @@
  */
 export const LOGIN_PATH = '/Login';
 
+/** Dónde volver después de entrar. Sobrevive la recarga, no sale de la pestaña. */
+const RETURN_KEY = 'pp-login-return';
+
+/**
+ * Sólo se acepta una ruta **relativa al propio origen**. Cualquier otra cosa se
+ * descarta y se cae a `/`.
+ *
+ * No es paranoia de manual: un destino de post-login que acepte lo que le den es
+ * un open redirect, y este repo arrastra a propósito el aviso de `react-router`
+ * que es exactamente eso — la variante del **backslash** en `<Link>`/`useNavigate`
+ * (ver el módulo 14, hallazgo de dependencias diferido). Por eso `\` se rechaza
+ * explícitamente además de `//` y de cualquier `://`.
+ */
+function safeReturnPath(raw) {
+  if (typeof raw !== 'string' || raw === '') return null;
+  if (!raw.startsWith('/')) return null;   // relativa al origen, siempre
+  if (raw.startsWith('//')) return null;   // //evil.com — relativa al protocolo
+  if (raw.includes('\\')) return null;     // /\evil.com y familia
+  if (raw.includes('://')) return null;
+  return raw;
+}
+
+/**
+ * Manda a la pantalla de inicio de sesión, recordando de dónde venía.
+ *
+ * Lo del retorno lo encontró una revisión de Codex sobre el PR que introdujo
+ * este archivo, y era un hueco real: la llamada vieja
+ * `redirectToLogin(window.location.href)` mandaba `from_url` a la plataforma,
+ * que **sí** devolvía a la ruta pedida. Cambiarlo por un salto pelado a
+ * `/Login` arreglaba el módulo 10 y de paso rompía los enlaces profundos — en
+ * particular `/Onboarding?join=1`, que es como se acepta una invitación y que
+ * `Layout.jsx` y `BusinessSwitcher.jsx` enlazan en cinco sitios. Quien llegara
+ * sin sesión por ese enlace acababa en `/` y nunca veía la invitación.
+ */
 export function goToLogin() {
+  try {
+    const here = window.location.pathname + window.location.search;
+    // No guardar la propia pantalla de login: eso sería un bucle.
+    if (safeReturnPath(here) && !here.startsWith(LOGIN_PATH)) {
+      sessionStorage.setItem(RETURN_KEY, here);
+    }
+  } catch { /* modo privado: se pierde el retorno, no la navegación */ }
   window.location.assign(LOGIN_PATH);
+}
+
+/**
+ * La ruta a la que volver tras autenticar, de un solo uso. Devuelve `/` si no
+ * hay ninguna guardada o si la guardada no pasa el saneado.
+ */
+export function consumeLoginReturn() {
+  let raw = null;
+  try {
+    raw = sessionStorage.getItem(RETURN_KEY);
+    sessionStorage.removeItem(RETURN_KEY);
+  } catch { /* idem */ }
+  return safeReturnPath(raw) || '/';
 }

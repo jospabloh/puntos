@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/components/AuthLayout';
 import GoogleIcon from '@/components/GoogleIcon';
 import { getRememberedIdentity, clearRememberedIdentity } from '@/lib/lastIdentity';
+import { consumeLoginReturn } from '@/lib/goToLogin';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -26,7 +27,8 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.login(email, password);
-      window.location.href = '/';
+      // Vuelve a donde venía el visitante (p.ej. /Onboarding?join=1), no a '/'.
+      window.location.href = consumeLoginReturn();
     } catch (err) {
       setError(err.message || 'Credenciales incorrectas. Intenta de nuevo.');
     } finally {
@@ -35,7 +37,8 @@ export default function Login() {
   };
 
   const handleGoogle = () => {
-    base44.auth.loginWithProvider('google', '/');
+    // El segundo argumento es la ruta de retorno; misma razón que arriba.
+    base44.auth.loginWithProvider('google', consumeLoginReturn());
   };
 
   const handleContinueAs = () => {
