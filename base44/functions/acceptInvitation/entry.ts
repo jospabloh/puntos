@@ -11,15 +11,12 @@ import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIden
 // addressed to THIS user's email and assigns exactly the role/tenant the invite
 // grants — with the service role, and never `admin` (an invite can't mint owners).
 //
-// Modulo 18 (jospabloh/acacia-app-standard -> STANDARD.md, 2026-08-26): accepting
-// an invitation used to overwrite business_id/role unconditionally, with no
-// record of whatever business the caller belonged to before. A business_admin
-// of Business A invited to join Business B as staff would silently and
-// irreversibly lose access to A the moment they accepted. Now, before moving
-// business_id away from the caller's current tenant role, that membership is
-// backfilled into Membership -- and a Membership row for the invitation's own
-// business is created (or reused, if one already exists) -- so joining a
-// second business is always safe and reversible via switchBusiness.
+// UN USUARIO, UN NEGOCIO (2026-09-10): aceptar una invitacion se rechaza con
+// 409 si el caller ya pertenece a otro negocio. Aceptarla sobrescribe
+// business_id/role, y sin el selector de negocio (retirado, nunca funciono en
+// produccion) eso dejaria el negocio anterior irreversiblemente inalcanzable --
+// exactamente el fallo que el selector existia para evitar. Darse de baja de un
+// negocio es cosa de su administrador (manageTeamMember).
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -27,12 +24,19 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Módulo 22: business_id / role / store del llamante salen de una lectura
-    // FRESCA de su registro User como servicio. El backfill de abajo ESCRIBE
-    // una fila Membership con esos valores, y switchBusiness (módulo 18) confía
-    // en Membership sin releer nunca el User — una vista de sesión vieja aquí
-    // graba una pertenencia al inquilino equivocado y le abre esa puerta.
+    // FRESCA de su registro User como servicio. La puerta de abajo DECIDE con
+    // ese business_id, y una vista de sesión vieja de auth.me() la dejaría
+    // pasar cuando no debe (o al revés).
     const caller = await resolveCaller(base44, user);
     if (!caller) return unresolvedCallerResponse();
+
+    // El dueno de plataforma (role: admin) es cross-tenant: su business_id
+    // activo no es una pertenencia y conserva su rol al aceptar.
+    if (caller.businessId && caller.role !== 'admin') {
+      return Response.json({
+        error: 'Ya perteneces a un negocio. Pide a un administrador que te dé de baja antes de aceptar esta invitación.',
+      }, { status: 409 });
+    }
 
     const body = await req.json().catch(() => ({}));
     const invitationId = body?.invitationId;
@@ -79,49 +83,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Backfill a Membership for whatever business the caller was already
-    // administering/staffing, BEFORE moving business_id away from it — a lazy,
-    // one-time migration for accounts that predate Membership. Only meaningful
-    // for a real tenant role; the platform owner (handled below) has none to
-    // preserve, and a brand-new user has no prior business_id at all.
-    if (caller.businessId && (caller.role === 'business_admin' || caller.role === 'merchant')) {
-      const already = await sr.entities.Membership.filter(
-        { business_id: caller.businessId, user_id: user.id }, undefined, 1,
-      );
-      if (!already?.length) {
-        await sr.entities.Membership.create({
-          business_id: caller.businessId,
-          business_name: caller.businessName,
-          user_id: user.id,
-          user_email: caller.email,
-          role: caller.role,
-          store_id: caller.storeId || '',
-          store_name: caller.data?.store_name || '',
-        });
-      }
-    }
-
-    // Membership for the business this invitation grants — same skip for the
-    // platform owner as createBusiness (their tier isn't a Membership role,
-    // and they keep `admin` below regardless). Idempotent: accepting an
-    // invitation to a business already joined reuses the existing row rather
-    // than overwriting a role an admin may have since promoted by hand.
-    if (caller.role !== 'admin') {
-      const existingHere = await sr.entities.Membership.filter(
-        { business_id: inv.business_id, user_id: user.id }, undefined, 1,
-      );
-      if (!existingHere?.length) {
-        await sr.entities.Membership.create({
-          business_id: inv.business_id,
-          business_name: inv.business_name || '',
-          user_id: user.id,
-          user_email: user.email,
-          role: grantsAdmin ? 'business_admin' : 'merchant',
-          store_id: storeId || '',
-          store_name: storeName || '',
-        });
-      }
-    }
 
     await sr.entities.User.update(user.id, {
       role,

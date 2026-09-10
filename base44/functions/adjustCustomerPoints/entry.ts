@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     // Módulo 22: el rol y el inquilino del llamante salen de una lectura FRESCA
     // de su registro User como servicio, nunca de la vista cacheada de
-    // auth.me() — que queda vieja en cuanto switchBusiness o manageTeamMember
+    // auth.me() — que queda vieja en cuanto manageTeamMember
     // escriben esos mismos campos.
     const caller = await resolveCaller(base44, user);
     if (!caller) return unresolvedCallerResponse();

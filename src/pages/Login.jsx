@@ -27,7 +27,7 @@ export default function Login() {
     setLoading(true);
     try {
       await base44.auth.login(email, password);
-      // Vuelve a donde venía el visitante (p.ej. /Onboarding?join=1), no a '/'.
+      // Vuelve a donde venía el visitante (p.ej. /MerchantPOS), no a '/'.
       window.location.href = consumeLoginReturn();
     } catch (err) {
       setError(err.message || 'Credenciales incorrectas. Intenta de nuevo.');

@@ -72,10 +72,14 @@ function safeReturnPath(raw) {
  * este archivo, y era un hueco real: la llamada vieja
  * `redirectToLogin(window.location.href)` mandaba `from_url` a la plataforma,
  * que **sí** devolvía a la ruta pedida. Cambiarlo por un salto pelado a
- * `/Login` arreglaba el módulo 10 y de paso rompía los enlaces profundos — en
- * particular `/Onboarding?join=1`, que es como se acepta una invitación y que
- * `Layout.jsx` y `BusinessSwitcher.jsx` enlazan en cinco sitios. Quien llegara
- * sin sesión por ese enlace acababa en `/` y nunca veía la invitación.
+ * `/Login` arreglaba el módulo 10 y de paso rompía **todos** los enlaces
+ * profundos: quien llegara sin sesión a `/MerchantPOS`, a `/Wallet` o a
+ * cualquier pantalla compartida por enlace acababa en `/` tras autenticar, sin
+ * pista de a dónde iba.
+ *
+ * (El ejemplo con el que se encontró era `/Onboarding?join=1`. Ese parámetro
+ * murió el mismo día, al retirarse el módulo 18 — `Onboarding.jsx` ya no lo
+ * lee. El hueco no era de esa ruta: era de cualquiera.)
  */
 export function goToLogin() {
   try {
