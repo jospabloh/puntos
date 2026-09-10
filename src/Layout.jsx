@@ -13,6 +13,7 @@ import { useCurrentUser } from '@/lib/useCurrentUser';
 import { getAppRole, ROLES } from '@/lib/rbac';
 import { useStickyScroll } from '@/hooks/useStickyScroll';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
+import { goToLogin } from '@/lib/goToLogin';
 
 const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding', 'ForgotPassword'];
 
@@ -240,11 +241,6 @@ function ConsumerShell({ user, role, currentPageName, children }) {
                 <Button variant="ghost" size="sm" className="text-xs">POS</Button>
               </Link>
             )}
-            {(role === ROLES.STAFF || role === ROLES.BUSINESS_ADMIN) && (
-              <Link to={`${createPageUrl('Onboarding')}?join=1`} className="hidden md:block">
-                <Button variant="ghost" size="sm" className="text-xs">Unirme a otro negocio</Button>
-              </Link>
-            )}
             {user ? (
               <Link to={createPageUrl('Profile')}>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -254,7 +250,7 @@ function ConsumerShell({ user, role, currentPageName, children }) {
                 </Button>
               </Link>
             ) : (
-              <Button onClick={() => base44.auth.redirectToLogin()} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg shadow-violet-500/25">
+              <Button onClick={goToLogin} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg shadow-violet-500/25">
                 Iniciar sesión
               </Button>
             )}
@@ -285,11 +281,6 @@ function ConsumerShell({ user, role, currentPageName, children }) {
               {canPOS && (
                 <Link to={createPageUrl('MerchantPOS')} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900">
                   <Store className="h-5 w-5" /><span className="font-medium">Punto de venta</span>
-                </Link>
-              )}
-              {(role === ROLES.STAFF || role === ROLES.BUSINESS_ADMIN) && (
-                <Link to={`${createPageUrl('Onboarding')}?join=1`} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:dark:bg-slate-900">
-                  <Building2 className="h-5 w-5" /><span className="font-medium">Unirme a otro negocio</span>
                 </Link>
               )}
               {user && (

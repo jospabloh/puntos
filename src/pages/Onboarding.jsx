@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { createPageUrl } from '../utils';
 import { TRIAL_DAYS } from '@/lib/licensePlans';
 import { getAppRole, homePageForRole, ROLES } from '@/lib/rbac';
+import { goToLogin } from '@/lib/goToLogin';
 
 /* ───────────────────────────────────────────────────────────────────────────
    All subcomponents live at MODULE scope so their identity is stable across
@@ -240,7 +241,7 @@ export default function Onboarding() {
           if (invites.length > 0) setInvitation(invites[0]);
         } catch { /* invitations optional */ }
       } catch {
-        base44.auth.redirectToLogin();
+        goToLogin();
       }
     })();
   }, []);

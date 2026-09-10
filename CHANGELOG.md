@@ -5,6 +5,89 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.19] — 2026-09-10 — El hueco de despliegue no existía: era el login
+
+Nueve días de `Production smoke test` en rojo (runs #12 a #22) tenían una causa
+distinta de la que este repo llevaba documentada, y la documentación equivocada
+es parte del hallazgo.
+
+### Lo que pasaba
+
+`pages.config.js` define `mainPage: "Home"`. Un visitante **sin sesión** entra a
+`/`:
+
+1. `Home.jsx` llama a `base44.auth.me()`, que lanza para un anónimo;
+2. su `catch` llamaba a `base44.auth.redirectToLogin()`;
+3. el navegador se iba al `/login` **en minúsculas** que sirve la plataforma
+   Base44, con `?from_url=…`.
+
+La SPA de Puntos+ **nunca llegaba a montarse**. Nada que dibuje React podía
+estar en esa página — el selector de tema del módulo 12 incluido.
+
+Por eso el smoke test fallaba exactamente 3 de 6: las tres afirmaciones que
+pasaban (200, `<title>`, tema resuelto antes del montaje) las cumple igual la
+página de login de Base44, porque salen del HTML estático y del script
+pre-montaje. Las tres que fallaban son las únicas que exigen React montado.
+**La suite decía la verdad; el diagnóstico que se le colgó encima era falso.**
+
+### Por qué se descartó la otra explicación
+
+`npx base44 visibility` puede poner una app en `private`, y una app privada
+rebota a los anónimos igual. Se confirmó con el dueño que **Puntos+ está en
+`public`**, así que el rebote no lo hacía la plataforma: lo hacía el código.
+
+### El defecto de fondo
+
+El módulo 10 del estándar dice «NUNCA un redirect al login por defecto de
+Base44». Ese arreglo se había aplicado en **un** sitio — la rama `authError` de
+`App.jsx`, que hasta lleva un comentario largo dándolo por cerrado — mientras
+**diez** seguían rebotando:
+
+`Home.jsx`, `Wallet.jsx`, `Offers.jsx`, `History.jsx`, `Chat.jsx`,
+`Profile.jsx`, `MerchantPOS.jsx`, `Onboarding.jsx`, `Layout.jsx` y
+`useCurrentUser.js` (`useRequirePage`).
+
+Nuevo `src/lib/goToLogin.js`: un solo dueño de esa navegación, para que el
+próximo `catch` que necesite mandar a login no vuelva a elegir. Va a `/Login`
+con `window.location.assign` — la mayoría de los llamadores están en `catch` o
+efectos sin contexto de router, y `Login.jsx` no lee ningún parámetro de
+retorno, así que no se pierde nada al no propagarlo.
+
+**Un sitio sigue llamando a `redirectToLogin` a propósito:**
+`components/auth/ContinueAs.jsx`, cuyo «Continuar como…» necesita el viaje
+redondo por la plataforma para reestablecer la sesión en silencio.
+`AuthContext.navigateToLogin` (hoy sin llamadores) se reapuntó al helper en vez
+de borrarse: una función viva que hace lo prohibido es un arma cargada.
+
+### Verificado
+
+`npm run lint` (eslint + `validate:rls` 19 entidades + `validate:permissions` +
+`validate:functions` 26/40) y `npm run build` pasan. Y con un navegador real
+contra el build de producción servido en local: un visitante anónimo en `/`
+ahora navega a `/Login` —dentro de la SPA, con `[data-theme-switcher]`
+presente— y **ninguna** navegación sale a `/login?from_url=`.
+
+**Alcance de esa prueba, dicho claro:** en local el redirect de plataforma no
+llegaba a saltar nunca (el fallback SPA de `vite preview` lo absorbe), así que
+esto demuestra que el código ya no llama al redirect prohibido y que el destino
+es el correcto. **La prueba de producción es desplegar y correr la suite** —
+`npm run deploy:site` y después un `workflow_dispatch` de `Production smoke
+test`. Hasta entonces esto no está demostrado en vivo.
+
+### La lección, que es la cara del módulo 11
+
+Este repo pasó nueve días con una explicación escrita y equivocada («mergear no
+deploya el sitio»), que era **plausible, documentada, y de la casa** — el mismo
+fallo había ocurrido de verdad antes, en flowfin. Ayer se desplegó de verdad, el
+smoke siguió rojo, y sólo entonces se leyó la línea del log que decía
+`navigated to ".../login?from_url=..."` y llevaba ahí desde el principio.
+
+**Una hipótesis que encaja con los síntomas no es un diagnóstico.** Lo que la
+convierte en diagnóstico es leer lo que el fallo ya está diciendo, y el smoke
+test lo llevaba diciendo nueve días en cada corrida.
+
+---
+
 ## [2.0.18] — 2026-09-09 — Módulos 19-23 del estándar ACACIA
 
 Auditoría programada contra `jospabloh/acacia-app-standard`. La lista de

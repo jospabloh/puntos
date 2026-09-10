@@ -29,6 +29,7 @@ import {
 import OfferCard from '../components/loyalty/OfferCard';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
+import { goToLogin } from '@/lib/goToLogin';
 
 export default function Offers() {
   const [user, setUser] = useState(null);
@@ -52,7 +53,7 @@ export default function Offers() {
       const userData = raw?.data ? { ...raw.data, ...raw } : raw;
       setUser(userData);
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 

@@ -24,6 +24,7 @@ import NotificationsPanel from '../components/loyalty/NotificationsPanel';
 import TrialBanner from '../components/loyalty/TrialBanner';
 import WelcomeTrialDialog from '../components/loyalty/WelcomeTrialDialog';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
+import { goToLogin } from '@/lib/goToLogin';
 
 export default function Home() {
   const [user, setUser] = useState(null);
@@ -43,7 +44,7 @@ export default function Home() {
       const userData = raw?.data ? { ...raw.data, ...raw } : raw;
       setUser(userData);
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 

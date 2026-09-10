@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import ActiveSessions from '@/components/ActiveSessions';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
+import { goToLogin } from '@/lib/goToLogin';
 
 const tierConfig = {
   bronze: { label: 'Bronce', icon: '🥉', nextTier: 'silver', pointsNeeded: 1000 },
@@ -68,7 +69,7 @@ export default function Profile() {
         phone: userData.phone || ''
       });
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 

@@ -47,6 +47,7 @@ import {
 import { toast } from 'sonner';
 import TrialBanner from '../components/loyalty/TrialBanner';
 import WelcomeTrialDialog from '../components/loyalty/WelcomeTrialDialog';
+import { goToLogin } from '@/lib/goToLogin';
 
 export default function MerchantPOS() {
   const [user, setUser] = useState(null);
@@ -77,7 +78,7 @@ export default function MerchantPOS() {
       }
       setUser(userData);
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 

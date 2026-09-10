@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { getAppRole, canAccessPage, homePageForRole } from '@/lib/rbac';
+import { goToLogin } from '@/lib/goToLogin';
 
 export function useCurrentUser() {
   const query = useQuery({
@@ -60,7 +61,7 @@ export function useRequirePage(pageName) {
   useEffect(() => {
     if (isLoading) return;
     if (!user) {
-      base44.auth.redirectToLogin(window.location.href);
+      goToLogin();
       return;
     }
     if (!canAccessPage(user, pageName)) {
