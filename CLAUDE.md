@@ -413,9 +413,12 @@ touching a module that's already implemented.
       `deploy:site` / `deploy:entities`, `validate:functions` in lint
       (26/40). See "Deploy: el id de la app vive en el repo" below.
 - [x] Module 12 — Theme control (claro/oscuro/dispositivo), 2026-08-21.
-      **Shipped in the repo but NOT live** — see the deploy gap below.
+      Estuvo 9 días sin verse en producción, y NO era un hueco de despliegue:
+      la SPA no montaba para visitantes anónimos (ver 2.0.19 abajo).
 - [x] Module 13 — `npm run test:smoke` against production, in Actions.
-      **Currently red, 9 days running** — that is the module doing its job.
+      Estuvo rojo del 2026-08-31 al 2026-09-10 y **tenía razón las dos veces**:
+      primero señalando un fallo real, después resistiéndose a un deploy que no
+      lo arreglaba porque la causa era otra.
 - [x] Module 14 — Multi-tenant isolation audit, dated and written down;
       last full pass 2026-08-23, findings closed 2026-08-24 (v2.0.15) and a
       `manageTeamMember`/`Membership` revocation hole closed 2026-09-07.
@@ -908,6 +911,20 @@ bloqueada no significa que la pregunta no tenga respuesta.**
 
 ## Auditoría programada — deploy gap, y un revocado que se auto-restauraba acceso (2026-09-07, v2.0.16)
 
+> **CORRECCIÓN (2026-09-10, v2.0.19): el diagnóstico de «deploy gap» de esta
+> sección era FALSO.** El 2026-09-09 se corrió el deploy de verdad —funciones,
+> entidades y sitio— y el smoke test siguió rojo, idéntico. La causa real es
+> que diez sitios del cliente llamaban a `base44.auth.redirectToLogin()`, así
+> que todo visitante anónimo salía al `/login` genérico de Base44 y la SPA no
+> montaba nunca. El detalle está en `CHANGELOG.md` (2.0.19).
+>
+> Se deja escrito en vez de borrarlo porque el error es lo instructivo: la
+> hipótesis del hueco de despliegue **encajaba con todos los síntomas**, estaba
+> documentada, y ya había pasado de verdad en flowfin. Aun así era la
+> equivocada, y el log del propio smoke test traía la respuesta
+> (`navigated to ".../login?from_url=..."`) desde la primera corrida. Nadie la
+> leyó durante nueve días — se leyó el resumen de fallos, no el log.
+
 `npm run test:smoke` lleva **al menos 7 días corriendo en rojo a diario**
 (runs de Actions #12 al #18, 2026-08-31 a hoy) contra
 `https://puntosplus.acaciaco.com.mx`, siempre en la misma forma: responde 200
@@ -1116,8 +1133,13 @@ derivable.
 
 ### Pendiente, y no se pudo hacer desde aquí
 
-El conector MCP de Base44 **no está autorizado en esta sesión**, así que no se
-pudo desplegar nada. Por orden de importancia:
+> **Actualizado 2026-09-10:** los puntos 1 a 3 ya se corrieron (21 funciones,
+> 19 entidades y el sitio). El punto 4 sigue abierto, y se le sumaron dos
+> pendientes nuevos que salieron de ese mismo deploy: el token de tareas
+> programadas commiteado (ver abajo) y el redirect del módulo 10 (v2.0.19).
+
+El conector MCP de Base44 **no estaba autorizado en esa sesión**, así que no se
+pudo desplegar nada en su momento. Por orden de importancia:
 
 1. **`npm run deploy:site`** — el hueco del 2026-09-07 sigue abierto y ya son
    **9 días** de `Production smoke test` en rojo (runs #12 a #21), siempre
@@ -1141,3 +1163,53 @@ Base44 en este entorno. Eso incluye `About`, los dos diálogos de sesión y la
 lista de dispositivos. Lo que sí se comprobó está en `CHANGELOG.md` (2.0.18),
 incluido un `deno check` de las 14 funciones **contra una línea base de
 `HEAD`** — el conteo de errores bajó o quedó igual en todas, ninguna subió.
+
+
+## Módulo 10 — el redirect que tumbaba la app para los anónimos (2026-09-10, v2.0.19)
+
+Diez sitios llamaban a `base44.auth.redirectToLogin()`, que manda al `/login`
+en minúsculas de la plataforma. Todo visitante **sin sesión** en `/` salía de la
+app antes de que React montara. Nueve días de smoke rojo salieron de aquí, no
+de un hueco de despliegue. `src/lib/goToLogin.js` es ahora el único dueño de esa
+navegación; el único `redirectToLogin` que queda es el de `ContinueAs.jsx`, que
+lo necesita.
+
+**El patrón que se repite en este repo, y ya van cuatro:** el arreglo del módulo
+10 estaba aplicado en un sitio, con un comentario largo dándolo por cerrado,
+mientras diez seguían rotos. Igual que el módulo 22 (`auth.me()` cacheado en 13
+funciones), igual que `check:secrets` (una regla que no ve JSON), igual que
+«Deno no puede importar entre directorios». **Un arreglo con un comentario que
+dice "arreglado" no es una garantía: la garantía es un grep o un test.** Cuando
+cierres un módulo, cuenta los sitios.
+
+## Un secreto vivo estaba commiteado — y el guardia no podía verlo (2026-09-10)
+
+`base44/workflows/*.jsonc` (los 4, desde `31b97f7`, 2026-09-06) llevaban
+`"scheduled_token": "re_QaaB…"` en claro: el valor de `SCHEDULED_TASK_SECRET`,
+lo único que protege las cuatro funciones programadas — dos de las cuales mandan
+correo a **todas** las cuentas. Rotado el 2026-09-09.
+
+**`npm run check:secrets` pasaba en verde, y no por poco:** su regla
+`HARDCODED` es `\b(secret|api_key|…)\b\s*[:=]`, y en JSON la clave lleva una
+comilla de cierre antes de los dos puntos, que `\s*` no cruza. Comprobado:
+
+    JS   clave sin comillas    secret: "…"     ->  true
+    JSON clave con comillas   "secret": "…"    ->  false
+
+O sea que **nunca ha podido detectar nada en un `.json` ni en un `.jsonc`** —
+el formato de las 19 entidades y de los 4 workflows. No es que faltara
+`scheduled_token` en la lista de palabras: `"secret"` tampoco casa.
+
+Pendientes de esto:
+
+1. Los 4 workflows en el panel siguen con el token viejo → los crons responden
+   403 hasta que se actualicen. **El CLI no sirve para esto**: `base44
+   workflows` sólo tiene `list` y `runs`, no hay `push`. Es a mano en el panel.
+2. Decidir si el panel admite una *referencia* al secreto o sólo un literal. Si
+   sólo admite literal, `base44/workflows/` debe ir a `.gitignore`, porque cada
+   exportación vuelve a meter el secreto en git.
+3. Arreglar `check-secrets.mjs` para que vea JSON. **Ojo con el orden:** en
+   cuanto vea JSON, fallará sobre el token que sigue commiteado — correcto, pero
+   pone `main` en rojo. Primero saca el token, después arregla el guardia.
+4. `purgeStaleSessions` sigue sin su workflow, así que la capa 3 del módulo 20
+   no corre todavía.

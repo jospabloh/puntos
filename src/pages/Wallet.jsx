@@ -14,6 +14,7 @@ import QRWallet from '../components/loyalty/QRWallet';
 import TransactionItem from '../components/loyalty/TransactionItem';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
+import { goToLogin } from '@/lib/goToLogin';
 
 export default function Wallet() {
   const [user, setUser] = useState(null);
@@ -28,7 +29,7 @@ export default function Wallet() {
       const userData = await base44.auth.me();
       setUser(userData);
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 

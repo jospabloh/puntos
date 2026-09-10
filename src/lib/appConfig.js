@@ -4,8 +4,8 @@
 // sync by hand on release, same convention as stockflow/cateqhub's
 // appConfig.js. This file is never touched by `npm run build` — only ever
 // bumped by hand alongside a real CHANGELOG.md entry.
-export const APP_VERSION = '2.0.18';
-export const RELEASE_DATE = '2026-09-09';
+export const APP_VERSION = '2.0.19';
+export const RELEASE_DATE = '2026-09-10';
 
 // Condensed from CHANGELOG.md's own entry titles — full detail lives there.
 //
@@ -17,6 +17,7 @@ export const RELEASE_DATE = '2026-09-09';
 // New entries carry both; About falls back to `summary` if `resumen` is
 // missing, so forgetting one degrades instead of rendering blank.
 export const CHANGELOG = [
+  { version: '2.0.19', date: '2026-09-10', resumen: 'Al entrar sin sesión, la app ya te lleva a su propia pantalla de inicio de sesión. Antes te sacaba a una página genérica de la plataforma, y por eso la app no llegaba a cargar para quien no había entrado todavía.', summary: 'Ten call sites still used base44.auth.redirectToLogin(), sending every anonymous visitor to Base44\'s platform-served /login so the Puntos+ SPA never mounted. This — not a deploy gap — is what kept the production smoke test red for nine days. New src/lib/goToLogin.js is the single owner of that navigation.' },
   { version: '2.0.18', date: '2026-09-09', resumen: 'Nueva pantalla "Acerca de": manual de usuario buscable, novedades de cada versión y a quién escribir. La sesión ahora avisa antes de cerrarse por inactividad, y en tu perfil puedes ver y cerrar las sesiones abiertas en otros dispositivos.', summary: 'Modules 19-23 of the ACACIA portfolio standard: lock rationale in every field description, session control (idle warning + device list + 48h stale-session reap), the About screen, no write decision taken from auth.me()\'s cached view (13 backend functions), and nav chrome surviving a reload.' },
   { version: '2.0.16', date: '2026-09-07', resumen: 'Revisión de mantenimiento: actualizaciones de seguridad de dependencias y correcciones internas. Sin cambios visibles en la app.', summary: 'Scheduled audit found production has not been serving the deployed code for at least 7 days (module 12\'s theme switcher is missing live — needs npm run deploy:site, not done here). Patched 4 dependency advisories (fflate, postcss-selector-parser, @humanfs/node, browserslist); react-router\'s advisory stays deferred pending a manual v7 migration. Documented the theme switcher in the user manual.' },
   { version: '2.0.15', date: '2026-08-24', resumen: 'Refuerzos de aislamiento entre negocios en el movimiento de puntos y en el código QR del monedero. Tu QR ahora sólo lo puede regenerar la app, no el navegador.', summary: 'Closed the three module-14 isolation findings: earnPoints/burnPoints now require the account\'s own tenant to match the store\'s, qr_token is locked from client writes (with a new refreshQrToken function backing Wallet.jsx\'s refresh), and LoyaltyAccount.business_id/store_id can no longer be written to a foreign tenant.' },

@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { rememberIdentity, clearRememberedIdentity } from '@/lib/lastIdentity';
+import { goToLogin } from '@/lib/goToLogin';
 
 const AuthContext = createContext();
 
@@ -130,10 +131,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
-  };
+  // Módulo 10: a la pantalla propia, nunca al /login genérico de la plataforma.
+  // Hoy no lo llama nadie (App.jsx sólo lo nombra en un comentario), pero se
+  // deja apuntando al sitio correcto: una función viva que hace lo prohibido es
+  // un arma cargada esperando al próximo que la encuentre por autocompletado.
+  const navigateToLogin = () => { goToLogin(); };
 
   return (
     <AuthContext.Provider value={{ 

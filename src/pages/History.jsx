@@ -30,6 +30,7 @@ import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { goToLogin } from '@/lib/goToLogin';
 
 export default function History() {
   const [user, setUser] = useState(null);
@@ -46,7 +47,7 @@ export default function History() {
       const userData = await base44.auth.me();
       setUser(userData);
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 

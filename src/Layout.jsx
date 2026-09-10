@@ -14,6 +14,7 @@ import { getAppRole, ROLES } from '@/lib/rbac';
 import { useStickyScroll } from '@/hooks/useStickyScroll';
 import { getActiveBusinessName, isImpersonatingTenant, clearActiveBusiness } from '@/lib/activeTenant';
 import BusinessSwitcher from '@/components/BusinessSwitcher';
+import { goToLogin } from '@/lib/goToLogin';
 
 const NO_LAYOUT_PAGES = ['Login', 'Register', 'Onboarding', 'ForgotPassword'];
 
@@ -271,7 +272,7 @@ function ConsumerShell({ user, role, currentPageName, children }) {
                 </Button>
               </Link>
             ) : (
-              <Button onClick={() => base44.auth.redirectToLogin()} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg shadow-violet-500/25">
+              <Button onClick={goToLogin} className="bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg shadow-violet-500/25">
                 Iniciar sesión
               </Button>
             )}

@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import ReactMarkdown from 'react-markdown';
 import SuspendedAccountModal from '../components/loyalty/SuspendedAccountModal';
 import TrialBanner from '../components/loyalty/TrialBanner';
+import { goToLogin } from '@/lib/goToLogin';
 
 export default function Chat() {
   const [user, setUser] = useState(null);
@@ -43,7 +44,7 @@ export default function Chat() {
       const userData = raw?.data ? { ...raw.data, ...raw } : raw;
       setUser(userData);
     } catch (e) {
-      base44.auth.redirectToLogin();
+      goToLogin();
     }
   };
 
