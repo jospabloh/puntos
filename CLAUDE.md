@@ -1201,19 +1201,62 @@ O sea que **nunca ha podido detectar nada en un `.json` ni en un `.jsonc`** —
 el formato de las 19 entidades y de los 4 workflows. No es que faltara
 `scheduled_token` en la lista de palabras: `"secret"` tampoco casa.
 
-Pendientes de esto:
+### Cerrado el 2026-09-10: el token fuera del árbol y el guardia con ojos
+
+Las dos mitades van juntas **y en ese orden** — arreglar el guardia primero
+habría puesto `main` en rojo sobre el token que todavía estaba ahí.
+
+**El valor salió de los cuatro `.jsonc`**, sustituido por
+`"<SCHEDULED_TASK_SECRET — el valor real vive SOLO en el panel de Base44>"`.
+Nada del repo lee `base44/workflows/` (comprobado con grep: ni un script, ni
+`base44.app.json`, ni `package.json`) y el CLI no tiene `push`, así que estos
+archivos son documentación de qué hay agendado, no algo que se despliegue.
+Redactarlos no cuesta nada y `.gitignore` habría costado esa documentación —
+que es justo cómo se ve que `purgeStaleSessions` sigue sin workflow. **Si
+algún día se re-exporta desde el panel, el secreto vuelve al diff** — pero
+ahora el guardia lo para, que era el punto.
+
+**`check-secrets.mjs` ve JSON, y dos cosas de su regex son estructurales:**
+
+- **La comilla de cierre opcional antes del separador.** Era el fallo entero:
+  `\s*` no cruza el `"` que en JSON va antes de los dos puntos.
+- **La palabra clave es *subcadena*, no palabra completa.** `\btoken\b` no casa
+  dentro de `scheduled_token` (`d` y `t` son los dos caracteres de palabra), y
+  por eso una lista exacta de `access_token`/`client_secret` seguía sin ver el
+  campo que tocara esta vez. Cualquier identificador que *contenga* uno de los
+  troncos cuenta.
+
+Lo que evita que esa apertura se vuelva ruido es `NOT_A_SECRET`, y es **la
+ceguera deliberada que hay que conocer antes de tocarlo**: no marca un valor
+con espacios ni uno que sea una URL. Los tokens reales no son ninguna de las
+dos, y un guardia que grita en falso se ignora — que es exactamente cómo éste
+llegó a estar cuatro días en verde sin que nadie lo mirara. Lo que suprime en
+este repo son tres líneas, contadas: un script de npm, una línea de prosa de
+este archivo y la constante `oauth2.googleapis.com/token`.
+
+**El guardia se demuestra a sí mismo en cada corrida.** `FIXTURES` lleva
+cuatro líneas que *tienen* que marcarse y seis que *no*, y el script sale con
+código 2 si alguna falla. Existe porque el fallo no fue una regla que faltara
+sino **una regla que todos daban por buena**: nada en CI distinguía «revisé los
+workflows y no encontré nada» de «soy incapaz de leerlos». Comprobado en los
+dos sentidos: con la regex vieja puesta, el guardia se detiene solo
+(`it no longer detects: "scheduled_token": …`); con el token real reintroducido
+en un workflow, falla nombrando archivo, línea y campo.
+
+Es la misma lección que el módulo 15 (`ACACIA_APP_SLUG`) y la del módulo 10
+tres párrafos más arriba, por tercera vez: **una comprobación que nadie ha
+visto fallar no es una comprobación, es una creencia.**
+
+Pendientes que siguen abiertos:
 
 1. Los 4 workflows en el panel siguen con el token viejo → los crons responden
    403 hasta que se actualicen. **El CLI no sirve para esto**: `base44
    workflows` sólo tiene `list` y `runs`, no hay `push`. Es a mano en el panel.
-2. Decidir si el panel admite una *referencia* al secreto o sólo un literal. Si
-   sólo admite literal, `base44/workflows/` debe ir a `.gitignore`, porque cada
-   exportación vuelve a meter el secreto en git.
-3. Arreglar `check-secrets.mjs` para que vea JSON. **Ojo con el orden:** en
-   cuanto vea JSON, fallará sobre el token que sigue commiteado — correcto, pero
-   pone `main` en rojo. Primero saca el token, después arregla el guardia.
-4. `purgeStaleSessions` sigue sin su workflow, así que la capa 3 del módulo 20
+2. `purgeStaleSessions` sigue sin su workflow, así que la capa 3 del módulo 20
    no corre todavía.
+3. **El valor viejo sigue en el historial de git** (desde `31b97f7`). Está
+   rotado desde el 2026-09-09, así que no autoriza nada; se deja escrito para
+   que nadie lo lea de un `git log` creyendo que sirve.
 
 ## Retirado: el selector de negocio (módulo 18) — 2026-09-10
 
