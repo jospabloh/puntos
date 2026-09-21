@@ -1318,3 +1318,93 @@ Es **el mismo patrón que este archivo nombra tres párrafos más arriba** en el
 módulo 10 — un retiro con su nota diciéndose completo mientras sobreviven
 llamadores. Ya van cinco. La regla no cambia: **cuenta los sitios con un grep,
 no con la memoria de lo que acabas de editar.**
+
+## Auditoría programada — verificación en vivo por primera vez, sin hallazgos nuevos (2026-09-21, v2.0.20)
+
+`main` no había recibido un commit desde el 2026-09-10 (v2.0.19) — once días
+sin cambios de código. Esta pasada corrió de todos modos, y por primera vez el
+conector MCP de Base44 **sí estaba autorizado**, así que lo que en las seis
+pasadas anteriores quedó como "no verificado" (el estado realmente desplegado)
+se pudo comprobar contra la base viva, `appId 696e7fdd7889892fe40868b7`.
+
+**Verificado en vivo, contra `list_entity_schemas`, no contra el repo:**
+
+- Los 17 campos de licencia de `Business` llevan `rls.write:false` desplegado,
+  idéntico al repo.
+- Los 8 campos de `User` (`role`/`app_role`/`business_id`/`business_name`/
+  `storeId`/`store_id`/`store_name`/`merchant_role`) llevan `rls.write:
+  {"user_condition":{"role":"admin"}}` desplegado, idéntico al repo. **Esta
+  comprobación casi se reporta mal**: un primer filtro automático buscaba
+  `rls.write === false` (el patrón de `Business`) y no encontró nada en
+  `User`, porque el patrón de `User` es un objeto de condición, no un booleano
+  — dos formas válidas de bloqueo, un solo filtro que sólo reconocía una. Se
+  leyó el JSON completo antes de escribir cualquier hallazgo, y con eso se
+  descartó como falso positivo. Vale dejarlo escrito porque es exactamente el
+  error de método que este archivo lleva seis auditorías señalando en otros
+  ("una comprobación que nadie ha visto fallar no es una comprobación").
+- `LoyaltyAccount.qr_token` (`rls.write:false`) y `business_id`/`store_id`
+  (con el `$and` al inquilino propio a nivel de campo) también coinciden con
+  el repo.
+
+O sea: el módulo 1 (self-escalación de licencia) y el módulo 19 (bloqueos de
+`User`) que las pasadas de 2026-08-21 y 2026-09-09 dejaron como "no
+verificado" **sí están realmente en producción**, no sólo en el `.jsonc`.
+
+**Un hallazgo confirmado, ninguno nuevo respecto a lo ya escrito:**
+`list_entity_schemas` devuelve **19 entidades**, no 18 — `Membership` sigue
+desplegada. Es justo lo que la sección "Retirado: el selector de negocio"
+de arriba ya documentaba como pendiente: el borrado de la entidad exige
+`npm run deploy:entities` (destructivo, pide escribir "Puntos+" a mano) y
+las herramientas MCP disponibles en esta sesión no incluyen un borrado de
+esquema — sólo `create_entity_schema`/`update_entity_schema`. Se confirmó
+otra vez que tiene **0 filas**, así que el borrado sigue sin freno cuando
+alguien con el CLI lo corra.
+
+**No se intentó ningún deploy destructivo ni de producción en esta pasada.**
+Tener el conector autorizado no es lo mismo que tener autorización para un
+`deploy:entities`/`deploy`/`deploy:site` desatendido — son cambios de alto
+radio de daño sobre la app real, y este archivo lleva quince módulos
+advirtiendo sobre exactamente ese tipo de decisión tomada sin un humano
+delante. Lo que sí se hizo con el acceso nuevo fue sólo lectura
+(`list_entity_schemas`, `query_entities`), que es lo que cerró la
+incertidumbre de arriba sin arriesgar nada.
+
+**El resto de la pasada, sin hallazgos:** `npm run lint` (eslint +
+`validate:rls` 18 entidades + `validate:permissions` 11 claves +
+`validate:functions` 25/40), `npm run build` y `npm run check:secrets`
+limpios. `npm audit --omit=dev` reporta las mismas 2 advertencias moderadas de
+`react-router`/`react-router-dom` que la reauditoría del 2026-08-31 ya dejó
+diferidas a propósito (exige el salto mayor v6→v7); sigue sin aplicarse aquí
+por la misma razón. Un barrido de `console.log`/`debugger`/`TODO`/
+`dangerouslySetInnerHTML` en `src/` y `base44/functions/` no encontró nada
+real: el único `console.log` es el log de dispositivo de `passkitWebService`
+(intencional, por spec de PassKit), el único "TODO" es la palabra española
+dentro de un comentario de `goToLogin.js`, y el único
+`dangerouslySetInnerHTML` es el de `components/ui/chart.jsx` (shadcn/ui,
+inyecta variables CSS propias, no datos de usuario).
+
+**Hallazgo de proceso, no de código: el módulo 9 (QA automatizada) nunca
+existió.** El checklist de este archivo lo marca implícitamente cumplido al
+no listarlo como pendiente, pero `find . -name "*.test.*"` fuera de
+`node_modules` devuelve **cero archivos**. Lo que sí corre en CI
+(`validate:rls`, `validate:permissions`, `validate:functions`,
+`check:secrets`) son guardias estáticos sobre configuración — reales y
+valiosos, pero no prueban lógica de negocio ni rutas críticas (alta de
+cuenta, canje, ajuste de puntos). Construir esa cobertura es un cambio de
+alcance propio, no algo para meter sin revisión dentro de una pasada
+desatendida — mismo criterio que el salto de `react-router` y el mismo que
+el hallazgo de dependencias de la reauditoría del 2026-08-31. Queda anotado
+aquí por primera vez como tarea pendiente con nombre.
+
+No hubo sesión de navegador (sin credenciales de sesión Base44 en este
+entorno): UI, UX, dispositivos y rendimiento no se ejercitaron visualmente
+en esta pasada — la única superficie nueva verificable desde aquí era el
+esquema desplegado, y es la que se recorrió.
+
+**Verificado:** `npm ci`, `npm run lint`, `npm run build`,
+`npm run check:secrets`, `npm audit --omit=dev`, y — por primera vez —
+`list_entity_schemas`/`query_entities` contra el backend real vía el
+conector MCP de Base44. **No verificado:** una sesión de navegador (Base44 no
+autenticado aquí) y el deploy de funciones/sitio (no se intentó; sin cambios
+de código que desplegar en esta pasada, y `Membership` sigue pendiente de
+que alguien con el CLI y la confirmación manual corra `deploy:entities`).
