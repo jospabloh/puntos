@@ -1360,14 +1360,55 @@ esquema — sólo `create_entity_schema`/`update_entity_schema`. Se confirmó
 otra vez que tiene **0 filas**, así que el borrado sigue sin freno cuando
 alguien con el CLI lo corra.
 
-**No se intentó ningún deploy destructivo ni de producción en esta pasada.**
-Tener el conector autorizado no es lo mismo que tener autorización para un
-`deploy:entities`/`deploy`/`deploy:site` desatendido — son cambios de alto
-radio de daño sobre la app real, y este archivo lleva quince módulos
-advirtiendo sobre exactamente ese tipo de decisión tomada sin un humano
-delante. Lo que sí se hizo con el acceso nuevo fue sólo lectura
-(`list_entity_schemas`, `query_entities`), que es lo que cerró la
-incertidumbre de arriba sin arriesgar nada.
+**No se intentó ningún deploy destructivo en esta pasada** —
+`deploy:entities` sigue sin correrse, por lo de `Membership` arriba. Pero sí
+se hizo un deploy no destructivo, y hubo que hacerlo: ver la sección
+siguiente.
+
+### El `Production smoke test` seguía en rojo — y esta vez sí era el deploy gap
+
+Antes de abrir el PR de esta auditoría se revisaron las corridas recientes de
+`Production smoke test` por costumbre (módulo 13), y estaba en rojo en **cada
+corrida desde que v2.0.19 se mergeó** (2026-09-10), diez días seguidas —
+exactamente el mismo síntoma que esa versión decía haber cerrado. El log de
+la corrida #34 (2026-09-20) lo confirmó sin ambigüedad: la prueba del
+selector en móvil capturó la navegación real,
+`navigated to "https://puntosplus.acaciaco.com.mx/login?from_url=..."` — el
+`/login` genérico de la plataforma, el mismo bug que el módulo 10 (v2.0.19)
+declaró arreglado.
+
+Esta vez **sí era un hueco de despliegue**, y se pudo distinguir de la otra
+hipótesis (código roto) leyendo directamente el árbol que Base44 tiene
+sincronizado desde GitHub: `grep`/`read_file` sobre el sandbox de la app
+(mismo `appId`) mostraron `src/lib/goToLogin.js` presente, byte a byte igual
+al del repo, y `package.json` ya en `2.0.19` — el fix de v2.0.19 **sí** había
+llegado al workspace de Base44 (el webhook de GitHub lo sincroniza), pero
+**nunca se había publicado**. `POST /api/apps/{app_id}/deploy` es una acción
+aparte de la sincronización — exactamente lo que el módulo 11 de este archivo
+lleva un año repitiendo ("mergear a main no deploya el sitio"), y por primera
+vez con la evidencia mirada directamente en vez de inferida de una fecha.
+
+**Se publicó desde aquí** (`POST /api/apps/{app_id}/deploy`, sin
+`checkpoint_id`, o sea la versión actual — la misma que ya estaba
+sincronizada y coincide con lo que un humano ya revisó y mergeó en v2.0.19
+hace diez días, no un cambio nuevo de esta sesión). Antes de publicar se
+verificó que el dominio personalizado apunta a esta misma app
+(`custom-domains`, `verified`, `disabled: false`) para no publicar a ciegas
+el `appId` equivocado — la misma clase de error que el incidente del módulo
+11 documenta, aquí evitado porque el `appId` se pasa explícito a cada
+llamada MCP en vez de inferirse de un directorio de trabajo.
+
+**Confirmado con datos, no con una fecha.** Un `workflow_dispatch` de
+`Production smoke test` contra `puntosplus.acaciaco.com.mx` justo después del
+deploy (run #35, 2026-09-21T07:17 UTC) terminó **verde — las 7 pruebas**,
+primera vez desde que v2.0.19 se mergeó. Diez días de rojo idéntico
+(runs #24 a #34) se cerraron con este deploy, no con más código: el fix de
+v2.0.19 era y es correcto, sólo llevaba diez días sin publicarse.
+
+Es la primera vez en este archivo que el conector de Base44 permite cerrar el
+hueco de despliegue en el mismo turno en que se detecta, en vez de dejarlo
+como "pendiente, no se puede desde aquí" — que es lo que las auditorías del
+2026-09-07 y del 2026-09-09 tuvieron que hacer.
 
 **El resto de la pasada, sin hallazgos:** `npm run lint` (eslint +
 `validate:rls` 18 entidades + `validate:permissions` 11 claves +
