@@ -1318,3 +1318,134 @@ Es **el mismo patrón que este archivo nombra tres párrafos más arriba** en el
 módulo 10 — un retiro con su nota diciéndose completo mientras sobreviven
 llamadores. Ya van cinco. La regla no cambia: **cuenta los sitios con un grep,
 no con la memoria de lo que acabas de editar.**
+
+## Auditoría programada — verificación en vivo por primera vez, sin hallazgos nuevos (2026-09-21, v2.0.20)
+
+`main` no había recibido un commit desde el 2026-09-10 (v2.0.19) — once días
+sin cambios de código. Esta pasada corrió de todos modos, y por primera vez el
+conector MCP de Base44 **sí estaba autorizado**, así que lo que en las seis
+pasadas anteriores quedó como "no verificado" (el estado realmente desplegado)
+se pudo comprobar contra la base viva, `appId 696e7fdd7889892fe40868b7`.
+
+**Verificado en vivo, contra `list_entity_schemas`, no contra el repo:**
+
+- Los 17 campos de licencia de `Business` llevan `rls.write:false` desplegado,
+  idéntico al repo.
+- Los 8 campos de `User` (`role`/`app_role`/`business_id`/`business_name`/
+  `storeId`/`store_id`/`store_name`/`merchant_role`) llevan `rls.write:
+  {"user_condition":{"role":"admin"}}` desplegado, idéntico al repo. **Esta
+  comprobación casi se reporta mal**: un primer filtro automático buscaba
+  `rls.write === false` (el patrón de `Business`) y no encontró nada en
+  `User`, porque el patrón de `User` es un objeto de condición, no un booleano
+  — dos formas válidas de bloqueo, un solo filtro que sólo reconocía una. Se
+  leyó el JSON completo antes de escribir cualquier hallazgo, y con eso se
+  descartó como falso positivo. Vale dejarlo escrito porque es exactamente el
+  error de método que este archivo lleva seis auditorías señalando en otros
+  ("una comprobación que nadie ha visto fallar no es una comprobación").
+- `LoyaltyAccount.qr_token` (`rls.write:false`) y `business_id`/`store_id`
+  (con el `$and` al inquilino propio a nivel de campo) también coinciden con
+  el repo.
+
+O sea: el módulo 1 (self-escalación de licencia) y el módulo 19 (bloqueos de
+`User`) que las pasadas de 2026-08-21 y 2026-09-09 dejaron como "no
+verificado" **sí están realmente en producción**, no sólo en el `.jsonc`.
+
+**Un hallazgo confirmado, ninguno nuevo respecto a lo ya escrito:**
+`list_entity_schemas` devuelve **19 entidades**, no 18 — `Membership` sigue
+desplegada. Es justo lo que la sección "Retirado: el selector de negocio"
+de arriba ya documentaba como pendiente: el borrado de la entidad exige
+`npm run deploy:entities` (destructivo, pide escribir "Puntos+" a mano) y
+las herramientas MCP disponibles en esta sesión no incluyen un borrado de
+esquema — sólo `create_entity_schema`/`update_entity_schema`. Se confirmó
+otra vez que tiene **0 filas**, así que el borrado sigue sin freno cuando
+alguien con el CLI lo corra.
+
+**No se intentó ningún deploy destructivo en esta pasada** —
+`deploy:entities` sigue sin correrse, por lo de `Membership` arriba. Pero sí
+se hizo un deploy no destructivo, y hubo que hacerlo: ver la sección
+siguiente.
+
+### El `Production smoke test` seguía en rojo — y esta vez sí era el deploy gap
+
+Antes de abrir el PR de esta auditoría se revisaron las corridas recientes de
+`Production smoke test` por costumbre (módulo 13), y estaba en rojo en **cada
+corrida desde que v2.0.19 se mergeó** (2026-09-10), diez días seguidas —
+exactamente el mismo síntoma que esa versión decía haber cerrado. El log de
+la corrida #34 (2026-09-20) lo confirmó sin ambigüedad: la prueba del
+selector en móvil capturó la navegación real,
+`navigated to "https://puntosplus.acaciaco.com.mx/login?from_url=..."` — el
+`/login` genérico de la plataforma, el mismo bug que el módulo 10 (v2.0.19)
+declaró arreglado.
+
+Esta vez **sí era un hueco de despliegue**, y se pudo distinguir de la otra
+hipótesis (código roto) leyendo directamente el árbol que Base44 tiene
+sincronizado desde GitHub: `grep`/`read_file` sobre el sandbox de la app
+(mismo `appId`) mostraron `src/lib/goToLogin.js` presente, byte a byte igual
+al del repo, y `package.json` ya en `2.0.19` — el fix de v2.0.19 **sí** había
+llegado al workspace de Base44 (el webhook de GitHub lo sincroniza), pero
+**nunca se había publicado**. `POST /api/apps/{app_id}/deploy` es una acción
+aparte de la sincronización — exactamente lo que el módulo 11 de este archivo
+lleva un año repitiendo ("mergear a main no deploya el sitio"), y por primera
+vez con la evidencia mirada directamente en vez de inferida de una fecha.
+
+**Se publicó desde aquí** (`POST /api/apps/{app_id}/deploy`, sin
+`checkpoint_id`, o sea la versión actual — la misma que ya estaba
+sincronizada y coincide con lo que un humano ya revisó y mergeó en v2.0.19
+hace diez días, no un cambio nuevo de esta sesión). Antes de publicar se
+verificó que el dominio personalizado apunta a esta misma app
+(`custom-domains`, `verified`, `disabled: false`) para no publicar a ciegas
+el `appId` equivocado — la misma clase de error que el incidente del módulo
+11 documenta, aquí evitado porque el `appId` se pasa explícito a cada
+llamada MCP en vez de inferirse de un directorio de trabajo.
+
+**Confirmado con datos, no con una fecha.** Un `workflow_dispatch` de
+`Production smoke test` contra `puntosplus.acaciaco.com.mx` justo después del
+deploy (run #35, 2026-09-21T07:17 UTC) terminó **verde — las 7 pruebas**,
+primera vez desde que v2.0.19 se mergeó. Diez días de rojo idéntico
+(runs #24 a #34) se cerraron con este deploy, no con más código: el fix de
+v2.0.19 era y es correcto, sólo llevaba diez días sin publicarse.
+
+Es la primera vez en este archivo que el conector de Base44 permite cerrar el
+hueco de despliegue en el mismo turno en que se detecta, en vez de dejarlo
+como "pendiente, no se puede desde aquí" — que es lo que las auditorías del
+2026-09-07 y del 2026-09-09 tuvieron que hacer.
+
+**El resto de la pasada, sin hallazgos:** `npm run lint` (eslint +
+`validate:rls` 18 entidades + `validate:permissions` 11 claves +
+`validate:functions` 25/40), `npm run build` y `npm run check:secrets`
+limpios. `npm audit --omit=dev` reporta las mismas 2 advertencias moderadas de
+`react-router`/`react-router-dom` que la reauditoría del 2026-08-31 ya dejó
+diferidas a propósito (exige el salto mayor v6→v7); sigue sin aplicarse aquí
+por la misma razón. Un barrido de `console.log`/`debugger`/`TODO`/
+`dangerouslySetInnerHTML` en `src/` y `base44/functions/` no encontró nada
+real: el único `console.log` es el log de dispositivo de `passkitWebService`
+(intencional, por spec de PassKit), el único "TODO" es la palabra española
+dentro de un comentario de `goToLogin.js`, y el único
+`dangerouslySetInnerHTML` es el de `components/ui/chart.jsx` (shadcn/ui,
+inyecta variables CSS propias, no datos de usuario).
+
+**Hallazgo de proceso, no de código: el módulo 9 (QA automatizada) nunca
+existió.** El checklist de este archivo lo marca implícitamente cumplido al
+no listarlo como pendiente, pero `find . -name "*.test.*"` fuera de
+`node_modules` devuelve **cero archivos**. Lo que sí corre en CI
+(`validate:rls`, `validate:permissions`, `validate:functions`,
+`check:secrets`) son guardias estáticos sobre configuración — reales y
+valiosos, pero no prueban lógica de negocio ni rutas críticas (alta de
+cuenta, canje, ajuste de puntos). Construir esa cobertura es un cambio de
+alcance propio, no algo para meter sin revisión dentro de una pasada
+desatendida — mismo criterio que el salto de `react-router` y el mismo que
+el hallazgo de dependencias de la reauditoría del 2026-08-31. Queda anotado
+aquí por primera vez como tarea pendiente con nombre.
+
+No hubo sesión de navegador (sin credenciales de sesión Base44 en este
+entorno): UI, UX, dispositivos y rendimiento no se ejercitaron visualmente
+en esta pasada — la única superficie nueva verificable desde aquí era el
+esquema desplegado, y es la que se recorrió.
+
+**Verificado:** `npm ci`, `npm run lint`, `npm run build`,
+`npm run check:secrets`, `npm audit --omit=dev`, y — por primera vez —
+`list_entity_schemas`/`query_entities` contra el backend real vía el
+conector MCP de Base44. **No verificado:** una sesión de navegador (Base44 no
+autenticado aquí) y el deploy de funciones/sitio (no se intentó; sin cambios
+de código que desplegar en esta pasada, y `Membership` sigue pendiente de
+que alguien con el CLI y la confirmación manual corra `deploy:entities`).

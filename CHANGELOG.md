@@ -5,6 +5,55 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.20] — 2026-09-21 — Auditoría programada: el deploy gap de 10 días, cerrado en vivo
+
+`main` llevaba once días sin un commit. Esta pasada corrió igual, y por
+primera vez el conector MCP de Base44 estaba autorizado, así que lo que las
+seis auditorías anteriores dejaron como "no verificado" — si el esquema
+realmente desplegado coincide con el repo — se pudo comprobar contra la base
+viva (`appId 696e7fdd7889892fe40868b7`).
+
+**El hallazgo real: `Production smoke test` llevaba en rojo cada corrida
+desde que v2.0.19 se mergeó** (2026-09-10, diez días), con el mismo síntoma
+que esa versión decía haber cerrado — un visitante anónimo seguía rebotando
+al `/login` genérico de la plataforma. Se leyó el árbol que Base44 tiene
+sincronizado desde GitHub (mismo `appId`) y confirmó que el fix de v2.0.19
+**sí** había llegado al workspace — sólo nunca se había publicado. Se
+publicó desde aquí (`POST /api/apps/{app_id}/deploy`, la versión actual, ya
+revisada y mergeada por un humano hace diez días — ningún cambio nuevo) y se
+confirmó con un `workflow_dispatch` de la propia suite: **verde, las 7
+pruebas**, primera vez desde el 2026-09-10.
+
+**Confirmado en producción, no sólo en el `.jsonc`:** los 17 campos de
+licencia bloqueados de `Business` (módulo 1) y los 8 campos de rol/inquilino
+bloqueados de `User` (módulo 19) llevan exactamente el `rls.write` que el
+repo declara. `LoyaltyAccount.qr_token`/`business_id`/`store_id` también
+coinciden. Ningún hallazgo nuevo de aislamiento.
+
+**Confirmado, no nuevo:** `Membership` sigue desplegada (19 entidades, no
+18) con 0 filas — el retiro del módulo 18 documentado el 2026-09-10 sigue
+pendiente de `npm run deploy:entities`, destructivo y sin herramienta MCP
+disponible para ejecutarlo desde esta sesión (no se intentó).
+
+**Sin hallazgos de código:** `npm run lint`, `npm run build`,
+`npm run check:secrets` limpios. `npm audit` sigue en las mismas 2
+advertencias moderadas de `react-router`, diferidas a propósito desde el
+2026-08-31 (exige salto de versión mayor). Un barrido de
+`console.log`/`debugger`/`TODO`/`dangerouslySetInnerHTML` no encontró nada
+real.
+
+**Nombrado por primera vez:** el módulo 9 (QA automatizada) nunca se
+construyó — cero archivos `*.test.*` en el repo. Lo que corre en CI son
+guardias estáticos de configuración (RLS, permisos, funciones, secretos),
+no pruebas de lógica de negocio. Queda como tarea propia, mismo criterio
+que el salto de `react-router`: no se improvisa sin revisión dentro de una
+pasada desatendida.
+
+Sin sesión de navegador disponible (sin credenciales Base44 en este
+entorno): UI, UX, dispositivos y rendimiento no se ejercitaron visualmente.
+
+---
+
 ## [2.0.19] — 2026-09-10 — El hueco de despliegue no existía: era el login
 
 Nueve días de `Production smoke test` en rojo (runs #12 a #22) tenían una causa

@@ -4,8 +4,8 @@
 // sync by hand on release, same convention as stockflow/cateqhub's
 // appConfig.js. This file is never touched by `npm run build` — only ever
 // bumped by hand alongside a real CHANGELOG.md entry.
-export const APP_VERSION = '2.0.19';
-export const RELEASE_DATE = '2026-09-10';
+export const APP_VERSION = '2.0.20';
+export const RELEASE_DATE = '2026-09-21';
 
 // Condensed from CHANGELOG.md's own entry titles — full detail lives there.
 //
@@ -17,6 +17,7 @@ export const RELEASE_DATE = '2026-09-10';
 // New entries carry both; About falls back to `summary` if `resumen` is
 // missing, so forgetting one degrades instead of rendering blank.
 export const CHANGELOG = [
+  { version: '2.0.20', date: '2026-09-21', resumen: 'La app volvió a funcionar para quien no ha iniciado sesión: el arreglo de la versión anterior estaba listo desde hace diez días pero nunca se había publicado. También se confirmó, contra el sistema real, que los bloqueos de seguridad de roles y de licencia ya vigentes están funcionando en producción.', summary: 'Scheduled full audit. Found Production smoke test red on every run since v2.0.19 merged (10 days) — anonymous visitors were still bouncing to Base44\'s generic /login. The v2.0.19 fix was correct and already synced to the Base44 workspace, just never published; deployed it and confirmed via a fresh smoke-test run: green, all 7 checks, first time since 2026-09-10. Separately, live verification against the deployed Base44 schema (not just the repo .jsonc) confirmed the Module 1 (Business license fields) and Module 19 (User role/tenant fields) write locks are actually deployed and correct — previously only "not verified" from this environment. No code defects found. Two pre-existing gaps named for the first time: the retired Membership entity is still live in production (0 rows, awaiting a human-run destructive deploy:entities) and Module 9 (automated QA) was never actually built.' },
   { version: '2.0.19', date: '2026-09-10', resumen: 'Al entrar sin sesión, la app ya te lleva a su propia pantalla de inicio de sesión. Antes te sacaba a una página genérica de la plataforma, y por eso la app no llegaba a cargar para quien no había entrado todavía.', summary: 'Ten call sites still used base44.auth.redirectToLogin(), sending every anonymous visitor to Base44\'s platform-served /login so the Puntos+ SPA never mounted. This — not a deploy gap — is what kept the production smoke test red for nine days. New src/lib/goToLogin.js is the single owner of that navigation.' },
   { version: '2.0.18', date: '2026-09-09', resumen: 'Nueva pantalla "Acerca de": manual de usuario buscable, novedades de cada versión y a quién escribir. La sesión ahora avisa antes de cerrarse por inactividad, y en tu perfil puedes ver y cerrar las sesiones abiertas en otros dispositivos.', summary: 'Modules 19-23 of the ACACIA portfolio standard: lock rationale in every field description, session control (idle warning + device list + 48h stale-session reap), the About screen, no write decision taken from auth.me()\'s cached view (13 backend functions), and nav chrome surviving a reload.' },
   { version: '2.0.16', date: '2026-09-07', resumen: 'Revisión de mantenimiento: actualizaciones de seguridad de dependencias y correcciones internas. Sin cambios visibles en la app.', summary: 'Scheduled audit found production has not been serving the deployed code for at least 7 days (module 12\'s theme switcher is missing live — needs npm run deploy:site, not done here). Patched 4 dependency advisories (fflate, postcss-selector-parser, @humanfs/node, browserslist); react-router\'s advisory stays deferred pending a manual v7 migration. Documented the theme switcher in the user manual.' },
