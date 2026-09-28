@@ -5,6 +5,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.21] — 2026-09-28 — Auditoría programada: sin hallazgos, verificado contra producción
+
+Siete días sin commits de código desde v2.0.20 (sólo un bump automático de
+`@base44/sdk`/`@base44/vite-plugin`, ya en `main` y con CI verde). Esta
+pasada repitió el recorrido completo contra el estado real, no contra la
+memoria de la pasada anterior:
+
+- **RLS comparado campo por campo contra `list_entity_schemas` en vivo**
+  (`appId 696e7fdd7889892fe40868b7`): las 18 entidades del repo, tanto la
+  regla de entidad completa (`create`/`read`/`update`/`delete`) como cada
+  bloqueo de campo, coinciden byte a byte con lo desplegado — cero
+  diferencias. Es la primera vez que esta comprobación se hace mediante una
+  comparación automática en vez de una lectura manual de un subconjunto de
+  campos.
+- **`Membership` sigue viva (19 entidades, no 18) con 0 filas** — sin cambio
+  desde el 2026-09-10; sigue pendiente de un `npm run deploy:entities`
+  humano, y las herramientas MCP disponibles siguen sin un borrado de
+  esquema.
+- **CI y `Production smoke test` verdes** en las últimas 5 corridas
+  (#38–#42; #38 fue roja una vez de forma aislada sin cambio de código
+  antes ni después — no reprodujo, se registra como posible ruido y no
+  como hallazgo).
+- **Sin PRs abiertas, sin ramas de auditoría huérfanas.**
+- `npm run lint` (eslint + `validate:rls` 18 + `validate:permissions` 11 +
+  `validate:functions` 25/40), `npm run build` y `npm run check:secrets`
+  limpios. `npm audit --omit=dev`: las mismas 2 advertencias moderadas de
+  `react-router`, diferidas a propósito (exige salto de versión mayor).
+  Barrido de `console.log`/`debugger`/`dangerouslySetInnerHTML`: sólo los
+  dos ya documentados como intencionales (PassKit device log, chart.jsx de
+  shadcn/ui). Módulo 9 (QA automatizada): sigue en cero archivos
+  `*.test.*` — mismo hueco nombrado en v2.0.20, todavía sin abordar por ser
+  cambio de alcance propio.
+
+**Sin hallazgos nuevos de ningún tipo.** No se tocó código de aplicación.
+Sin sesión de navegador disponible en este entorno: UI, UX, dispositivos y
+rendimiento visual no se ejercitaron directamente esta vez tampoco — el
+`Production smoke test` es la única cobertura viva de esas superficies.
+
+---
+
 ## [2.0.20] — 2026-09-21 — Auditoría programada: el deploy gap de 10 días, cerrado en vivo
 
 `main` llevaba once días sin un commit. Esta pasada corrió igual, y por
