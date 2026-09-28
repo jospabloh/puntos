@@ -1449,3 +1449,40 @@ conector MCP de Base44. **No verificado:** una sesión de navegador (Base44 no
 autenticado aquí) y el deploy de funciones/sitio (no se intentó; sin cambios
 de código que desplegar en esta pasada, y `Membership` sigue pendiente de
 que alguien con el CLI y la confirmación manual corra `deploy:entities`).
+
+## Auditoría programada — cero deriva, comprobada campo por campo (2026-09-28, v2.0.21)
+
+Siete días sin commits de código desde la pasada anterior — sólo
+`Update base44 packages` (`@base44/sdk` 0.8.48→0.8.51,
+`@base44/vite-plugin` 1.0.41→1.0.42), ya en `main` con CI verde antes de
+empezar esta auditoría. La pasada del 2026-09-21 había comprobado el estado
+desplegado leyendo a mano un subconjunto de campos (los 17 de `Business`,
+los 8 de `User`, los 3 de `LoyaltyAccount`); esta vez la comprobación se
+automatizó: un diff campo por campo entre cada `base44/entities/*.jsonc`
+del repo y `list_entity_schemas` en vivo, sobre **las cuatro operaciones de
+entidad y todos los bloqueos de campo, no sólo los que una pasada anterior
+ya había mirado**. Las 18 entidades del repo coinciden exactamente con lo
+desplegado — cero diferencias. Vale decir explícitamente qué compró esta
+automatización sobre la lectura manual: cubre entidades que ninguna
+auditoría anterior había comparado campo por campo contra el esquema vivo
+(`Campaign`, `Offer`, `Store`, `Invitation`, `PermissionProfile`,
+`ChatConversation`, `WalletRegistration`, `LicenseEvent`, `AuditLog`,
+`AppSession`, `NotificationPreference`, `SupportTicket*`, `PointsLedger`,
+`Redemption`), no sólo las tres que ya se sabían bloqueadas.
+
+**Sin hallazgos de ningún tipo.** `Membership` sigue desplegada (19
+entidades, no 18) con 0 filas, sin cambio desde el 2026-09-10 — sigue
+pendiente de un `deploy:entities` humano. CI y `Production smoke test`
+verdes en las últimas 5 corridas (una roja aislada, run #38, no reprodujo
+en las 4 corridas siguientes sobre el mismo commit — se registra, no se
+trata como hallazgo). Sin PRs abiertas ni ramas de auditoría huérfanas.
+`npm run lint`/`build`/`check:secrets` limpios; `npm audit` en las mismas 2
+advertencias de `react-router` diferidas desde el 2026-08-31; barrido de
+`console.log`/`debugger`/`dangerouslySetInnerHTML` sin nada nuevo. Módulo 9
+(QA automatizada) sigue en cero archivos `*.test.*` — mismo hueco que
+v2.0.20 nombró por primera vez, sin abordar aquí por ser cambio de alcance
+propio, mismo criterio que el salto de versión mayor de `react-router`.
+
+No se tocó código de aplicación. **No verificado, otra vez:** una sesión de
+navegador (UI/UX/dispositivos/rendimiento visual) y el deploy de
+funciones/sitio (no había nada nuevo que desplegar).
