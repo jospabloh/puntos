@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Store, Sparkles, ArrowRight, CheckCircle, Loader2, ArrowLeft, Building2,
-  MailCheck, Gift, ShieldCheck, Wallet, Megaphone, QrCode, Check,
+  MailCheck, Gift, ShieldCheck, Wallet, Megaphone, QrCode, Check, Users, Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -184,6 +184,12 @@ function OptionCard({ icon: Icon, title, desc, accent, onClick }) {
   );
 }
 
+// El error real de una función viene en response.data.error (axios rechaza los
+// no-2xx con un mensaje genérico); sin esto el usuario vería "status code 409".
+function apiErrorMessage(e, fallback) {
+  return e?.response?.data?.error || e?.message || fallback;
+}
+
 function Field({ label, hint, children }) {
   return (
     <label className="block">
@@ -210,6 +216,8 @@ export default function Onboarding() {
   const [storeCode, setStoreCode] = useState('');
   const [biz, setBiz] = useState({ businessName: '', storeName: '', phone: '' });
   const [created, setCreated] = useState(null); // { business, store } after registration
+  const [teamCode, setTeamCode] = useState('');
+  const [joinRequest, setJoinRequest] = useState(null); // última solicitud propia (pending/rejected/...)
 
   const setBizField = useCallback((field, value) => {
     setBiz((b) => ({ ...b, [field]: value }));
@@ -240,6 +248,12 @@ export default function Onboarding() {
           const invites = await base44.entities.Invitation.filter({ email: u.email, status: 'pending' });
           if (invites.length > 0) setInvitation(invites[0]);
         } catch { /* invitations optional */ }
+        // Solicitud de unión por código: sobrevive a recargas porque vive en la
+        // base (RLS deja leer sólo las propias). Sin acceso a datos del negocio.
+        try {
+          const mine = await base44.entities.JoinRequest.filter({ user_id: u.id }, '-created_date', 1);
+          if (mine.length > 0) setJoinRequest(mine[0]);
+        } catch { /* sin solicitudes */ }
       } catch {
         goToLogin();
       }
@@ -262,6 +276,45 @@ export default function Onboarding() {
       setTimeout(() => { window.location.href = createPageUrl(isAdmin ? 'AdminDashboard' : 'MerchantPOS'); }, 900);
     },
     onError: () => toast.error('No se pudo aceptar la invitación. Intenta de nuevo.'),
+  });
+
+  // Mientras espera, consulta si ya la resolvieron. Al aprobarse, recargar
+  // /Onboarding hace que el efecto de arriba lo mande a su pantalla por rol.
+  useEffect(() => {
+    if (joinRequest?.status !== 'pending' || !user?.id) return undefined;
+    const id = setInterval(async () => {
+      try {
+        const rows = await base44.entities.JoinRequest.filter({ user_id: user.id }, '-created_date', 1);
+        const latest = rows[0];
+        if (!latest || latest.status === 'pending') return;
+        if (latest.status === 'approved') {
+          toast.success(`¡Te aprobaron en ${latest.business_name}!`);
+          setTimeout(() => { window.location.href = createPageUrl('Onboarding'); }, 700);
+        } else {
+          setJoinRequest(latest);
+        }
+      } catch { /* reintenta en el siguiente ciclo */ }
+    }, 15000);
+    return () => clearInterval(id);
+  }, [joinRequest?.status, user?.id]);
+
+  const requestJoinMutation = useMutation({
+    mutationFn: async (code) => {
+      const res = await base44.functions.invoke('manageJoinRequest', { action: 'request', code });
+      if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo enviar la solicitud');
+      return res.data.request;
+    },
+    onSuccess: (request) => { setJoinRequest(request); setStep(1); setPath(null); setTeamCode(''); },
+    onError: (e) => toast.error(apiErrorMessage(e, 'No se pudo enviar la solicitud')),
+  });
+
+  const cancelJoinMutation = useMutation({
+    mutationFn: async () => {
+      const res = await base44.functions.invoke('manageJoinRequest', { action: 'cancel', requestId: joinRequest.id });
+      if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo cancelar la solicitud');
+    },
+    onSuccess: () => { setJoinRequest(null); toast.success('Solicitud cancelada'); },
+    onError: (e) => toast.error(apiErrorMessage(e, 'No se pudo cancelar la solicitud')),
   });
 
   const customerMutation = useMutation({
@@ -317,6 +370,34 @@ export default function Onboarding() {
       <div className="flex min-h-screen items-center justify-center pp-shell-bg">
         <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
       </div>
+    );
+  }
+
+  // ── Solicitud enviada: esperando aprobación del administrador ───────────
+  if (joinRequest?.status === 'pending') {
+    const panelWait = (
+      <BrandPanel
+        tone="violet" brand={joinRequest.business_name} code="" joining
+        perks={BUSINESS_PERKS} headline="Ya casi estás dentro"
+        sub="Cuando el administrador apruebe tu solicitud, entrarás con el rol que te asigne."
+      />
+    );
+    return (
+      <Shell panel={panelWait}>
+        <MobileCard tone="violet" brand={joinRequest.business_name} joining />
+        <StepHeader eyebrow="Solicitud enviada" title="Esperando aprobación" sub={`Pediste unirte al equipo de ${joinRequest.business_name}.`} />
+        <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-slate-900 text-violet-600 shadow-sm"><Clock className="h-5 w-5" /></span>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Un administrador de {joinRequest.business_name} tiene que aprobarte. Mientras tanto no tienes acceso a los datos del negocio. Puedes cerrar esta pantalla: la solicitud sigue vigente.
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" onClick={() => cancelJoinMutation.mutate()} disabled={cancelJoinMutation.isPending} className="mt-5 h-12 w-full">
+          {cancelJoinMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Cancelando…</> : 'Cancelar solicitud'}
+        </Button>
+      </Shell>
     );
   }
 
@@ -386,11 +467,11 @@ export default function Onboarding() {
 
   // Brand panel adapts to the chosen path / step.
   const tone = path === 'customer' ? 'gold' : 'violet';
-  const panelBrand = path === 'customer' ? '' : biz.businessName;
+  const panelBrand = path === 'customer' || path === 'team' ? '' : biz.businessName;
   const panelCode = path === 'customer' ? storeCode : '';
   const panel = (
     <BrandPanel
-      tone={tone} brand={panelBrand} code={panelCode} joining={path === 'customer'}
+      tone={tone} brand={panelBrand} code={panelCode} joining={path === 'customer' || path === 'team'}
       perks={path === 'customer' ? CUSTOMER_PERKS : BUSINESS_PERKS}
       headline={path === 'customer' ? 'Tus puntos, en tu bolsillo' : 'Lealtad que hace crecer tu negocio'}
       sub={path === 'customer'
@@ -407,10 +488,18 @@ export default function Onboarding() {
           <motion.div key="s1" variants={fieldVariants} initial="initial" animate="animate" exit="exit">
             <MobileCard tone={tone} brand={panelBrand} code={panelCode} joining={path === 'customer'} />
             <StepHeader step={1} eyebrow="Bienvenido" title="¿Cómo vas a usar Puntos+?" sub="Elige la opción que mejor te describe." />
+            {joinRequest?.status === 'rejected' && (
+              <div role="status" className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                Tu solicitud para unirte a {joinRequest.business_name} fue rechazada. Si crees que es un error, habla con su administrador.
+              </div>
+            )}
             <div className="space-y-3">
               <OptionCard icon={Building2} accent="violet" title="Tengo un negocio"
                 desc={`Crear mi programa de lealtad · prueba ${TRIAL_DAYS} días`}
                 onClick={() => { setPath('business'); setStep(2); }} />
+              <OptionCard icon={Users} accent="violet" title="Trabajo en un negocio"
+                desc="Unirme al equipo con el código que me dio el administrador"
+                onClick={() => { setPath('team'); setStep(2); }} />
               <OptionCard icon={Gift} accent="gold" title="Soy cliente"
                 desc="Acumular puntos y canjear recompensas"
                 onClick={() => { setPath('customer'); setStep(2); }} />
@@ -441,6 +530,32 @@ export default function Onboarding() {
                 <Button variant="outline" onClick={() => { setStep(1); setPath(null); }} className="h-12 flex-1"><ArrowLeft className="mr-2 h-4 w-4" />Volver</Button>
                 <Button onClick={() => customerMutation.mutate(storeCode)} disabled={storeCode.length < 3 || customerMutation.isPending} className="h-12 flex-1 bg-amber-500 text-base hover:bg-amber-600">
                   {customerMutation.isPending ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Verificando…</> : <>Continuar<ArrowRight className="ml-2 h-4 w-4" /></>}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 2 — unirse a un equipo por código (queda PENDIENTE de aprobación) */}
+        {step === 2 && path === 'team' && (
+          <motion.div key="s2t" variants={fieldVariants} initial="initial" animate="animate" exit="exit">
+            <MobileCard tone="violet" brand="" code="" joining />
+            <StepHeader step={2} eyebrow="Equipo" title="Únete a un negocio" sub="Escribe el código de invitación del negocio. El administrador tendrá que aprobarte." />
+            <div className="space-y-5">
+              <Field label="Código de invitación del negocio" hint="Te lo comparte quien administra el negocio. Sólo envía una solicitud: no entras hasta que la aprueben.">
+                <Input
+                  autoFocus
+                  value={teamCode}
+                  onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
+                  placeholder="ABC123"
+                  maxLength={12}
+                  className="h-14 text-center font-mono text-xl tracking-[0.3em]"
+                />
+              </Field>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => { setStep(1); setPath(null); }} className="h-12 flex-1"><ArrowLeft className="mr-2 h-4 w-4" />Volver</Button>
+                <Button onClick={() => requestJoinMutation.mutate(teamCode)} disabled={teamCode.trim().length < 4 || requestJoinMutation.isPending} className="h-12 flex-1 bg-violet-600 text-base hover:bg-violet-700">
+                  {requestJoinMutation.isPending ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Enviando…</> : <>Enviar solicitud<ArrowRight className="ml-2 h-4 w-4" /></>}
                 </Button>
               </div>
             </div>

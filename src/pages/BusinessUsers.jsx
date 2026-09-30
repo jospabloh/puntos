@@ -117,6 +117,9 @@ export default function BusinessUsers() {
   const [removeTarget, setRemoveTarget] = useState(null);
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [requestChoices, setRequestChoices] = useState({}); // { [requestId]: { role, storeId } }
+  const choiceFor = (id) => requestChoices[id] || { role: 'staff', storeId: '' };
+  const setChoice = (id, patch) => setRequestChoices((c) => ({ ...c, [id]: { ...choiceFor(id), ...patch } }));
 
   const teamQuery = useQuery({
     queryKey: ['biz-team', businessId],
@@ -128,6 +131,13 @@ export default function BusinessUsers() {
     enabled: !!businessId && ready,
     queryFn: () => base44.entities.Invitation.filter({ business_id: businessId, status: 'pending' }, '-created_date', 500),
   });
+  // Solicitudes de unión por código. Leerlas lo permite la RLS de JoinRequest
+  // (business_admin del propio negocio); resolverlas, sólo manageJoinRequest.
+  const requestsQuery = useQuery({
+    queryKey: ['biz-join-requests', businessId],
+    enabled: !!businessId && ready,
+    queryFn: () => base44.entities.JoinRequest.filter({ business_id: businessId, status: 'pending' }, '-created_date', 100),
+  });
   const storesQuery = useQuery({
     queryKey: ['biz-stores', businessId],
     enabled: !!businessId && ready,
@@ -136,6 +146,7 @@ export default function BusinessUsers() {
 
   const team = teamQuery.data || [];
   const invites = invitesQuery.data || [];
+  const joinRequests = requestsQuery.data || [];
   const stores = storesQuery.data || [];
 
   const seatLimit = business?.licensed_user_limit ?? 0;
@@ -146,6 +157,7 @@ export default function BusinessUsers() {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['biz-team', businessId] });
     queryClient.invalidateQueries({ queryKey: ['biz-invites', businessId] });
+    queryClient.invalidateQueries({ queryKey: ['biz-join-requests', businessId] });
   };
 
   // Team-member changes go through the manageTeamMember service-role function:
@@ -177,6 +189,22 @@ export default function BusinessUsers() {
     },
     onSuccess: () => { invalidate(); setRemoveTarget(null); toast.success('Miembro removido del equipo'); },
     onError: (e) => toast.error(e?.message || 'No se pudo remover al miembro'),
+  });
+
+  // Aprobar/rechazar una solicitud por código: el administrador ELIGE el rol.
+  // El servidor valida el rol contra lista blanca y que la solicitud sea de este negocio.
+  const resolveRequestMutation = useMutation({
+    mutationFn: async ({ requestId, action, role, storeId }) => {
+      try {
+        const res = await base44.functions.invoke('manageJoinRequest', { action, requestId, role, storeId });
+        if (!res?.data?.success) throw new Error(res?.data?.error || 'No se pudo resolver la solicitud');
+        return res.data;
+      } catch (e) {
+        throw new Error(e?.response?.data?.message || e?.response?.data?.error || e?.message || 'No se pudo resolver la solicitud');
+      }
+    },
+    onSuccess: (_d, v) => { invalidate(); toast.success(v.action === 'approve' ? 'Persona aprobada. Ya tiene acceso.' : 'Solicitud rechazada'); },
+    onError: (e) => toast.error(e?.message === 'write_blocked' ? 'Tu licencia está en solo lectura.' : e?.message === 'seat_limit' ? 'Ya usas todos tus asientos.' : e?.message),
   });
 
   const inviteMutation = useMutation({
@@ -278,6 +306,51 @@ export default function BusinessUsers() {
               Alcanzaste el límite de tu plan. Mejora tu plan o remueve a un miembro para invitar a alguien más.
             </p>
           )}
+        </SectionCard>
+      )}
+
+      {joinRequests.length > 0 && (
+        <SectionCard title="Solicitudes para unirse" description="Personas que usaron el código de tu negocio. No tienen acceso hasta que las apruebes." icon={UserPlus} className="mb-6" bodyClassName="p-0">
+          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+            {joinRequests.map((r) => {
+              const choice = choiceFor(r.id);
+              return (
+                <li key={r.id} className="flex flex-col gap-3 px-5 py-4 lg:flex-row lg:items-center">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-50">{r.user_name || r.user_email}</p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{r.user_email} · {relTime(r.created_date)}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={choice.role} onValueChange={(role) => setChoice(r.id, { role, storeId: role === 'staff' ? choice.storeId : '' })}>
+                      <SelectTrigger className="h-9 w-44" aria-label="Rol que tendrá"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="staff">Equipo / Cajero</SelectItem>
+                        <SelectItem value="business_admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {choice.role === 'staff' && stores.length > 0 && (
+                      <Select value={choice.storeId || 'none'} onValueChange={(v) => setChoice(r.id, { storeId: v === 'none' ? '' : v })}>
+                        <SelectTrigger className="h-9 w-44" aria-label="Tienda"><SelectValue placeholder="Sin tienda" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin tienda</SelectItem>
+                          {stores.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button size="sm" disabled={!canWrite || resolveRequestMutation.isPending}
+                      onClick={() => resolveRequestMutation.mutate({ requestId: r.id, action: 'approve', role: choice.role, storeId: choice.storeId || undefined })}
+                      className="bg-violet-600 hover:bg-violet-700">
+                      Aprobar
+                    </Button>
+                    <Button size="sm" variant="outline" disabled={resolveRequestMutation.isPending}
+                      onClick={() => resolveRequestMutation.mutate({ requestId: r.id, action: 'reject' })}>
+                      Rechazar
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </SectionCard>
       )}
 
@@ -449,6 +522,7 @@ export default function BusinessUsers() {
             )}
             <div className="rounded-xl border border-violet-200 bg-violet-50 p-3">
               <p className="text-xs font-medium text-violet-700">Código de invitación a compartir</p>
+              <p className="mt-0.5 text-xs text-violet-600">Quien lo use enviará una solicitud; tú eliges su rol al aprobarla.</p>
               <div className="mt-1 flex items-center gap-2">
                 <span className="font-display text-xl font-bold tracking-[0.25em] text-violet-800 tnum">{business?.invite_code || '——————'}</span>
                 <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={copyCode} disabled={!business?.invite_code} aria-label="Copiar código de invitación">

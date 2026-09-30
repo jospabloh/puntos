@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/components/AuthLayout';
 import GoogleIcon from '@/components/GoogleIcon';
+import VerifyEmailStep from '@/components/VerifyEmailStep';
+import { needsEmailVerification } from '@/lib/emailVerification';
 import { getRememberedIdentity, clearRememberedIdentity } from '@/lib/lastIdentity';
 import { consumeLoginReturn } from '@/lib/goToLogin';
 
@@ -16,6 +18,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [remembered, setRemembered] = useState(null);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     setRemembered(getRememberedIdentity());
@@ -26,11 +29,16 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      await base44.auth.login(email, password);
+      await base44.auth.loginViaEmailPassword(email, password);
       // Vuelve a donde venía el visitante (p.ej. /MerchantPOS), no a '/'.
       window.location.href = consumeLoginReturn();
     } catch (err) {
-      setError(err.message || 'Credenciales incorrectas. Intenta de nuevo.');
+      if (needsEmailVerification(err)) {
+        // Correo sin verificar: en vez del error crudo, abre el paso del código.
+        setVerifying(true);
+      } else {
+        setError(err.message || 'Credenciales incorrectas. Intenta de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -56,6 +64,23 @@ export default function Login() {
   };
 
   const firstName = remembered?.name?.split(' ')[0] || remembered?.email?.split('@')[0] || '';
+
+  if (verifying) {
+    return (
+      <AuthLayout icon={LogIn} title="Verifica tu correo" subtitle="Tu cuenta aún no está activada.">
+        <VerifyEmailStep
+          email={email}
+          password={password}
+          sendOnMount
+          onVerified={({ needsLogin }) => {
+            if (needsLogin) { setVerifying(false); return; }
+            window.location.href = consumeLoginReturn();
+          }}
+          onCancel={() => setVerifying(false)}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/components/AuthLayout';
 import GoogleIcon from '@/components/GoogleIcon';
+import VerifyEmailStep from '@/components/VerifyEmailStep';
+import { needsEmailVerification, friendlyAuthMessage } from '@/lib/emailVerification';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -14,16 +16,27 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resendOnOpen, setResendOnOpen] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await base44.auth.register(email, password, name);
-      window.location.href = '/';
+      // register() recibe un objeto y NO acepta nombre; el nombre se guarda al
+      // verificar (VerifyEmailStep). Base44 manda el código de 6 dígitos al correo.
+      await base44.auth.register({ email, password });
+      setResendOnOpen(false);
+      setVerifying(true);
     } catch (err) {
-      setError(err.message || 'No se pudo crear la cuenta. Intenta de nuevo.');
+      if (needsEmailVerification(err)) {
+        // La cuenta ya existía sin verificar: pide el código y manda uno nuevo.
+        setResendOnOpen(true);
+        setVerifying(true);
+      } else {
+        setError(friendlyAuthMessage(err, 'No se pudo crear la cuenta. Intenta de nuevo.'));
+      }
     } finally {
       setLoading(false);
     }
@@ -32,6 +45,21 @@ export default function Register() {
   const handleGoogle = () => {
     base44.auth.loginWithProvider('google', '/');
   };
+
+  if (verifying) {
+    return (
+      <AuthLayout title="Verifica tu correo" subtitle="Un último paso para activar tu cuenta.">
+        <VerifyEmailStep
+          email={email}
+          password={password}
+          name={name}
+          sendOnMount={resendOnOpen}
+          onVerified={({ needsLogin }) => { window.location.href = needsLogin ? '/Login' : '/'; }}
+          onCancel={() => setVerifying(false)}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout

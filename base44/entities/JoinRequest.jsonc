@@ -1,0 +1,118 @@
+{
+  // JoinRequest — solicitud PENDIENTE para unirse al equipo de un negocio
+  // redimiendo su código de invitación (Business.invite_code).
+  //
+  // CONTRATO (2026-09-30): redimir el código NO da acceso. Sólo crea esta fila
+  // en `pending`; el usuario sigue siendo `customer` sin tenant hasta que un
+  // business_admin de ESE negocio la aprueba y ELIGE el rol. Sólo entonces
+  // `manageJoinRequest` (service role) escribe role/app_role/business_id del User.
+  //
+  // Reglas de RLS, y por qué:
+  //  - create/update/delete: SÓLO role:admin (servicio/dueño de plataforma).
+  //    Ningún usuario final escribe esta entidad: si el solicitante pudiera
+  //    editar su fila se aprobaría a sí mismo, y si un admin pudiera editarla
+  //    por SDK se saltaría la validación de rol y de asientos de la función.
+  //  - read: el admin del negocio (rama de rol DENTRO de $and con el tenant), el
+  //    propio solicitante (data.user_id == {{user.id}}, para que su pantalla
+  //    "Solicitud enviada" sobreviva a una recarga) y la plataforma.
+  "name": "JoinRequest",
+  "type": "object",
+  "description": "Solicitud pendiente de unión a un negocio por código. Sin acceso a datos del negocio mientras esté pendiente. Escritura sólo por manageJoinRequest.",
+  "properties": {
+    "business_id": {
+      "type": "string",
+      "description": "Negocio destino, derivado en el servidor del código redimido (nunca del cuerpo)."
+    },
+    "business_name": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Solicitante, tomado del token en el servidor."
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "granted_role": {
+      "type": "string",
+      "enum": [
+        "business_admin",
+        "staff"
+      ],
+      "description": "Rol que eligió el administrador al aprobar (lista blanca; nunca admin de plataforma ni owner)."
+    },
+    "store_id": {
+      "type": "string",
+      "description": "Tienda asignada al aprobar (sólo rol staff, validada contra el negocio)."
+    },
+    "store_name": {
+      "type": "string"
+    },
+    "resolved_by": {
+      "type": "string",
+      "description": "Correo de quien aprobó o rechazó."
+    },
+    "resolved_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "business_id",
+    "user_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.business_id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
