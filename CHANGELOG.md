@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.22] — 2026-09-30 — Verificación de correo por código y unión al equipo con aprobación
+
+- **Registro/Login con correo:** `Login.jsx` llamaba a `base44.auth.login` (no existe
+  en el SDK 0.8.51) y `Register.jsx` a `register(email, password, name)` (la firma
+  real recibe un objeto y no acepta nombre): el acceso por correo/contraseña no
+  podía funcionar. Ahora usan `loginViaEmailPassword` / `register({email, password})`
+  y hay un paso para escribir el código de 6 dígitos (`VerifyEmailStep`), con
+  reenviar código; el login con correo sin verificar abre ese paso en vez del error crudo.
+- **Unirse por código ya no da acceso:** `Business.invite_code` no lo redimía nadie.
+  Ahora crea una `JoinRequest` pendiente (`manageJoinRequest`); el administrador la
+  ve en Equipo y usuarios, elige el rol al aprobar (o rechaza). Ver CLAUDE.md.
+
+---
+
 ## [2.0.21] — 2026-09-28 — Auditoría programada: sin hallazgos, verificado contra producción
 
 Siete días sin commits de código desde v2.0.20 (sólo un bump automático de

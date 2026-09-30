@@ -6,7 +6,7 @@
  * navegador al `/login` en minúsculas que sirve la plataforma, con
  * `?from_url=…`. Base44 es dueña de esa ruta y responde con su propia página
  * genérica, así que el visitante nunca llega a `/Login`, la pantalla propia de
- * Puntos+ (que sí autentica de verdad: `base44.auth.login` +
+ * Puntos+ (que sí autentica de verdad: `base44.auth.loginViaEmailPassword` +
  * `loginWithProvider('google')`).
  *
  * **Esto no era teórico.** Del 2026-08-31 al 2026-09-09, el smoke test de

@@ -1486,3 +1486,108 @@ propio, mismo criterio que el salto de versión mayor de `react-router`.
 No se tocó código de aplicación. **No verificado, otra vez:** una sesión de
 navegador (UI/UX/dispositivos/rendimiento visual) y el deploy de
 funciones/sitio (no había nada nuevo que desplegar).
+
+## 2026-09-30 — verificación de correo por código y unión por código con aprobación (v2.0.22)
+
+Dos encargos del portafolio. **Nada de esto está desplegado ni verificado en vivo.**
+
+### A. Correo/contraseña: paso del código de 6 dígitos
+
+**Lo que había roto, y no era sólo el paso que faltaba:** `Login.jsx` llamaba a
+`base44.auth.login(email, password)` y `Register.jsx` a
+`base44.auth.register(email, password, name)`. En el SDK instalado (0.8.51,
+`node_modules/@base44/sdk/dist/modules/auth.js`) **no existe `auth.login`** (sólo
+`loginViaEmailPassword`) y `register` recibe **un objeto** `{email, password}` y no
+acepta nombre. O sea que el acceso por correo/contraseña no podía funcionar
+—Google era lo único que entraba— y nadie lo vio porque el smoke sólo mira rutas públicas.
+
+- `src/components/VerifyEmailStep.jsx` (InputOTP de 6 dígitos, `verifyOtp({email,
+  otpCode})`, `resendOtp(email)`, errores en español). Tras verificar inicia sesión
+  solo; si ese login falla manda a `/Login`. El nombre que se pidió en el registro
+  se guarda con `updateMe({full_name})` ya con sesión (best-effort: `register` no lo lleva).
+- `src/lib/emailVerification.js`: `needsEmailVerification` (regex sobre el mensaje,
+  como en stockflow), `isCompleteOtp`, `friendlyAuthMessage`.
+- `Register.jsx`: tras `register(...)` abre el paso; si la cuenta ya existía sin
+  verificar, lo abre y manda un código nuevo. `Login.jsx`: si el error es de correo
+  sin verificar abre el paso (y manda código nuevo); cualquier otro error conserva
+  su mensaje.
+
+### B. Modelo de tenant, roles y unión por código: auditoría
+
+**Ya cumplía:**
+- Quien crea un negocio queda `business_admin` de SU negocio (`createBusiness`, servicio,
+  `role:'business_admin'`); `admin` de plataforma sólo lo tienen el dueño y el servicio.
+  Todas las ramas de rol de RLS van dentro de `$and` con `data.business_id`
+  (comprobado con un barrido de las 18 entidades; las únicas ramas de tenant sin rol son
+  lecturas de `Business/Campaign/Offer/Store/PermissionProfile` para clientes del
+  propio negocio, a propósito).
+- Un usuario, un negocio: 409 en `createBusiness` y `acceptInvitation` (se conservan y
+  se replicaron en `manageJoinRequest`).
+- La invitación por correo iniciada por el admin es pre-aprobación y no cambió.
+- Todo escritor de `role/business_id` del User es servicio: `createBusiness`,
+  `acceptInvitation`, `createLoyaltyAccount` (sólo `customer`), `manageTeamMember` y
+  `getAppContext` (sólo el dueño de plataforma). Ninguno salta una aprobación.
+
+**Lo que NO cumplía:** `Business.invite_code` se mostraba en Equipo y usuarios como "código
+a compartir" pero **nada lo redimía**. Se construyó la ruta con aprobación:
+
+- Entidad nueva `JoinRequest` (`base44/entities/JoinRequest.jsonc`): create/update/delete
+  sólo `role:admin` (servicio); read = admin del negocio (rol dentro de `$and` con tenant),
+  el propio solicitante (`data.user_id == {{user.id}}`) y plataforma. Reutilizar `Invitation`
+  se descartó a propósito: una `Invitation` `pending` la acepta `acceptInvitation` sin
+  aprobación, y habría sido justo el atajo que este contrato prohíbe.
+- Función nueva `manageJoinRequest` (acciones `request | cancel | approve | reject`; 26 de 40
+  endpoints). Lógica pura y probada en `base44/shared/joinRequestRules.ts` (+ test).
+  - `request`: el negocio sale del código (servidor), nunca del cuerpo; código
+    inexistente, apagado o de negocio suspendido responde el mismo 404; 409 si ya
+    perteneces a un negocio o tienes otra solicitud pendiente; tope de 25 pendientes por
+    negocio. **No escribe nada en el User**: el solicitante sigue siendo `customer`.
+  - `approve`: sesión (401) -> registro almacenado del llamante, módulo 22 (403) -> rol
+    `business_admin` o plataforma -> relee la solicitud ALMACENADA y exige que sea de su
+    negocio (otra o inexistente = 404 sin oráculo) -> rol elegido contra lista blanca
+    (`business_admin`, `staff`; nunca `admin`/owner/customer) -> licencia (`write_blocked`)
+    -> asientos de personal contra `licensed_user_limit` -> relee al solicitante (409 si ya
+    tiene negocio) -> tienda validada contra el negocio -> escribe role/app_role/business_id.
+  - `reject` y `cancel` (sólo el propio solicitante).
+- UI: `Onboarding.jsx` ("Trabajo en un negocio", código -> pantalla "Solicitud enviada,
+  esperando aprobación" que sobrevive a recargar porque sale de la base; consulta cada 15 s y
+  al aprobarse redirige por rol; puede cancelar; si la rechazan se avisa). `BusinessUsers.jsx`:
+  sección "Solicitudes para unirse" con selector de rol (y tienda) y Aprobar/Rechazar.
+
+**Decisiones de producto tomadas (default más seguro):**
+- Asientos: el servidor cuenta sólo personal (`business_admin` + `merchant`), no clientes;
+  la UI de `BusinessUsers` sigue contando `User` del negocio (incluye clientes): no se tocó.
+- Permiso: como `manageTeamMember`, exige rol `business_admin` (no consulta overrides de
+  `PermissionProfile`; `users:update_role` no está espejada aquí).
+- Un cliente que ya se unió a una tienda tiene `business_id` y por tanto recibe 409 al pedir
+  unirse como personal (mismo comportamiento que `acceptInvitation`/`createBusiness`).
+- El solicitante rechazado ve un aviso y puede volver a intentar.
+
+**Hallazgos NO cerrados (anotados):**
+- Los clientes del negocio leen la fila `Business` (RLS de lectura por `id` sin rol), así
+  que ven `invite_code`. Ahora es sólo una solicitud que el admin debe aprobar, pero el código
+  ya no es secreto frente a clientes. No se cambió esa regla (aflojar/estrechar lecturas de
+  `Business` rompe pantallas de cliente); si se quiere, es un candado de lectura por campo.
+- `BusinessSettings.jsx` genera el código con `Math.random` en el navegador (6 caracteres).
+  Con aprobación el riesgo es bajo; mejor moverlo al servidor con `crypto`.
+- No hay límite de intentos de adivinar códigos (`request` con código inválido no crea filas).
+
+### Qué NO se pudo verificar
+- Una sesión real: registro con correo real y llegada del código, login con correo sin
+  verificar (la detección es regex sobre el mensaje de Base44, no probada con la respuesta real),
+  ni el flujo solicitar -> aprobar con dos cuentas de dos negocios.
+- Que Base44 acepte el `create/update/delete` de una sola rama `{"user_condition":...}` sin `$or`
+  (validate:rls lo acepta; otras entidades del portafolio lo usan así).
+- Deploy: nada se publicó; `deno check` de la función sólo da el ruido de tipos del SDK
+  (`Property 'X' does not exist on type '{}'`), igual que el resto de funciones.
+- `npm run typecheck` no está en CI y ya fallaba (~970 errores); esta rama suma ~35 del mismo
+  tipo (props de shadcn en JSX).
+
+### Qué desplegar, y en qué orden
+1. `npm run deploy:entities` (destructivo: pide escribir "Puntos+"): añade `JoinRequest`. **Antes**
+   de las funciones y el sitio: la función escribe una entidad que aún no existe.
+   Releer con `list_entity_schemas` que `JoinRequest` tiene la RLS del `.jsonc`.
+2. `npm run deploy` (función `manageJoinRequest`; 26/40) y Publish. Comprobar por
+   comportamiento: `{action:'x'}` debe responder 400 `Acción inválida`, no 404.
+3. `npm run deploy:site` (Login, Register, Onboarding, Equipo).
+4. Probar con dos cuentas: una que redima el código y una `business_admin` que apruebe.
