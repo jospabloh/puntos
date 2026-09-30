@@ -39,6 +39,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Un usuario, un negocio (módulo 22: lectura FRESCA). Esta función ESCRIBE
+    // role/business_id del llamante como 'customer' de la tienda pedida. Sin este
+    // freno, un business_admin o cajero (p. ej. aprobado por solicitud o
+    // invitación, que no tienen LoyaltyAccount todavía) podía pasar el id de una
+    // tienda de OTRO negocio y quedar degradado a cliente de ese negocio,
+    // perdiendo el suyo. La creadora de un negocio ya tiene cuenta (409 arriba),
+    // pero el resto no. El dueño de plataforma (admin) queda exento.
+    const callerNow = await resolveCaller(base44, user);
+    if (!callerNow) return unresolvedCallerResponse();
+    const pendingStore = body?.store?.id ? await base44.asServiceRole.entities.Store.get(body.store.id).catch(() => null) : null;
+    if (
+      callerNow.role !== 'admin' && callerNow.businessId &&
+      (callerNow.role !== 'customer' || callerNow.businessId !== pendingStore?.business_id)
+    ) {
+      return Response.json({ error: 'Ya perteneces a un negocio.' }, { status: 409 });
+    }
+
     // Server-generated QR token.
     const bytes = new Uint8Array(9);
     crypto.getRandomValues(bytes);

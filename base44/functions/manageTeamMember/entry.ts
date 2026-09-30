@@ -60,6 +60,14 @@ Deno.serve(async (req) => {
 
     const targetBusinessId = pick(target, 'business_id');
     if (!isOwner) {
+      // Un admin de negocio no toca a otro negocio ni al dueño de plataforma, y
+      // no se degrada ni se da de baja a sí mismo: dejaría el negocio sin
+      // administrador (solo otro admin o la plataforma cambian a un creador).
+      if (pick(target, 'role') === 'admin' || (op !== 'assignStore' && (target.id === callerId.id || userId === callerId.id))) {
+        return Response.json({ error: 'No autorizado' }, { status: 403 });
+      }
+    }
+    if (!isOwner) {
       if (!actorBusinessId || targetBusinessId !== actorBusinessId) {
         return Response.json({ error: 'El usuario no pertenece a tu negocio' }, { status: 403 });
       }
