@@ -3,34 +3,42 @@
   "name": "Business",
   "properties": {
     "activated_by_admin": {
-      "description": "Operador de ACACIA que activó la licencia (rastro de auditoría). BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino puede firmar su propia activación.",
-      "type": "string",
-      "rls": { "write": false }
+      "description": "Operador de ACACIA que activ\u00f3 la licencia (rastro de auditor\u00eda). BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino puede firmar su propia activaci\u00f3n.",
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "activation_notes": {
-      "description": "Notas internas de la activación de la licencia. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino puede reescribir el motivo por el que se le activó.",
-      "type": "string",
-      "rls": { "write": false }
+      "description": "Notas internas de la activaci\u00f3n de la licencia. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino puede reescribir el motivo por el que se le activ\u00f3.",
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "address": {
       "description": "Direcci\u00f3n",
       "type": "string"
     },
     "archived_at": {
-      "description": "Fecha en que Mission Control archivó al inquilino. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino archivado se desarchiva solo borrando esta fecha.",
+      "description": "Fecha en que Mission Control archiv\u00f3 al inquilino. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino archivado se desarchiva solo borrando esta fecha.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "auto_renewal": {
-      "description": "Si la licencia se renueva automáticamente por Mercado Pago. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino se activa la renovación automática sin haberla contratado.",
       "default": false,
-      "type": "boolean",
-      "rls": { "write": false }
+      "description": "Si la licencia se renueva autom\u00e1ticamente por Mercado Pago. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino se activa la renovaci\u00f3n autom\u00e1tica sin haberla contratado.",
+      "rls": {
+        "write": false
+      },
+      "type": "boolean"
     },
     "billing_status": {
-      "description": "ESTADO DE LA LICENCIA — el campo del que toda la app deriva isSuspended/isTrial (src/lib/useTenant.js, deriveLicense) y el que corta el acceso de escritura de un inquilino moroso. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino suspendido vuelve a 'active' con una sola llamada del SDK desde el navegador y recupera el POS, los canjes y el alta de tiendas sin pagar. Es el bloqueo más importante de esta entidad.",
       "default": "trial",
+      "description": "ESTADO DE LA LICENCIA \u2014 el campo del que toda la app deriva isSuspended/isTrial (src/lib/useTenant.js, deriveLicense) y el que corta el acceso de escritura de un inquilino moroso. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino suspendido vuelve a 'active' con una sola llamada del SDK desde el navegador y recupera el POS, los canjes y el alta de tiendas sin pagar. Es el bloqueo m\u00e1s importante de esta entidad.",
       "enum": [
         "trial",
         "active",
@@ -38,8 +46,10 @@
         "suspended",
         "archived"
       ],
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "city": {
       "description": "Ciudad",
@@ -66,50 +76,62 @@
       "type": "string"
     },
     "license_activated_at": {
-      "description": "Fecha de activación de la licencia vigente. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino falsea desde cuándo tiene licencia.",
+      "description": "Fecha de activaci\u00f3n de la licencia vigente. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino falsea desde cu\u00e1ndo tiene licencia.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "license_cycle": {
-      "description": "Ciclo de facturación contratado (mensual o anual). BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino se cambia a anual sin pagarlo.",
       "default": "monthly",
+      "description": "Ciclo de facturaci\u00f3n contratado (mensual o anual). BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino se cambia a anual sin pagarlo.",
       "enum": [
         "monthly",
         "annual"
       ],
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "license_expires_at": {
-      "description": "Vencimiento de la licencia; el cron de Mission Control lo lee para transicionar billing_status. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino se prorroga solo empujando la fecha hacia adelante.",
+      "description": "Vencimiento de la licencia; el cron de Mission Control lo lee para transicionar billing_status. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino se prorroga solo empujando la fecha hacia adelante.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "license_plan": {
-      "description": "Plan contratado; de él salen los límites de usuarios y tiendas. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino se sube de starter a enterprise sin pagarlo.",
       "default": "starter",
+      "description": "Plan contratado; de \u00e9l salen los l\u00edmites de usuarios y tiendas. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino se sube de starter a enterprise sin pagarlo.",
       "enum": [
         "starter",
         "growth",
         "pro",
         "enterprise"
       ],
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "licensed_store_limit": {
-      "description": "Número de tiendas que el plan permite. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino se levanta el tope y crea tiendas fuera de su plan.",
       "default": 1,
-      "type": "number",
-      "rls": { "write": false }
+      "description": "N\u00famero de tiendas que el plan permite. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino se levanta el tope y crea tiendas fuera de su plan.",
+      "rls": {
+        "write": false
+      },
+      "type": "number"
     },
     "licensed_user_limit": {
-      "description": "Número de usuarios que el plan permite. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino se levanta el tope y suma equipo fuera de su plan.",
       "default": 2,
-      "type": "number",
-      "rls": { "write": false }
+      "description": "N\u00famero de usuarios que el plan permite. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino se levanta el tope y suma equipo fuera de su plan.",
+      "rls": {
+        "write": false
+      },
+      "type": "number"
     },
     "logo_url": {
       "description": "URL del logotipo",
@@ -131,9 +153,11 @@
       "type": "string"
     },
     "payment_reference": {
-      "description": "Referencia del pago que respalda la licencia (Mercado Pago u operación manual). BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino inventa la referencia de un pago que nunca hizo.",
-      "type": "string",
-      "rls": { "write": false }
+      "description": "Referencia del pago que respalda la licencia (Mercado Pago u operaci\u00f3n manual). BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino inventa la referencia de un pago que nunca hizo.",
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "phone": {
       "description": "Tel\u00e9fono",
@@ -149,46 +173,67 @@
       "type": "string"
     },
     "scheduled_delete_at": {
-      "description": "Fecha en que Mission Control borrará al inquilino tras su baja. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino cancela su propio borrado programado.",
+      "description": "Fecha en que Mission Control borrar\u00e1 al inquilino tras su baja. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino cancela su propio borrado programado.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "state": {
       "description": "Estado",
       "type": "string"
     },
     "status": {
-      "description": "Estado operativo del inquilino (active/suspended); se lee junto a billing_status en canTenantWrite(). BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino suspendido se reactiva por esta segunda vía aunque billing_status siga bloqueado.",
       "default": "active",
+      "description": "Estado operativo del inquilino (active/suspended); se lee junto a billing_status en canTenantWrite(). BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino suspendido se reactiva por esta segunda v\u00eda aunque billing_status siga bloqueado.",
       "enum": [
         "active",
         "suspended"
       ],
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "support_contacted_at": {
       "format": "date-time",
       "type": "string"
     },
+    "tenant_id": {
+      "description": "Copia del propio id del negocio (tenant_id == id). Existe porque la regla RLS read/update contra el id interno ({\"id\": \"{{user.data.business_id}}\"}) no empareja y devuelve [] / 404 al propio due\u00f1o, mientras que una regla sobre un campo data.* con la misma plantilla s\u00ed empareja: read/update aceptan adem\u00e1s {\"data.tenant_id\": \"{{user.data.business_id}}\"}. Lo fija el servicio justo despu\u00e9s de crear el negocio (createBusiness / alta de plataforma) y se rellen\u00f3 a los existentes. BLOQUEO DE ESCRITURA (solo admin de plataforma): sin \u00e9l, un business_admin podr\u00eda apuntarlo al id de otro negocio y leerlo.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      },
+      "type": "string"
+    },
     "trial_end_at": {
-      "description": "Fin del periodo de prueba de 30 días, fijado al crear el inquilino. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, la prueba es infinita: el inquilino empuja la fecha cada vez que se acerca.",
+      "description": "Fin del periodo de prueba de 30 d\u00edas, fijado al crear el inquilino. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, la prueba es infinita: el inquilino empuja la fecha cada vez que se acerca.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "trial_start_at": {
-      "description": "Inicio del periodo de prueba, fijado al crear el inquilino. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino reinicia su prueba moviendo esta fecha.",
+      "description": "Inicio del periodo de prueba, fijado al crear el inquilino. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino reinicia su prueba moviendo esta fecha.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     },
     "view_only_since": {
-      "description": "Desde cuándo el inquilino está en solo-lectura por falta de pago. BLOQUEO DE ESCRITURA (rls.write:false) — módulo 1 del estándar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la función licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta — lo único que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin él, un inquilino borra la marca de su propia degradación.",
+      "description": "Desde cu\u00e1ndo el inquilino est\u00e1 en solo-lectura por falta de pago. BLOQUEO DE ESCRITURA (rls.write:false) \u2014 m\u00f3dulo 1 del est\u00e1ndar ACACIA, reforzado el 2026-08-21. Lo escribe SOLO Mission Control, por servicio (cron de licencias o la funci\u00f3n licensesAdmin), nunca el cliente. Gobierna la ESCRITURA, no la lectura: quitarlo no cambia ni un byte de lo que devuelve una consulta \u2014 lo \u00fanico que habilita es que el business_admin del propio inquilino, que ya tiene update sobre su fila de Business, se edite su propia licencia. Sin \u00e9l, un inquilino borra la marca de su propia degradaci\u00f3n.",
       "format": "date-time",
-      "type": "string",
-      "rls": { "write": false }
+      "rls": {
+        "write": false
+      },
+      "type": "string"
     }
   },
   "required": [
@@ -211,6 +256,9 @@
           "id": "{{user.data.business_id}}"
         },
         {
+          "data.tenant_id": "{{user.data.business_id}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
@@ -228,6 +276,18 @@
             },
             {
               "id": "{{user.data.business_id}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "role": "business_admin"
+              }
+            },
+            {
+              "data.tenant_id": "{{user.data.business_id}}"
             }
           ]
         },
