@@ -146,6 +146,28 @@ record carries yet, so they are inert until data is populated and **no existing
 access narrows**. This is the safe way to migrate live RLS (see StockFlow's
 CLAUDE.md for the two outages caused by *narrowing* live rules).
 
+## Business.tenant_id: el dueño no lee su propio negocio por `id` (2026-10-01)
+
+La regla RLS `read`/`update` de `Business` sobre el `id` interno
+(`{"id": "{{user.data.business_id}}"}`) no empareja: devuelve `[]` (lista) y 404
+(get) AL PROPIO DUEÑO. Síntoma: `/BusinessSettings` queda en "Cargando negocio…",
+`/BusinessUsers` muestra el código de invitación vacío y `useTenant` no recibe ni
+licencia ni trial. Una regla sobre un campo `data.*` con la misma plantilla SÍ
+empareja, así que `Business` tiene `tenant_id` (== `id`) y `read`/`update` aceptan
+además `{"data.tenant_id": "{{user.data.business_id}}"}` (en `update`, dentro del
+`$and` con `business_admin`). Se conserva la rama `id`.
+
+- **Candado de campo**: `tenant_id` lleva `rls.write: {user_condition:{role:admin}}`.
+  Sin él un `business_admin` lo apuntaría al id de otro negocio y lo leería.
+- **Quien crea un `Business` fija `tenant_id = id`** justo después (service role):
+  `createBusiness` (antes de promover al usuario; si falla borra el negocio) y
+  `licensesAdmin` `create_tenant` (alta desde Mission Control). Cualquier camino
+  nuevo que cree `Business` debe hacer lo mismo.
+- **Relleno**: los negocios previos se rellenaron con `update_entities`
+  `{"$set":{"tenant_id": id}}`.
+- **Cómo probarlo**: léelo como el dueño de un negocio recién creado (cuenta
+  nueva, `entities/Business` con su token): debe devolver SOLO su negocio.
+
 ## Guard
 
 `npm run validate:rls` parses every `base44/entities/*.jsonc` and fails on any

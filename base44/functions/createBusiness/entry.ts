@@ -110,6 +110,20 @@ Deno.serve(async (req) => {
       primary_color: '#7c3aed',
     });
 
+    // 1b) tenant_id = id. Business RLS read/update on the built-in `id` does not
+    // match the owner (returns [] / 404); a `data.tenant_id` rule with the same
+    // template does. Set it now, before anything else points at this tenant; if
+    // it fails, drop the tenant so none is left half-made. See CLAUDE.md
+    // "Business.tenant_id".
+    try {
+      await base44.asServiceRole.entities.Business.update(business.id, { tenant_id: business.id });
+      business.tenant_id = business.id;
+    } catch (e) {
+      console.error('Failed to set Business.tenant_id:', (e as Error)?.message);
+      try { await base44.asServiceRole.entities.Business.delete(business.id); } catch (_) { /* best effort */ }
+      return Response.json({ error: 'Failed to create business' }, { status: 500 });
+    }
+
     // 2) First store under the tenant.
     const store = await base44.asServiceRole.entities.Store.create({
       name: storeName,
