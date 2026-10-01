@@ -132,6 +132,16 @@ Deno.serve(async (req) => {
       if (!payload.name) return fail(400, 'name es obligatorio.');
 
       const created = await base44.asServiceRole.entities.Business.create(payload);
+      // tenant_id = id so the tenant's own read/update RLS matches (see CLAUDE.md
+      // "Business.tenant_id"). Undo the create if it fails: no half-made tenants.
+      try {
+        await base44.asServiceRole.entities.Business.update(created.id, { tenant_id: created.id });
+        created.tenant_id = created.id;
+      } catch (e) {
+        console.error('Failed to set Business.tenant_id:', (e as Error)?.message);
+        try { await base44.asServiceRole.entities.Business.delete(created.id); } catch (_) { /* best effort */ }
+        return fail(500, 'No se pudo crear el negocio.');
+      }
       if (event) {
         await base44.asServiceRole.entities.LicenseEvent.create({
           ...pick(event, EVENT_FIELDS),
