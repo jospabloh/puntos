@@ -121,10 +121,20 @@ export default function BusinessUsers() {
   const choiceFor = (id) => requestChoices[id] || { role: 'staff', storeId: '' };
   const setChoice = (id, patch) => setRequestChoices((c) => ({ ...c, [id]: { ...choiceFor(id), ...patch } }));
 
+  // Lee el equipo vía manageTeamMember (op 'list'), no User.filter directo:
+  // la entidad User no lleva rls.read propio, así que corre el default de
+  // Base44 (sólo la propia fila) y la consulta por SDK del admin nunca veía a
+  // nadie más — "Miembros del equipo: 0" tras aprobar a alguien por código.
+  // El negocio lo deriva el servidor del propio llamante; businessId sólo
+  // habilita/invalida esta query en el cliente.
   const teamQuery = useQuery({
     queryKey: ['biz-team', businessId],
     enabled: !!businessId && ready,
-    queryFn: () => base44.entities.User.filter({ business_id: businessId }),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('manageTeamMember', { op: 'list' });
+      if (!res?.data?.ok) throw new Error(res?.data?.error || 'No se pudo cargar el equipo');
+      return res.data.users || [];
+    },
   });
   const invitesQuery = useQuery({
     queryKey: ['biz-invites', businessId],
