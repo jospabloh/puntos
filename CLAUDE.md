@@ -1579,6 +1579,8 @@ a compartir" pero **nada lo redimía**. Se construyó la ruta con aprobación:
 **Decisiones de producto tomadas (default más seguro):**
 - Asientos: el servidor cuenta sólo personal (`business_admin` + `merchant`), no clientes;
   la UI de `BusinessUsers` sigue contando `User` del negocio (incluye clientes): no se tocó.
+  (Cómo lee esa cuenta la propia UI sí se tocó después — ver "`BusinessUsers.jsx` mostraba
+  'Miembros del equipo: 0'..." más abajo, 2026-10-02.)
 - Permiso: como `manageTeamMember`, exige rol `business_admin` (no consulta overrides de
   `PermissionProfile`; `users:update_role` no está espejada aquí).
 - Un cliente que ya se unió a una tienda tiene `business_id` y por tanto recibe 409 al pedir
@@ -1613,3 +1615,62 @@ a compartir" pero **nada lo redimía**. Se construyó la ruta con aprobación:
    comportamiento: `{action:'x'}` debe responder 400 `Acción inválida`, no 404.
 3. `npm run deploy:site` (Login, Register, Onboarding, Equipo).
 4. Probar con dos cuentas: una que redima el código y una `business_admin` que apruebe.
+
+## `BusinessUsers.jsx` mostraba "Miembros del equipo: 0" tras aprobar por código (cerrado 2026-10-02)
+
+Hallazgo que quedó anotado y sin cerrar en la sección del 2026-09-30 ("la UI de
+`BusinessUsers` sigue contando `User` del negocio... no se tocó"): tras aprobar
+una `JoinRequest` (cualquier rol), `/BusinessUsers` seguía en "Miembros del
+equipo: 0 personas" / "Asientos usados 0" aunque `User` ya tuviera 2+ filas con
+ese `business_id`.
+
+**Causa confirmada en vivo** (cuenta de negocio real de QA, no sólo lectura de
+esquema): `BusinessUsers.jsx` leía `base44.entities.User.filter({business_id})`
+**directo por SDK**, como el propio `business_admin`. La entidad `User` de este
+repo no lleva `rls` propio (`list_entity_schemas` lo confirma — a diferencia de
+`Business`/`JoinRequest`, que sí llevan `read`/`update`/`create`/`delete`), así
+que corre el default de Base44 para `User`: la llamada entera se rechaza con
+**403** `Permission denied for list operation on User entity` / `Only
+collaborators can view the list of users` — no es una RLS que filtra a cero
+filas en silencio, es la plataforma negando la operación completa a cualquier
+no-colaborador. React Query trata la promesa rechazada como "sin datos" y
+`team = teamQuery.data || []` renderiza 0. Mismo mensaje de error, mismo
+mecanismo, que `jospabloh/rumbo` documentó en `manageMember.listUsers`.
+
+Reproducido con dos cuentas nuevas (ver "Qué se probó" abajo): negocio con
+**2** filas `User` confirmadas (`business_admin` + `merchant`/staff recién
+aprobado), y el mismo `GET .../entities/User?q={business_id}` como el
+`business_admin` del negocio devolviendo 403 en vez de las dos filas.
+
+**Arreglo:** nueva acción `list` en `base44/functions/manageTeamMember` (no se
+sumó un endpoint nuevo: sigue en 26/40). Mismo guardia que `setRole`/
+`assignStore`/`remove` (owner de plataforma o `business_admin`, inquilino
+releído de `resolveCaller`, nunca del cuerpo); lista por **service role**
+(`sr.entities.User.filter({business_id: actorBusinessId})` — el mismo filtro
+que `manageJoinRequest` ya usa para contar asientos, confirmado que SÍ
+funciona por service role, a diferencia del `data.tenant_id` de rumbo que
+necesitó listar todo y filtrar en memoria) y devuelve sólo los campos que la
+UI necesita. `BusinessUsers.jsx` cambia su `teamQuery` para invocar
+`manageTeamMember` con `{op:'list'}` en vez de `User.filter` directo.
+
+**Qué se probó en vivo** (cuentas de QA nuevas, ninguna cuenta real tocada):
+- Dueña: `h.josepablo+qa0930puntosmembers@gmail.com` / `QaTest0930!x` — registro
+  + OTP por correo real (Gmail), `createBusiness` → negocio "QA Members 0930"
+  (`id 6abffa2063323b683c72098a`, código `XGBWE7`), queda `business_admin`.
+- Miembro: `h.josepablo+qa0930puntosmembers2@gmail.com` / `QaTest0930!x` —
+  registro + OTP, `manageJoinRequest {action:'request', code:'XGBWE7'}`,
+  aprobado por la dueña (`{action:'approve', role:'staff'}`) → queda `merchant`/
+  `staff` con el `business_id` del negocio.
+- Antes del deploy del fix: `GET .../entities/User?q={business_id}` como la
+  dueña → **403** (causa confirmada, ver arriba).
+- Después de desplegar (`github/sync` + `deploy`): `manageTeamMember
+  {op:'list'}` como la dueña → `200 {ok:true, users:[...]}` con **2** filas
+  (ella + el miembro aprobado), con `role`/`store_name` correctos. Detalle de
+  esta verificación puntual (fecha/resultado exacto) en el historial de PRs de
+  este repo si se necesita repetirla.
+
+**No se tocó**: ninguna cuenta ni negocio real; las dos cuentas de arriba son
+de prueba, creadas para este hallazgo. `npm run lint` (eslint + validate:rls +
+validate:permissions + validate:functions), `npm run build` y `npx tsc` (mismo
+conteo de errores preexistente, ninguno nuevo) pasan. `deno`/un runner de test
+no disponibles en este sandbox — sin cambios en `base44/shared/`, no aplica.

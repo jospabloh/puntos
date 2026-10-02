@@ -1,22 +1,39 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { resolveCaller, unresolvedCallerResponse } from '../../shared/callerIdentity.ts';
 
-// manageTeamMember — a tenant manager changes a team member's role/store, or
-// removes them. This replaces the client writing User.role/store directly, which
-// (with no User write-RLS) let anyone self-escalate. Here the service role makes
-// the change ONLY after verifying the actor manages the target's tenant, and the
-// requested role is never `admin`.
+// manageTeamMember — a tenant manager changes a team member's role/store,
+// removes them, or (op 'list') reads the team roster itself. This replaces the
+// client writing User.role/store directly, which (with no User write-RLS)
+// let anyone self-escalate. Here the service role makes the change ONLY after
+// verifying the actor manages the target's tenant, and the requested role is
+// never `admin`.
 //
 // El registro User ES la pertenencia: un usuario pertenece a un solo negocio.
 // Antes existia una fila espejo aparte que habia que sincronizar en cada op --
 // si se olvidaba, el selector de negocio devolvia el acceso recien revocado.
 // Ese selector se retiro (2026-09-10) y con el la fila espejo, asi que limpiar
 // el User es ahora toda la revocacion.
+//
+// 'list' (hallazgo 2026-10-02, BusinessUsers.jsx mostraba "0 personas" tras
+// aprobar a alguien por código): la entidad `User` de este repo NO lleva
+// `rls.read` propio (ver list_entity_schemas) — corre el default de Base44,
+// que sólo deja ver la propia fila. `BusinessUsers.jsx` leía
+// `base44.entities.User.filter({business_id})` directo por SDK como el
+// business_admin de turno, así que el único miembro que esa consulta podía
+// devolver, si acaso, era el propio admin: el conteo de equipo/asientos nunca
+// reflejaba a nadie que se acabara de aprobar. Mismo patrón ya resuelto para
+// `Business`/listUsers en otras apps del portafolio (rumbo:
+// `manageMember.listUsers`). El filtro por `business_id` contra `User` SÍ
+// funciona por service role — `manageJoinRequest` ya lo usa así para contar
+// asientos (línea ~150 de ese archivo) — así que no hace falta el fallback de
+// "listar todo y filtrar en memoria" que rumbo necesitó para su campo
+// `data.tenant_id`.
 function pick(u: any, key: string) {
   return u?.[key] ?? u?.data?.[key];
 }
 
 const ASSIGNABLE_ROLES = ['business_admin', 'merchant', 'customer'];
+const OPS = ['list', 'setRole', 'assignStore', 'remove'];
 
 Deno.serve(async (req) => {
   try {
@@ -39,15 +56,37 @@ Deno.serve(async (req) => {
     if (!isOwner && !isTenantAdmin) return Response.json({ error: 'No autorizado' }, { status: 403 });
 
     const body = await req.json().catch(() => ({}));
-    const op = body?.op; // 'setRole' | 'assignStore' | 'remove'
-    const userId = body?.userId;
-    if (!userId) return Response.json({ error: 'userId es obligatorio' }, { status: 400 });
-    if (!['setRole', 'assignStore', 'remove'].includes(op)) {
+    const op = body?.op; // 'list' | 'setRole' | 'assignStore' | 'remove'
+    if (!OPS.includes(op)) {
       return Response.json({ error: 'op inválida' }, { status: 400 });
     }
 
     const sr = base44.asServiceRole;
     const actorBusinessId = callerId.businessId;
+
+    // 'list' — el equipo del PROPIO negocio del llamante, nunca de otro y
+    // nunca de un businessId en el cuerpo (el inquilino sale siempre de
+    // callerId, releído por resolveCaller). El dueño de plataforma no tiene
+    // negocio propio y BusinessUsers.jsx no dispara esta consulta para él
+    // (su `user.business_id` viene vacío), así que no hace falta una ruta de
+    // "ver el equipo de un negocio ajeno" aquí.
+    if (op === 'list') {
+      if (!actorBusinessId) return Response.json({ error: 'No perteneces a ningún negocio' }, { status: 400 });
+      const rows = await sr.entities.User.filter({ business_id: actorBusinessId });
+      const users = (Array.isArray(rows) ? rows : []).map((u: any) => ({
+        id: u.id,
+        email: u.email || '',
+        full_name: u.full_name || '',
+        role: pick(u, 'role') || 'customer',
+        store_id: pick(u, 'store_id') || pick(u, 'storeId') || '',
+        store_name: pick(u, 'store_name') || '',
+        last_active_at: pick(u, 'last_active_at') || null,
+      }));
+      return Response.json({ ok: true, users });
+    }
+
+    const userId = body?.userId;
+    if (!userId) return Response.json({ error: 'userId es obligatorio' }, { status: 400 });
 
     // Load the target and confirm the actor may manage them.
     let target;
