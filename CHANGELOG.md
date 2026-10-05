@@ -5,6 +5,71 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.23] — 2026-10-05 — Auditoría programada: manual desactualizado tras el retiro del selector de negocio
+
+Auditoría completa programada de portafolio. Estado previo a esta pasada: CI y
+`Production smoke test` en verde en los últimos días (runs #46-49), sin PRs
+abiertas, `npm audit` en 2 avisos moderados (`react-router`, diferido desde el
+2026-08-31). Verificado contra el esquema desplegado (`list_entity_schemas`,
+19 entidades): **cero drift** campo por campo entre `base44/entities/*.jsonc`
+y producción — y `Membership` (retirada en el módulo 18, 2026-09-10) **ya no
+aparece** en el esquema desplegado, confirmando que el `deploy:entities`
+destructivo que llevaba semanas pendiente finalmente se corrió.
+
+### Fixed
+- **`docs/USER_MANUAL.md` y `src/lib/manual.js` describían una función
+  retirada hace casi un mes.** El módulo 18 (2026-09-10) quitó el selector de
+  negocio porque el modelo pasó a "un usuario, un negocio" — pero el manual de
+  usuario seguía diciendo "Pertenezco a más de un negocio. ¿Cómo cambio? Con
+  el selector de negocio en la barra lateral..." y "también puedes unirte a
+  otro negocio con un código de invitación sin salir del que ya tienes",
+  describiendo un control que ya no existe y una capacidad (pertenecer a dos
+  negocios) que `createBusiness`/`acceptInvitation` responden con 409 desde
+  ese mismo módulo. Reemplazado por la respuesta real: una cuenta, un negocio.
+  De paso, ni `docs/USER_MANUAL.md` ni `src/lib/manual.js` mencionaban el paso
+  de verificación por código de 6 dígitos ni la unión por código con
+  aprobación del admin, los dos añadidos en v2.0.22 (6 días antes de esta
+  pasada) — las tres secciones afectadas (Signing In, Onboarding, Team
+  Management/Equipo) se actualizaron en los dos archivos.
+- **4 avisos de dependencias con parche no disruptivo** (`brace-expansion`,
+  `dompurify`, `moment` — `npm audit fix` sin `--force`; sólo cambió
+  `package-lock.json`). Quedan 2 avisos: `braces`/`chokidar`/`tailwindcss` sin
+  parche disponible (dependencia de build, no procesa datos de usuario) y
+  `react-router` (necesita el salto mayor v6→v7, diferido a propósito desde
+  el 2026-08-31 — mismo criterio, no forzarlo dentro de una pasada
+  desatendida).
+
+### Sin hallazgos nuevos
+RLS (19 entidades, 0 drift), `validate:permissions` (11 claves espejadas),
+`validate:functions` (26/40, sin huérfanas — las 26 funciones desplegadas
+están todas en uso o declaradas hook/cron), `check:secrets`, barrido de
+`console.log`/`debugger`/`TODO`/`dangerouslySetInnerHTML` (los mismos tres
+casos intencionales de siempre: el log de PassKit, la palabra española
+"TODO" en un comentario, y `chart.jsx` de shadcn/ui). El único archivo de
+test del repo (`base44/shared/joinRequestRules.test.ts`, módulo 9) sigue
+pasando sus 6 casos — corrido con `deno test` bajado directo desde la
+release de GitHub, mismo método que módulos anteriores ya documentaron que
+sí funciona en este sandbox.
+
+### No verificado
+Una sesión de navegador autenticada (sin credenciales de sesión Base44 en
+este entorno): no se pudo confirmar visualmente que las pantallas de
+Onboarding/Equipo se vean como el manual ahora las describe, aunque el
+código fuente leído coincide palabra por palabra con lo escrito. El módulo 9
+(cobertura de QA automatizada más allá de las reglas de `JoinRequest`) sigue
+siendo el mismo hueco nombrado desde v2.0.20, sin abordar aquí por ser cambio
+de alcance propio.
+
+### Housekeeping
+Cuatro negocios de prueba (`QA Members 0930`, `QA1001CafeK`, `QA0930CafeV`,
+más el sandbox real del dueño) y sus usuarios de QA siguen en la base de
+datos en vivo, acumulados de auditorías anteriores (2026-09-30 a 2026-10-02).
+No se tocaron en esta pasada — borrar cuentas/negocios reales o de prueba es
+una acción irreversible sobre datos en vivo que no estaba pedida, así que se
+deja anotada para quien decida si vale la pena limpiarlos.
+
+---
+
 ## [2.0.22] — 2026-09-30 — Verificación de correo por código y unión al equipo con aprobación
 
 - **Registro/Login con correo:** `Login.jsx` llamaba a `base44.auth.login` (no existe

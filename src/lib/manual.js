@@ -95,7 +95,7 @@ export const MANUAL = [
       },
       {
         q: '¿Cómo invito a alguien a mi equipo?',
-        a: 'En "Equipo" envías una invitación por correo o compartes el código de tu negocio. Al aceptarla, la persona entra con el rol que definiste. Puedes cambiarle el rol, asignarle una tienda o quitarle el acceso desde esa misma pantalla, y el cambio es inmediato.',
+        a: 'Dos formas, en "Equipo": una invitación por correo con el rol ya definido (al aceptarla, entra de inmediato con ese rol), o compartir el código de tu negocio (quien lo usa queda en "Solicitudes para unirse", esperando que tú elijas su rol y apruebes). Puedes cambiarle el rol, asignarle una tienda o quitarle el acceso desde esa misma pantalla en cualquier momento.',
       },
       {
         q: '¿Qué puede hacer cada rol?',
@@ -110,8 +110,8 @@ export const MANUAL = [
         a: 'En "Bitácora": cada ajuste de puntos, cambio de rol y operación sensible, con autor y fecha.',
       },
       {
-        q: 'Pertenezco a más de un negocio. ¿Cómo cambio?',
-        a: 'Con el selector de negocio en la barra lateral. Cambia el negocio activo, tu rol y tu tienda a lo que te corresponde en ese negocio, y recarga la pantalla. También puedes unirte a otro negocio con un código de invitación sin salir del que ya tienes.',
+        q: '¿Puedo pertenecer a más de un negocio?',
+        a: 'No: cada cuenta pertenece a un solo negocio. Si ya tienes uno y intentas crear otro o unirte con un código, la app te lo impide — así se evita perder acceso al negocio original. Si necesitas operar un segundo negocio, usa una cuenta de correo distinta para él.',
       },
       {
         q: '¿Cómo reporto un problema o pido una mejora?',

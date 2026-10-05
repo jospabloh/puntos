@@ -47,7 +47,10 @@ There are four roles in Puntos+:
 
 ### Signing In
 - Visit the Puntos+ app and click **Iniciar Sesión**.
-- Authenticate through your configured identity provider.
+- Sign in with Google, or with email and password.
+- **New accounts verify by email code**: after registering with email and
+  password, enter the 6-digit code sent to your inbox to activate the account.
+  Didn't get it? Use **Reenviar código** to request a new one.
 - First-time users are redirected to the **Onboarding** flow.
 
 ### Persistent Sessions — "Continue As"
@@ -57,7 +60,7 @@ There are four roles in Puntos+:
 - Session state is kept synchronized across browser tabs automatically.
 
 ### Onboarding
-There are three onboarding paths:
+There are four onboarding paths:
 
 1. **Register a Business** — Create a new business and start a 30-day free trial.
    The server provisions your business, first store, and loyalty account with safe
@@ -66,6 +69,13 @@ There are three onboarding paths:
    your loyalty account to their program.
 3. **Accept a Team Invitation** — If a business admin has invited you, follow the
    link in the invitation email. Your role and business are set automatically.
+4. **Join a Business by Code ("Trabajo en un negocio")** — Enter the invitation
+   code a business admin gave you. This does **not** grant access right away:
+   it creates a join request that sits as **"Solicitud enviada, esperando
+   aprobación"** until the admin approves it and picks your role (Staff or
+   Business Admin) from the **Team / Users** page. The waiting screen survives
+   a page reload and checks for a decision automatically; if the admin rejects
+   the request instead, you're told and can try again with a different code.
 
 ---
 
@@ -338,6 +348,19 @@ Business admins can build and manage their team from **BusinessUsers**.
 - **Remove**: remove a member from your team. They lose access immediately.
 - **Revoke Invitation**: cancel a pending invitation before it is accepted
   (a confirmation dialog is shown).
+
+### Join Requests ("Solicitudes para unirse")
+When someone enters your business's invitation code from Onboarding, they show
+up here instead of joining right away:
+
+1. The **Solicitudes para unirse** section on **Team / Users** lists everyone
+   waiting on a decision.
+2. Pick a role (Staff or Business Admin) and, for Staff, a store, then
+   **Aprobar** — or **Rechazar** if the request isn't legitimate.
+3. Approving is seat-limited the same way invitations are: you cannot approve
+   past your plan's staff seat limit.
+4. The requester's screen updates on its own once you decide; a rejected
+   requester can submit a new request.
 
 ---
 
