@@ -31,6 +31,14 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // The message box is pinned to the bottom edge, which is where the corner theme
+  // switcher sits: while this page is open the switcher rides above the box
+  // instead of over the send button (see `data-fixed-composer` in index.css).
+  useEffect(() => {
+    document.documentElement.setAttribute('data-fixed-composer', '');
+    return () => document.documentElement.removeAttribute('data-fixed-composer');
+  }, []);
+
   useEffect(() => {
     loadUser();
   }, []);
@@ -207,9 +215,7 @@ PREGUNTA DEL USUARIO:
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
-        <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={business?.trial_end_at} />
-        </div>
+        <TrialBanner trialEndDate={business?.trial_end_at} />
       )}
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-16 z-40">

@@ -463,7 +463,7 @@ export default function AdminCampaigns() {
         )}
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Campañas" value={allCampaigns.length} icon={Sparkles} tone="violet" loading={loadingCampaigns} />
         <StatTile label="Campañas activas" value={activeCampaigns} icon={CheckCircle2} tone="emerald" loading={loadingCampaigns} />
         <StatTile label="Recompensas" value={allOffers.length} icon={Gift} tone="gold" loading={loadingOffers} />
@@ -486,11 +486,11 @@ export default function AdminCampaigns() {
       {/* Campaigns Tab */}
       {tab === 'campaigns' && (
         loadingCampaigns ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900" />)}
           </div>
         ) : allCampaigns.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {allCampaigns.map((campaign, i) => (
               <CampaignCard
                 key={campaign.id}
@@ -516,11 +516,11 @@ export default function AdminCampaigns() {
       {/* Offers Tab */}
       {tab === 'offers' && (
         loadingOffers ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900" />)}
           </div>
         ) : allOffers.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {allOffers.map((offer, i) => (
               <OfferCard
                 key={offer.id}

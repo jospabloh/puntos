@@ -214,11 +214,11 @@ export default function AdminStores() {
       </Toolbar>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((i) => <div key={i} className="h-44 animate-pulse rounded-2xl border border-slate-200/70 bg-white dark:bg-slate-900" />)}
         </div>
       ) : filteredStores.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
           {filteredStores.map((store, i) => (
             <StoreCard key={store.id} store={store} index={i} onEdit={handleEdit} onDelete={setStoreToDelete} onCopyCode={copyCode} />
           ))}

@@ -155,9 +155,7 @@ export default function History() {
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50 dark:bg-slate-900">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
-        <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={business?.trial_end_at} />
-        </div>
+        <TrialBanner trialEndDate={business?.trial_end_at} />
       )}
       {/* Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-16 z-40">

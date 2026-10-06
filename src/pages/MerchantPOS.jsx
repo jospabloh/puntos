@@ -282,9 +282,7 @@ export default function MerchantPOS() {
       />
 
       {showTrialBanner && (
-        <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={business?.trial_end_at} />
-        </div>
+        <TrialBanner trialEndDate={business?.trial_end_at} />
       )}
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white px-4 py-6">
