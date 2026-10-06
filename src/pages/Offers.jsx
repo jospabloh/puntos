@@ -220,9 +220,7 @@ Considera: que pueda pagar con sus puntos, variedad de categorías, mejor valor.
     <div className="min-h-screen pb-24 md:pb-8 bg-slate-50 dark:bg-slate-900">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
-        <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={business?.trial_end_at} />
-        </div>
+        <TrialBanner trialEndDate={business?.trial_end_at} />
       )}
       
       {/* Header */}

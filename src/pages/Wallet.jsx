@@ -104,9 +104,7 @@ export default function Wallet() {
     <div className="min-h-screen pb-24 md:pb-8">
       {isSuspended && <SuspendedAccountModal />}
       {!isSuspended && showTrialBanner && (
-        <div className="fixed top-16 left-0 right-0 z-40">
-          <TrialBanner trialEndDate={business?.trial_end_at} />
-        </div>
+        <TrialBanner trialEndDate={business?.trial_end_at} />
       )}
       {/* Header */}
       <div className="bg-gradient-to-br from-violet-600 via-purple-600 to-pink-600 px-4 pt-4 pb-32">

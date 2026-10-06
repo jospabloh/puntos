@@ -67,23 +67,20 @@ export default function OfferCard({
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
         {/* Category Badge */}
-        <div className="absolute bottom-3 left-3">
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
           <span className={cn(
-            "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium",
+            "inline-flex min-w-0 items-center gap-1 truncate px-2.5 py-1 rounded-full text-xs font-medium",
             category.color
           )}>
             {category.icon} {category.label}
           </span>
-        </div>
-
-        {/* Value Badge */}
-        {offer.value_mxn && (
-          <div className="absolute bottom-3 right-3">
-            <span className="bg-white/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full text-xs font-semibold">
+          {offer.value_mxn && (
+            <span className="shrink-0 whitespace-nowrap bg-white/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-full text-xs font-semibold">
               Valor: ${offer.value_mxn.toLocaleString()}
             </span>
-          </div>
-        )}
+          )}
+        </div>
+
       </div>
 
       {/* Content */}

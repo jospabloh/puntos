@@ -206,3 +206,10 @@
 @media (max-width: 767px) {
   :root { --theme-switcher-bottom: 5.5rem; }
 }
+/* Chat pins its message box to the bottom edge: lift the switcher above it so it
+   never sits on the send button (box = 4rem + 1rem padding, plus the tab bar on
+   phones). */
+:root[data-fixed-composer] { --theme-switcher-bottom: 6.5rem; }
+@media (max-width: 767px) {
+  :root[data-fixed-composer] { --theme-switcher-bottom: 10.5rem; }
+}

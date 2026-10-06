@@ -26,7 +26,7 @@ export default function AuthLayout({
       )}
     >
       {/* Columna del formulario */}
-      <div className="flex min-h-screen flex-col overflow-y-auto px-6 py-8 lg:min-h-0 lg:px-12">
+      <div className="flex min-h-screen flex-col overflow-y-auto px-6 pt-8 pb-24 lg:min-h-0 lg:px-12">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-500 shadow-lg shadow-violet-500/30">
             <Sparkles className="h-5 w-5 text-white" />

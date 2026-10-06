@@ -131,7 +131,7 @@ function Shell({ panel, children }) {
   return (
     <div className="flex min-h-screen bg-white dark:bg-slate-900">
       {panel}
-      <div className="relative flex flex-1 items-center justify-center overflow-y-auto px-5 py-8 sm:px-8">
+      <div className="relative flex flex-1 items-center justify-center overflow-y-auto px-5 pt-8 pb-24 sm:px-8">
         <div className="w-full max-w-md">{children}</div>
       </div>
     </div>
