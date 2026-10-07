@@ -26,7 +26,7 @@
           "then": "end",
           "with": {
             "args": {
-              "scheduled_token": "${ $secrets.SCHEDULED_TASK_SECRET }"
+              "scheduled_token": "sched_k1gAd-WlycDGfypwRCJpZHVT4ad4aGvR"
             },
             "function_name": "regenerateExpiredQR"
           }
