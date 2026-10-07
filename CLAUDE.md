@@ -1351,11 +1351,40 @@ arreglo está en `smoke.config.js` (`routes: ['./Login']`: la pantalla estable q
 el visitante de verdad ve, sin redirect), no en `smoke.spec.js`, que es canónico
 y no se edita aquí. Después: **6 de 6 pasos** y la suite completa, 6 passed.
 
-**Orden de despliegue, y es el único punto donde el orden importa:** (1) las 5
-funciones nuevas, (2) los workflows sin token (`args: {}`), (3) borrar
-`SCHEDULED_TASK_SECRET`. Al revés, cada paso rompe un cron. El valor puesto el
-2026-10-07 (prefijo `sched_`) quedó en `main` por los commits del bot; **está
-muerto en cuanto se borra el secreto** y no hay que rotarlo.
+**Cómo se hizo el despliegue (2026-10-07), y qué corrige de lo previsto.** El orden
+planeado era (1) funciones, (2) workflows sin token, (3) borrar el secreto. En la
+práctica **el paso 2 no es un paso: lo hace el merge.** Al llegar a `main`, Base44
+sincroniza los `.jsonc` de `base44/workflows/` al panel por su cuenta (los tres que
+leyeron — Resumen y Recordatorio — tenían `updated_date` 15:20:55–56, el minuto del
+merge, y `args: {}`; QR igual, con una versión nueva) — que
+es exactamente cómo el marcador de redacción llegó al panel el 1 de octubre. O sea
+que **el merge ya rompe los crons hasta que las funciones nuevas estén desplegadas**
+(el código viejo exige el token que el workflow ya no manda), y la ventana es lo
+que tarde `POST /github/sync` + `POST /deploy` tras mergear: aquí, minutos, pero no
+cero. La secuencia segura es **mergear y desplegar sin pausa**, no "desplegar y luego
+ya veremos". `POST /deploy` no dice si desplegó (devuelve `{"truncated":true}`): se
+comprobó por comportamiento, ver abajo.
+
+**Cómo comprobar que corre el código nuevo, sin esperar al cron:** `run-now` del
+workflow y leer `AuditLog` con `entity_type: ScheduledRun` — debe haber un reclamo
+con el `min_interval_ms` de esa función (2 700 000 = 45 min; 72 000 000 = 20 h; los
+semanales, 518 400 000 = 6 días). Un segundo `run-now` debe terminar mucho más
+rápido (238 ms el paso de la función; la misma función con el código viejo tardó
+~740) y **no** escribir otro reclamo. Hecho para QR, Wallet y
+Purga; las dos de correo (`sendWeeklySummary`, `cleanupInactiveUsers`) **no se
+invocan a mano** y se verifican en su primer disparo real (lunes 15:00 y miércoles
+16:00 UTC): debe aparecer su reclamo y `last_run_status: success`.
+
+**Un `run-now` gasta el periodo.** Es la contrapartida de la cota: la corrida
+manual de QR a las 15:39 deja el reclamo vivo 45 min, así que el cron de las 16:13
+se salta (`ran_recently`) y el siguiente real es el de las 17:13. Inofensivo para
+QR (rota tokens que de todos modos expiran a los 5 min), pero **no hagas `run-now`
+de una función semanal "para probar"**: gasta la semana, y esa es justo la que
+manda correo.
+
+El valor puesto el 2026-10-07 (prefijo `sched_`) quedó en `main` por los commits del
+bot; **está muerto desde que se borró `SCHEDULED_TASK_SECRET`** (2026-10-07, vía
+`DELETE /secrets`) y no hay que rotarlo.
 
 **Verificado en vivo antes de este cambio:** los 5 workflows corren a mano con
 éxito con el secreto nuevo (`run-now`); los dos apagados se reactivaron
