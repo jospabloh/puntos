@@ -19,26 +19,26 @@
     }
   },
   "definition": {
-    "document": {
-      "dsl": "1.0.0",
-      "name": "resumen_semanal_de_actividad",
-      "version": "1.0",
-      "namespace": "base44"
-    },
     "do": [
       {
         "run_function": {
           "call": "invoke_backend_function",
+          "then": "end",
           "with": {
-            "function_name": "sendWeeklySummary",
             "args": {
-              "scheduled_token": "<SCHEDULED_TASK_SECRET — el valor real vive SOLO en el panel de Base44>"
-            }
-          },
-          "then": "end"
+              "scheduled_token": "sched_k1gAd-WlycDGfypwRCJpZHVT4ad4aGvR"
+            },
+            "function_name": "sendWeeklySummary"
+          }
         }
       }
-    ]
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "resumen_semanal_de_actividad",
+      "namespace": "base44",
+      "version": "1.0"
+    }
   },
   "x-base44-migrated-from-automation": {
     "legacy_payload_function": "sendWeeklySummary"
