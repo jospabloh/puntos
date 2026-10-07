@@ -1,0 +1,43 @@
+{
+  "name": "Purgar Sesiones Inactivas",
+  "description": "Revoca las AppSession sin actividad en 48 h (m\u00f3dulo 20, capa 3)",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 6 * * *",
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "then": "end",
+          "with": {
+            "args": {
+              "scheduled_token": "sched_k1gAd-WlycDGfypwRCJpZHVT4ad4aGvR"
+            },
+            "function_name": "purgeStaleSessions"
+          }
+        }
+      }
+    ],
+    "document": {
+      "dsl": "1.0.0",
+      "name": "purgar_sesiones_inactivas",
+      "namespace": "base44",
+      "version": "1.0"
+    }
+  }
+}
