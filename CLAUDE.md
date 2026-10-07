@@ -446,9 +446,11 @@ touching a module that's already implemented.
       `manageTeamMember`/`Membership` revocation hole closed 2026-09-07.
 - [x] Module 15 — Bridge: one derived key per app, `_acaciaSign.ts`,
       `ACACIA_APP_SLUG=puntos` verified against a real sync 2026-08-24.
-- [x] Module 16 — Secrets: `npm run check:secrets` in CI;
-      `scheduledGuard.ts` fails closed on an unset `SCHEDULED_TASK_SECRET`,
-      and `purgeStaleSessions` (module 20) went behind that same guard.
+- [x] Module 16 — Secrets: `npm run check:secrets` in CI (sees JSON since
+      2026-09-10). The five scheduled jobs no longer carry a shared secret at
+      all — `scheduledGuard.ts` bounds each to one run per period and fails
+      closed (503) if it cannot record its own claim. See "El secreto de los
+      crons" below for why a secret in a workflow cannot work on Base44.
 - [x] Module 17 — Mission Control knows this app: row in `apps`, base44
       adapter, licence capabilities, ticket control, catalogue mirror.
 - [ ] Module 18 — **RETIRADO 2026-09-10.** `Membership`, `switchBusiness` y
@@ -1269,16 +1271,97 @@ Es la misma lección que el módulo 15 (`ACACIA_APP_SLUG`) y la del módulo 10
 tres párrafos más arriba, por tercera vez: **una comprobación que nadie ha
 visto fallar no es una comprobación, es una creencia.**
 
-Pendientes que siguen abiertos:
+**Superado el 2026-10-07 — lo de arriba "funcionó" y aun así los crons cayeron,
+y la solución de fondo fue otra.** Léase la sección siguiente. Lo que queda
+vigente de este bloque: el guardia ve JSON y se prueba a sí mismo, y **el valor
+de `re_QaaB…` sigue en el historial de git** (desde `31b97f7`), rotado desde el
+2026-09-09: no autoriza nada, pero no lo copies de un `git log` creyendo que sirve.
 
-1. Los 4 workflows en el panel siguen con el token viejo → los crons responden
-   403 hasta que se actualicen. **El CLI no sirve para esto**: `base44
-   workflows` sólo tiene `list` y `runs`, no hay `push`. Es a mano en el panel.
-2. `purgeStaleSessions` sigue sin su workflow, así que la capa 3 del módulo 20
-   no corre todavía.
-3. **El valor viejo sigue en el historial de git** (desde `31b97f7`). Está
-   rotado desde el 2026-09-09, así que no autoriza nada; se deja escrito para
-   que nadie lo lea de un `git log` creyendo que sirve.
+## El secreto de los crons: por qué no puede existir en un workflow de Base44 (2026-10-07)
+
+**Qué pasó.** Los cuatro workflows se quedaron con
+`"<SCHEDULED_TASK_SECRET — el valor real vive SOLO en el panel de Base44>"` como
+token **literal**, o sea el marcador de redacción de arriba, no el secreto. Una
+sincronización de archivos (la versión del panel dice `Updated via file tree`,
+2026-10-01) copió el árbol del repo al panel, y desde ahí todas las corridas
+daban 403. Base44 apagó solo dos de los cuatro tras 5 fallos seguidos
+(`status_reason: consecutive_failures`): QR y Wallet. Los otros dos son semanales
+y todavía no habían acumulado cinco. **Seis días (1–7 de octubre) sin que nada lo
+avisara** — QR fallaba cada hora y nadie lo vio: el ejemplo más limpio de este
+repo de lo que cuesta una comprobación que nadie mira.
+
+**Tres creencias de este archivo que eran falsas, comprobadas el 2026-10-07:**
+
+1. «El CLI no tiene `push`, así que es a mano en el panel.» **La API REST sí**:
+   `PUT /api/apps/{app_id}/workflows/{id}`, `POST .../workflows`,
+   `POST .../toggle-status`, `POST .../run-now`. El CLI no la expone; la API sí.
+2. «El panel quizá admite una referencia al secreto.» **No.** `${ $secrets.X }`
+   pasa el validador (`valid:true`) y revienta al ejecutar:
+   `jq: error: $secrets is not defined`. Un validador que dice sí no prueba que el
+   motor lo entienda — sólo ejecutándolo se supo.
+3. «Redactar el secreto del repo basta.» **No, porque Base44 escribe su propio
+   árbol.** Cada `PUT` a un workflow hace que `base44-builder[bot]` commitee
+   `base44/workflows/*.jsonc` a `main`, con el valor tal cual. Poner el secreto
+   correcto vía API lo filtró a GitHub **siete veces en una tarde**; rotarlo sólo
+   mueve la fuga. (El repo es privado; aun así, un secreto que la plataforma
+   republica sola no es un secreto.)
+
+**Por eso se quitó el secreto en vez de rotarlo.** `base44/shared/scheduledGuard.ts`
+ya no compara un token: cada función (`regenerateExpiredQR` cada hora,
+`updateWalletPasses`/`purgeStaleSessions` cada día, `sendWeeklySummary`/
+`cleanupInactiveUsers` cada semana) corre **como mucho una vez por periodo**.
+Esto **no es autenticación y no lo pretende**: cualquiera que encuentre la URL
+puede llamarla, pero eso solo adelanta la única corrida que el scheduler iba a
+hacer de todos modos, o devuelve `skipped`. Nadie puede hacer que estos trabajos
+hagan **más** trabajo, y no hay nada que filtrar ni que adivinar.
+
+- **El reclamo vive en `AuditLog`** (`entity_type: 'ScheduledRun'`, sin
+  `business_id`, así que ninguna rama de RLS de un inquilino lo lee). Se usó una
+  entidad ya desplegada a propósito: un campo o entidad que sólo existe en el repo
+  se descarta en silencio, y una compuerta que no puede guardar su propio reclamo
+  parecería funcionar sin acotar nada.
+- **Falla CERRADO:** si no puede leer o escribir el reclamo, responde 503 y **no
+  corre**. Correr sin compuerta ante un fallo de almacenamiento sería la versión
+  sin límite de lo que esto previene.
+- **Si el trabajo falla, devuelve el periodo** (borra su reclamo) para que el
+  siguiente intento programado reintente; si tiene éxito, lo conserva — soltarlo
+  quitaría el límite.
+- **La ventana es ~75–85 % del periodo, no el periodo.** El scheduler tiene
+  segundos de jitter: una corrida a las 08:03:33 y la siguiente a las 08:03:31 del
+  día siguiente están a 23:59:58. Una compuerta de exactamente 24 h rechazaría la
+  corrida legítima.
+- **`created_date` llega sin zona** (`2026-10-07T03:59:03.502000`). `Date.parse`
+  lo leería como hora local; se trata como UTC. Hay prueba (`scheduledGuard.test.ts`,
+  corre con `TZ=America/Mexico_City`).
+- **No sirve para cualquier función.** Es aceptable aquí porque una corrida extra
+  adelantada no daña a nadie. Una función cuya corrida única sea dañina, o cuyo
+  efecto dependa de **quién** la pide, necesita identidad real, no esto.
+
+**Las pruebas protegen la lógica, comprobado con mutaciones:** con la compuerta
+rota para que nunca cierre, y con la fecha leída como hora local, la suite
+falla en ambos casos (`deno test base44/shared/scheduledGuard.test.ts`, 13 pruebas).
+
+**El smoke rojo del 5–6 de octubre no era producción.** Era una carrera del propio
+test: el app redirige `/` → `/Login` en cuanto `auth.me()` falla, y el test hacía
+`goto('/')` y luego inspeccionaba — si el redirect caía durante el `goto`, error
+`net::ERR_ABORTED`; si caía después, `Execution context was destroyed`. Medido:
+**6 fallos de 6** desde un portátil contra producción, intermitente en el runner de
+Actions (verde #47–#49, rojo #50–#51 sin cambio de código entre medias). El
+arreglo está en `smoke.config.js` (`routes: ['./Login']`: la pantalla estable que
+el visitante de verdad ve, sin redirect), no en `smoke.spec.js`, que es canónico
+y no se edita aquí. Después: **6 de 6 pasos** y la suite completa, 6 passed.
+
+**Orden de despliegue, y es el único punto donde el orden importa:** (1) las 5
+funciones nuevas, (2) los workflows sin token (`args: {}`), (3) borrar
+`SCHEDULED_TASK_SECRET`. Al revés, cada paso rompe un cron. El valor puesto el
+2026-10-07 (prefijo `sched_`) quedó en `main` por los commits del bot; **está
+muerto en cuanto se borra el secreto** y no hay que rotarlo.
+
+**Verificado en vivo antes de este cambio:** los 5 workflows corren a mano con
+éxito con el secreto nuevo (`run-now`); los dos apagados se reactivaron
+(`toggle-status`); se creó `Purgar Sesiones Inactivas` (diario 06:00 UTC) — la capa
+3 del módulo 20 por fin tiene agenda. **No se ejecutaron `sendWeeklySummary` ni
+`cleanupInactiveUsers` a mano**: mandan correo a clientes reales.
 
 ## Retirado: el selector de negocio (módulo 18) — 2026-09-10
 

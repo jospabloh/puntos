@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/scheduledGuard.ts';
+import { runScheduled, EVERY_DAY } from '../../shared/scheduledGuard.ts';
 
 // purgeStaleSessions — Módulo 20 del estándar ACACIA, capa 3.
 //
@@ -23,18 +23,15 @@ import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/sched
 // `SessionExpiredDialog` — la misma vía por la que Mission Control ya fuerza
 // un cierre de sesión remoto. No hace falta ningún cambio de cliente.
 //
-// Va detrás del MISMO guardia de tareas programadas que las otras cuatro
-// funciones de cron de este repo (módulo 16): sin `SCHEDULED_TASK_SECRET`
-// puesto, `verifyScheduledRequest` responde 403 — falla CERRADO, nunca
-// "corrió igual".
+// Va detrás de la MISMA compuerta que las otras cuatro funciones de cron de este
+// repo (`scheduledGuard.ts`): corre como mucho una vez por periodo y, si no puede
+// reclamar su corrida, responde 503 y no corre — falla CERRADO, nunca "corrió
+// igual". Ya no hay secreto compartido: ver la cabecera de ese archivo.
 
 const STALE_AFTER_MS = 48 * 60 * 60 * 1000; // 48h — el valor por defecto del portafolio
 const PAGE = 200;
 
-Deno.serve(async (req: Request) => {
-  const guard = await verifyScheduledRequest(req);
-  if (!guard.ok) return unauthorizedResponse(guard.reason || 'Forbidden');
-
+async function run(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const sr = base44.asServiceRole;
@@ -81,4 +78,6 @@ Deno.serve(async (req: Request) => {
     console.error('purgeStaleSessions failed:', error);
     return Response.json({ error: 'purge_failed' }, { status: 500 });
   }
-});
+}
+
+Deno.serve((req: Request) => runScheduled(createClientFromRequest(req), 'purgeStaleSessions', EVERY_DAY, () => run(req)));
