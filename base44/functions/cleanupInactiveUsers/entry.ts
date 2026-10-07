@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import { verifyScheduledRequest, unauthorizedResponse } from '../../shared/scheduledGuard.ts';
+import { runScheduled, EVERY_WEEK } from '../../shared/scheduledGuard.ts';
 
 // The email template lives inline here — same convention as the duplicated
 // isBusinessWriteBlocked() guards in earnPoints/burnPoints/redeemOffer/createStore.
@@ -70,14 +70,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </body></html>`;
 }
 
-Deno.serve(async (req) => {
+async function run(req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Only the platform's scheduled automation may invoke this — it passes the
-    // SCHEDULED_TASK_SECRET via function_args. Anonymous external callers get 403.
-    const guard = await verifyScheduledRequest(req);
-    if (!guard.ok) return unauthorizedResponse(guard.reason || 'Forbidden');
 
     // Scheduled automation — no user session; use service role directly.
 
@@ -132,4 +128,6 @@ Deno.serve(async (req) => {
       success: false 
     }, { status: 500 });
   }
-});
+}
+
+Deno.serve((req: Request) => runScheduled(createClientFromRequest(req), 'cleanupInactiveUsers', EVERY_WEEK, () => run(req)));

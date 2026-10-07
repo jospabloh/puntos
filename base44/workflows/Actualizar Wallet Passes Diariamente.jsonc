@@ -25,9 +25,7 @@
           "call": "invoke_backend_function",
           "then": "end",
           "with": {
-            "args": {
-              "scheduled_token": "sched_k1gAd-WlycDGfypwRCJpZHVT4ad4aGvR"
-            },
+            "args": {},
             "function_name": "updateWalletPasses"
           }
         }
