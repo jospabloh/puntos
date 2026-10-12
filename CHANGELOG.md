@@ -5,6 +5,79 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [2.0.24] — 2026-10-12 — Auditoría programada: prueba del guardia de crons rota por deriva de reloj, y un bump que faltaba
+
+Auditoría completa programada de portafolio. Estado previo: CI y `Production
+smoke test` en verde (una corrida aislada en rojo el 2026-10-08, sin logs
+recuperables — no reprodujo en las 3 corridas siguientes sobre el mismo
+commit, tratada como flake). Un PR externo (`#82`, `ci: cap every workflow
+job at 15 minutes`) sigue abierto y en rojo por presupuesto de Actions
+agotado, no por código — no es de esta pasada y no se tocó.
+
+### Fixed
+- **`scheduledGuard.test.ts` tenía una prueba con fecha de caducidad, y ya
+  había caducado.** `deno test` (el runtime se puede descargar en este
+  sandbox, confirmando otra vez la nota de la sección "El secreto de los
+  crons" de `CLAUDE.md`) encontró `hammering the endpoint does not multiply
+  the work` fallando: 50 llamadas devolvían 50 ejecuciones en vez de 1. No es
+  una regresión del guardia en producción — `runScheduled`, la única función
+  que Base44 invoca de verdad, nunca recibía un `nowMs` explícito y caía
+  siempre a `Date.now()` real, que en producción avanza al mismo ritmo que el
+  `created_date` real que el propio Base44 estampa. El problema vivía sólo en
+  la prueba: su cliente falso usa un reloj simulado fijado al 2026-10-07, y al
+  comparar esos timestamps simulados contra el `Date.now()` real de la
+  máquina (ya 2026-10-12, cinco días después), la ventana de "¿ya corrió
+  hoy?" nunca encontraba la reclamación anterior dentro del rango — cada
+  llamada se creía la primera. Arreglado dándole a `runScheduled` un quinto
+  parámetro opcional `nowMs` (default `Date.now()`, cero cambio de
+  comportamiento en los cinco call sites reales, que ninguno lo pasa) y
+  haciendo que la prueba lo use (`f.now()`) en vez de depender del reloj real
+  de la máquina. **19/19 pruebas pasan** (antes: 18/19); `deno check` sobre el
+  archivo sin errores nuevos. Vale decirlo tal como es: esta es la única
+  prueba que fija el límite que reemplazó el secreto compartido de los cinco
+  crons (`regenerateExpiredQR`, `updateWalletPasses`, `purgeStaleSessions`,
+  `sendWeeklySummary`, `cleanupInactiveUsers`), y llevaba rota desde el día
+  después de escribirse sin que nada lo hubiera detectado — `deno` no corre en
+  CI (el mismo hueco que `CLAUDE.md` ya documenta), así que sólo lo ve quien
+  lo corre a mano.
+- **Una vulnerabilidad alta de dependencias con parche no disruptivo**
+  (`source-map-js` 1.2.1→1.2.2, *CPU exhaustion vía offsets de sección
+  indexados* — `npm audit fix` sin `--force`; sólo cambió
+  `package-lock.json`). Quedan 10 avisos (5 altos, 5 moderados), los mismos
+  de siempre: la cadena de build (`braces`/`chokidar`/`micromatch`/
+  `fast-glob`/`tailwindcss`/`tailwindcss-animate`/`postcss-selector-parser`/
+  `postcss-nested`, sin parche disponible y sin tocar datos de usuario) y
+  `react-router`/`react-router-dom` (necesita el salto mayor v6→v7, diferido
+  a propósito desde el 2026-08-31).
+- **El trabajo del 2026-10-07 (quitar el secreto compartido de los crons,
+  PR #80/#81) se mergeó sin el bump de versión ni la entrada de changelog que
+  el módulo 13 exige.** `package.json` seguía en `2.0.23` con fecha
+  2026-10-05 mientras `CLAUDE.md` ya documentaba trabajo cinco días
+  posterior bajo su propio encabezado de fecha, sin número de versión — el
+  mismo patrón de "bump que se cae al mergear" que este archivo ya cuenta
+  tres veces (ver la nota de colisión de versiones en la sección de
+  reauditoría del 2026-08-31). Esta entrada lo cierra retroactivamente: el
+  bump a `2.0.24` cubre tanto ese trabajo como los hallazgos de esta pasada.
+
+### Verified
+- Diff campo por campo (`list_entity_schemas` vía MCP de Base44, appId
+  `696e7fdd7889892fe40868b7`) contra las 19 entidades del repo: **cero
+  drift**, incluidos los bloqueos de campo de `Business`/`User`/
+  `LoyaltyAccount`.
+- `npm run lint` (eslint + `validate:rls` 19 entidades + `validate:permissions`
+  11 claves + `validate:functions` 26/40), `npm run build`,
+  `npm run check:secrets` — todos limpios.
+- `deno test base44/shared/*.test.ts` — 19/19. `deno check` sobre
+  `scheduledGuard.ts` y `scheduledGuard.test.ts` sin errores nuevos.
+
+### Not verified from this environment
+- Una sesión de navegador autenticada (UI/UX, dispositivos, rendimiento) —
+  sin credenciales de sesión Base44 aquí, igual que todas las pasadas
+  anteriores.
+- Módulo 9 (QA automatizada de rutas de negocio: alta de cuenta, canje,
+  ajuste de puntos) sigue sin existir — mismo hueco nombrado desde v2.0.20,
+  fuera de alcance de una pasada desatendida.
+
 ## [2.0.23] — 2026-10-05 — Auditoría programada: manual desactualizado tras el retiro del selector de negocio
 
 Auditoría completa programada de portafolio. Estado previo a esta pasada: CI y

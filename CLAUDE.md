@@ -1786,3 +1786,101 @@ de prueba, creadas para este hallazgo. `npm run lint` (eslint + validate:rls +
 validate:permissions + validate:functions), `npm run build` y `npx tsc` (mismo
 conteo de errores preexistente, ninguno nuevo) pasan. `deno`/un runner de test
 no disponibles en este sandbox — sin cambios en `base44/shared/`, no aplica.
+
+## Auditoría programada — la prueba del guardia de crons tenía fecha de caducidad (2026-10-12, v2.0.24)
+
+Auditoría completa programada de portafolio. `main` llevaba desde el
+2026-10-07 (PR #80/#81, el retiro del secreto compartido de los crons) sin
+cambios de código — sólo el PR externo `#82` (`ci: cap every workflow job at
+15 minutes`), abierto en draft y en rojo por presupuesto de Actions agotado
+en la cuenta, no por su código; no es de esta pasada y no se tocó.
+
+**`deno` SÍ se pudo bajar otra vez en este sandbox** (la sección "El secreto
+de los crons" ya lo decía; la nota de cierre del hallazgo de
+`BusinessUsers.jsx` del 2026-10-02 decía lo contrario — "deno/un runner de
+test no disponibles en este sandbox" — y era la versión equivocada: nadie
+había vuelto a intentarlo). `curl` contra la release de GitHub funciona a
+través del proxy igual que siempre.
+
+### El hallazgo: `scheduledGuard.test.ts` llevaba roto desde el día después de escribirse
+
+`deno test base44/shared/*.test.ts` dio **18/19** — `hammering the endpoint
+does not multiply the work` fallaba: 50 llamadas producían 50 ejecuciones en
+vez de 1. Antes de tocar nada: **no es una regresión de producción.** El
+único call site real de `runScheduled` (los cinco crons —
+`regenerateExpiredQR`, `updateWalletPasses`, `purgeStaleSessions`,
+`sendWeeklySummary`, `cleanupInactiveUsers`, todos vía `Deno.serve`) nunca
+pasa un `nowMs`, así que siempre usó `Date.now()` real — y en producción el
+`created_date` que el propio Base44 estampa también es real, así que las dos
+mitades siempre avanzan al mismo paso.
+
+El defecto vivía sólo en la prueba. Su cliente falso (`fakeClient()`) simula
+su propio reloj, fijo en `Date.UTC(2026, 9, 7, 6, 0, 0)` — el día en que se
+escribió el archivo — y lo usa para estampar cada fila creada. Pero
+`runScheduled` (a diferencia de `claimScheduledRun`, que sí acepta un
+`nowMs` explícito, y que las OTRAS pruebas de este archivo sí usan) nunca
+tenía forma de recibir ese reloj simulado: caía siempre al `Date.now()` real
+de la máquina. El 2026-10-07, reloj simulado y reloj real coincidían, así
+que la ventana de "¿ya corrió hoy?" encontraba la reclamación anterior sin
+problema. Cinco días después (hoy), el reloj real ya está en 2026-10-12
+mientras las filas simuladas siguen fechadas 2026-10-07 — fuera de la
+ventana de `EVERY_DAY` (20h) — así que cada una de las 50 llamadas se creía
+la primera del día y las 50 corrían. Una prueba con fecha de caducidad: pasa
+el día en que se escribe y falla todos los siguientes, por una razón que no
+tiene nada que ver con el límite que dice estar fijando.
+
+Nadie lo había visto porque `deno` no corre en CI (ver "El secreto de los
+crons" arriba) — sólo lo descubre quien lo corre a mano, y la última vez que
+alguien lo intentó (2026-10-02) concluyó que no se podía.
+
+**Arreglado**, en el orden que importa: primero `runScheduled` ganó un
+quinto parámetro opcional, `nowMs: number = Date.now()`, que reenvía a
+`claimScheduledRun`. Los cinco call sites reales llaman con sus cuatro
+argumentos de siempre, así que el default los deja exactamente como
+estaban — confirmado leyendo los cinco antes de tocar la firma. Después la
+prueba se cambió para pasar `f.now()` por ese nuevo parámetro, igual que ya
+hacía al llamar `claimScheduledRun` directamente, en vez de depender de que
+el reloj real de la máquina coincidiera con el suyo. **19/19** ahora.
+`deno check` sobre `scheduledGuard.ts` y su prueba, sin errores nuevos.
+
+**La lección es la misma que esta sección de CLAUDE.md ya repite en otras
+formas** (el `ACACIA_APP_SLUG` del módulo 15, el `check:secrets` que no veía
+JSON, "Deno no puede importar entre directorios"): una prueba que nadie ha
+vuelto a correr no es una prueba, es una fecha. Esta en concreto fijaba el
+único límite que reemplazó la autenticación de los cinco crons — exactamente
+la que más importaba que siguiera viva.
+
+### El resto de la pasada
+
+- **Cero drift** entre las 19 entidades del repo (`base44/entities/*.jsonc`)
+  y `list_entity_schemas` en vivo (appId `696e7fdd7889892fe40868b7`),
+  comparación campo por campo incluyendo todos los bloqueos de campo
+  (`Business`, `User`, `LoyaltyAccount.qr_token`/`business_id`/`store_id`).
+- **1 vulnerabilidad alta de dependencias cerrada sin romper nada**:
+  `source-map-js` 1.2.1→1.2.2 (`npm audit fix`, sin `--force`). Quedan 10
+  avisos (5 altos, 5 moderados), todos ya conocidos y diferidos a propósito:
+  la cadena de build de Tailwind/PostCSS (sin parche, no procesa datos de
+  usuario) y `react-router`/`react-router-dom` (salto mayor v6→v7, diferido
+  desde el 2026-08-31).
+- **Bump retroactivo a `2.0.24`**: el trabajo del 2026-10-07 (retiro del
+  secreto compartido de los crons, PR #80/#81) se mergeó sin el bump de
+  versión ni la entrada de changelog que el módulo 13 exige — tercera vez que
+  este archivo documenta ese mismo patrón de "bump que se cae al mergear".
+  Esta versión cubre ese trabajo retroactivamente más los hallazgos de esta
+  pasada.
+- Una corrida aislada de `Production smoke test` en rojo el 2026-10-08 (run
+  #54) no reprodujo en las tres corridas siguientes sobre el mismo commit;
+  sus logs ya caducaron en GitHub (retención agotada) así que no se pudo
+  leer la causa — tratada como flake, sin acción, mismo criterio que el
+  resto de este archivo aplica a una corrida aislada que no se repite.
+- `npm run lint`/`build`/`check:secrets` limpios. Módulo 9 (QA automatizada
+  de rutas de negocio) sigue sin existir — mismo hueco nombrado desde
+  v2.0.20, fuera de alcance de una pasada desatendida.
+
+**No verificado:** una sesión de navegador autenticada (sin credenciales de
+sesión Base44 en este entorno, igual que todas las pasadas anteriores). No
+se intentó ningún deploy (ni de funciones ni de sitio): el fix de esta
+pasada vive en `base44/shared/scheduledGuard.ts`/`.test.ts`, y hasta que se
+corra `npm run deploy` el comportamiento desplegado sigue siendo el de
+antes de este PR — sin cambio de riesgo, porque el propio hallazgo confirma
+que la versión desplegada nunca tuvo el bug, sólo la prueba que lo vigila.
