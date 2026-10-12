@@ -145,8 +145,9 @@ export async function runScheduled(
   name: string,
   minIntervalMs: number,
   job: () => Promise<Response>,
+  nowMs: number = Date.now(),
 ): Promise<Response> {
-  const claim = await claimScheduledRun(base44, name, minIntervalMs);
+  const claim = await claimScheduledRun(base44, name, minIntervalMs, nowMs);
   if (!claim.ok) {
     if (claim.reason === 'gate_unavailable') {
       return Response.json({ error: 'gate_unavailable', skipped: true }, { status: 503 });

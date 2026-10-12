@@ -77,11 +77,18 @@ Deno.test('a second call inside the period is refused — this is the bound', as
 });
 
 Deno.test('hammering the endpoint does not multiply the work', async () => {
+  // Must pass the fake clock through runScheduled (its 5th, optional arg) rather
+  // than let it fall back to the real Date.now(): this test's AuditLog rows are
+  // stamped on the FAKE clock (started from a fixed date), so a bare call here
+  // would compare those fake timestamps against the real wall clock and drift
+  // further apart every day after this file was written — exactly the kind of
+  // test that passes once and then fails forever, for a reason that has nothing
+  // to do with the gate it is supposed to be pinning.
   const f = fakeClient();
   let ran = 0;
   for (let i = 0; i < 50; i++) {
     f.advance(1000);
-    const res = await runScheduled(f.client, 'job', EVERY_DAY, async () => { ran++; return Response.json({ ok: true }); });
+    const res = await runScheduled(f.client, 'job', EVERY_DAY, async () => { ran++; return Response.json({ ok: true }); }, f.now());
     assert(res.status === 200, 'refusals are 200 skipped, not errors');
   }
   eq(ran, 1, 'fifty calls in under a minute, exactly one run');
