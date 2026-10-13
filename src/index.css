@@ -220,3 +220,13 @@
    `h-10`) mide lo mismo. Con 4.75rem el aviso queda bajo cualquiera de las dos,
    con el mismo respiro de 0.75rem que trae por defecto. */
 :root { --update-banner-top: 4.75rem; }
+/* Back-office from 768px: no top bar, but a 16rem (w-64) sidebar inside a
+   centred max-w-[1400px] row. Drop the notice back to the top and start it at
+   the sidebar's right edge, which moves in once the viewport passes 1400px.
+   Layout.jsx sets data-backoffice-shell while that shell is mounted. */
+@media (min-width: 768px) {
+  :root[data-backoffice-shell] {
+    --update-banner-top: 0.75rem;
+    --update-banner-left: calc(max(0px, (100vw - 1400px) / 2) + 16rem);
+  }
+}
