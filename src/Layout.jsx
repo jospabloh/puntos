@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
@@ -140,6 +140,12 @@ function BackOfficeShell({ user, role, currentPageName, children }) {
     ? [{ label: 'Plataforma', items: OWNER_NAV }, { label: 'Administración', items: ADMIN_NAV }]
     : [{ items: ADMIN_NAV }];
   const subtitle = role === ROLES.OWNER ? 'Consola' : 'Administración';
+  // Tells src/index.css this shell is mounted, so the update notice can sit to
+  // the right of the desktop sidebar instead of over it.
+  useEffect(() => {
+    document.documentElement.setAttribute('data-backoffice-shell', '');
+    return () => document.documentElement.removeAttribute('data-backoffice-shell');
+  }, []);
 
   return (
     <div className="min-h-screen pp-shell-bg">
